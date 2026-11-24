@@ -86,7 +86,10 @@ struct Target { int kind = TG_NONE, idx = 0; bool operator==(const Target& o) co
 Target g_hover, g_down;
 std::map<int, float> g_glow;   // tecla -> brilho do clique (1 = apertada), apaga em 250 ms
 std::map<int, bool> g_held;
-DWORD g_lastAnim;
+double g_lastAnim;   // ms (QueryPerformanceCounter) do último passo do brilho das teclas
+bool g_anim;         // o brilho está apagando: cada WM_PAINT dá um passo e pede o próximo quadro
+double g_animStart;  // para o log dos primeiros brilhos (quadros por segundo)
+int g_animFrames;
 float g_histScroll;
 
 // ---- expressão (Básica e Científica)
@@ -1641,11 +1644,47 @@ Target HitTarget(D2D1_POINT_2F p) {
     return t;
 }
 
+// O brilho das teclas anda no relógio da tela: o EndDraw espera o vsync, então cada WM_PAINT é um quadro.
+// Sem SetTimer (15,6 ms engasgava nas telas de 120/144/174 Hz) e o passo é pelo tempo real.
+double NowMs() {
+    static LARGE_INTEGER f = [] { LARGE_INTEGER q; QueryPerformanceFrequency(&q); return q; }();
+    LARGE_INTEGER c; QueryPerformanceCounter(&c);
+    return c.QuadPart * 1000.0 / f.QuadPart;
+}
+void StartAnim() {
+    if (!g_anim) { g_anim = true; g_lastAnim = g_animStart = NowMs(); g_animFrames = 0; }
+    Invalidate();
+}
+// um passo do brilho; true enquanto alguma tecla ainda apaga (as seguradas ficam acesas e paradas)
+bool StepAnim() {
+    if (!g_anim) return false;
+    double now = NowMs();
+    float dt = (float)std::min(100.0, now - g_lastAnim) / 1000.f;
+    g_lastAnim = now;
+    bool moving = false;
+    for (auto it = g_glow.begin(); it != g_glow.end();) {
+        if (!g_held[it->first]) {
+            it->second -= dt / 0.25f;
+            if (it->second <= 0) { g_held.erase(it->first); it = g_glow.erase(it); continue; }
+            moving = true;
+        }
+        ++it;
+    }
+    g_animFrames++;
+    g_anim = moving;
+    static int logged = 0;  // só os 3 primeiros: dá a medida sem escrever no disco a cada tecla
+    if (!moving && logged < 3) {
+        logged++;
+        double ms = now - g_animStart;
+        Log(L"brilho das teclas: %d quadros em %.0f ms (%.0f quadros/s)", g_animFrames, ms, ms > 0 ? g_animFrames * 1000.0 / ms : 0.0);
+    }
+    return moving;
+}
+
 void Flash(int id) {  // tecla apertada pelo teclado: acende e apaga
     g_glow[id] = 1;
     g_held[id] = false;
-    g_lastAnim = GetTickCount();
-    SetTimer(g_hwnd, 1, 16, nullptr);
+    StartAnim();
 }
 
 void PressKey(int id) {
@@ -1834,20 +1873,6 @@ LRESULT HitTestNC(HWND h, LPARAM l) {
     return HTCAPTION;  // o resto (visor, fundo) arrasta a janela
 }
 
-void Tick() {
-    DWORD now = GetTickCount();
-    float dt = (now - g_lastAnim) / 1000.f;
-    g_lastAnim = now;
-    bool any = false;
-    for (auto it = g_glow.begin(); it != g_glow.end();) {
-        if (!g_held[it->first]) it->second -= dt / 0.25f;
-        if (it->second <= 0) { g_held.erase(it->first); it = g_glow.erase(it); continue; }
-        any = true; ++it;
-    }
-    if (!any) KillTimer(g_hwnd, 1);
-    Invalidate();
-}
-
 LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
     switch (m) {
     case WM_NCCALCSIZE: if (w) return 0; break;
@@ -1883,7 +1908,7 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         return 0;
     }
     case WM_ERASEBKGND: return 1;
-    case WM_PAINT: { PAINTSTRUCT ps; BeginPaint(h, &ps); Render(); EndPaint(h, &ps); return 0; }
+    case WM_PAINT: { PAINTSTRUCT ps; BeginPaint(h, &ps); bool moving = StepAnim(); Render(); EndPaint(h, &ps); if (moving) Invalidate(); return 0; }
     case WM_ACTIVATE: g_active = LOWORD(w) != WA_INACTIVE; Invalidate(); return 0;
     case WM_SETTINGCHANGE: {
         g_dark = ReadDark();
@@ -1892,7 +1917,7 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         Invalidate();
         return 0;
     }
-    case WM_TIMER: if (w == 1) Tick(); else if (w == 2) { bool d = ReadDark(); if (d != g_dark) SendMessageW(h, WM_SETTINGCHANGE, 0, 0); } return 0;
+    case WM_TIMER: if (w == 2) { bool d = ReadDark(); if (d != g_dark) SendMessageW(h, WM_SETTINGCHANGE, 0, 0); } return 0;
     case WM_MOUSEWHEEL: {
         if (!g_sidebar) return 0;
         POINT pt{ GET_X_LPARAM(l), GET_Y_LPARAM(l) }; ScreenToClient(h, &pt);
@@ -1947,8 +1972,7 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
             ReleaseCapture();
             int id = g_keys[g_down.idx].id;
             g_held[id] = false;
-            g_lastAnim = GetTickCount();
-            SetTimer(h, 1, 16, nullptr);
+            StartAnim();
             float sc = Scale(); D2D1_POINT_2F p{ GET_X_LPARAM(l) / sc, GET_Y_LPARAM(l) / sc };
             if (HitTarget(p) == g_down) PressKey(id);
         }
