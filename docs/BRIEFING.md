@@ -1,61 +1,58 @@
-# Briefing completo do projeto (referência obrigatória para qualquer agente)
+# Briefing completo do projeto
 
-Atualizado em 2026-11-11. Leia inteiro antes de mudar qualquer coisa. Quando este documento e o código
-divergirem, o código manda; corrija o documento. Documentos de apoio: `docs/dock-e-barra-de-menus.md`,
-`docs/sem-explorer.md`, `docs/problemas-conhecidos.md`, `docs/pendencias.md`, `docs/estudo-bandeja.md`,
-`docs/registro-mudancas.txt` (tudo que já mudou no sistema).
+> **English summary.** This is the most complete technical overview of Liquinix, written in Portuguese like most
+> of the code. It covers what each program and shell module does (sections 5 and 5.1), the visual reference for
+> each theme (6), settings keys and the registered messages between processes (7), how Liquinix integrates with
+> Windows (8), the performance rules (9) and how to test (10, 11). It came from upstream WacOS before the fork and
+> was updated for Liquinix: names, paths and the release package follow the fork. The project rules live in
+> [`AGENTS.md`](../AGENTS.md) and the skills in `.claude/skills/`; where this document disagrees with them or
+> with the code, they win. Work is tracked on the project board, in the order of [`ROADMAP.md`](ROADMAP.md).
+
+Herdado do WacOS (estado de 2026-11-11) e atualizado para o Liquinix. Quando este documento e o código
+divergirem, o código manda; corrija o documento. As regras do projeto estão no `AGENTS.md`. Documentos de apoio:
+`docs/dock-e-barra-de-menus.md`, `docs/sem-explorer.md`, `docs/problemas-conhecidos.md`, `docs/pendencias.md`,
+`docs/estudo-bandeja.md`, `docs/windows-vm.md` (VM de testes) e `docs/linux-dev.md` (o lado Linux).
 
 ---
 
 ## 1. O que é
 
-Um "macOS por cima do Windows 11": um shell próprio em **C++ Win32 + Direct2D/DirectWrite +
+O Liquinix (fork GPL-3.0 do WacOS, ver `PROVENANCE.md`) é um "macOS por cima do Windows 11": um shell próprio em **C++ Win32 + Direct2D/DirectWrite +
 DirectComposition / Windows.UI.Composition**, sem frameworks, que substitui a experiência do Windows
 (barra de tarefas, Iniciar, Explorador, menus, diálogos, tela de bloqueio) pelo visual e comportamento do
 **macOS Sequoia** e, com o tema ligado, do **macOS 26 Tahoe (Liquid Glass)**. Kernel, drivers e apps do
-Windows continuam os mesmos.
+Windows continuam os mesmos. Uma versão para Linux está planejada (`docs/linux-dev.md`, skill
+`liquinix-platform-layer`).
 
-Objetivo de qualidade: **ficar idêntico ao Mac** (medidas, curvas, tempos, textos em pt-BR), fluido
-(no ritmo da tela, que aqui é 174 Hz) e reversível.
+Objetivo de qualidade: **ficar idêntico ao Mac** (medidas, curvas, tempos e textos), fluido (no ritmo da tela,
+medido numa de 174 Hz) e reversível. Sem nenhum arquivo da Apple no repositório (regra 2 do `AGENTS.md`).
 
 ---
 
-## 2. Regras do usuário (inegociáveis)
+## 2. Regras de trabalho
 
-1. **Sempre responder em português (pt-BR).** Textos da interface em pt-BR, com tradução em inglês
-   (seção 7.4).
-2. **Reversível sempre.** Toda mudança no sistema tem um "desfazer" e fica anotada em
-   `docs/registro-mudancas.txt` (data, o que, valor antigo, como desfazer).
-3. **Não editar arquivos do sistema** no PC real (System32, imageres.dll etc.). Só registro (de preferência
+As regras do projeto (licença, arquivos da Apple, dados pessoais, git) estão no `AGENTS.md`. Estas são as de
+engenharia que valem para qualquer mudança:
+
+1. **Reversível sempre.** Toda mudança no sistema tem um "desfazer" e fica anotada no log de quem a fez
+   (o instalador usa `instalacao.log`; os scripts de `tools/` guardam backup antes de mudar).
+2. **Não editar arquivos do sistema** num PC real (System32, imageres.dll etc.). Só registro (de preferência
    HKCU) e arquivos próprios. Na **VM de testes** é permitido (é para isso que ela existe).
-4. **Avisar antes de qualquer ação irreversível** (registro de shell, remover arquivos, políticas) e
-   esperar o OK.
-5. **Não registrar o Shell como shell do Windows** no PC real nesta etapa (HKLM/HKCU Winlogon Shell).
-6. **Não fazer commit** a menos que o usuário peça. Nada de push.
-7. **Pode reiniciar o Shell sem perguntar** (seção 4.3), mas **nunca** sem o executável novo existir.
-8. **Não fechar apps do usuário sem perguntar.** Matar processo exige OK a cada vez.
-   Fechar janelas que o próprio agente abriu para teste (WM_CLOSE) é permitido.
-9. **Evitar simulação de entrada** (SendInput, keybd_event, mouse_event) no PC real. Mensagens diretas
-   para janelas dos nossos próprios apps (ex.: WM_MOUSEWHEEL para medir) são aceitáveis. Na VM, o teclado
-   e o mouse virtuais do Hyper-V podem ser usados (seção 10.3).
-10. **Nunca repetir a chave da API do macosicons** (`%APPDATA%\Shell\macosicons.txt`).
-11. **Nunca digitar senhas/PINs da conta Microsoft do usuário**; ele digita. Credenciais de teste da VM
-    ficam em `docs/vm-authux.txt` (não repetir na conversa).
-12. Secure Boot fica **desligado** de propósito (o driver AudioCore usa `testsigning`); TPM fica ligado.
-    O Windows está **travado no 25H2 / build 26200** por política (`tools/travar-atualizacoes.ps1`).
-13. Coisas que parecem estranhas mas são do usuário: `version.dll` sem assinatura no Ableton (mod próprio),
-    agente Insightful/Workpuls (trabalho). Não tratar como malware.
+3. **Avisar antes de qualquer ação irreversível** (registro de shell, remover arquivos, políticas) e esperar o OK.
+4. **Não registrar o Shell como shell do Windows** (Winlogon Shell) num PC real; isso só se testa na VM.
+5. **Reiniciar o Shell só depois de o executável novo existir** (seção 4.3).
+6. **Não fechar apps do usuário sem perguntar.** Fechar janelas que você mesmo abriu para teste é permitido.
+7. **Evitar simulação de entrada** (SendInput, keybd_event, mouse_event) num PC real. Mensagens diretas para
+   janelas dos nossos próprios apps (ex.: WM_MOUSEWHEEL para medir) são aceitáveis. Na VM pode.
+8. **Nunca guardar chaves de API, senhas ou dados de uma conta** no repositório nem nos logs.
 
 ---
 
 ## 3. Ambiente
 
-- Windows 11 Pro 25H2, build 26200.9711. Monitor 3440×1440 a **174 Hz** (RTX 3070 Ti).
-- Visual Studio Build Tools 2022 (MSVC v143), Windows SDK 10.0.26100.0, C++20.
-- **O Claude roda num contêiner MSIX**: HKCU e `%APPDATA%` que ele vê podem ser uma **cópia virtualizada**.
-  Para ler/gravar o registro e o AppData **reais**, ou para abrir programas "de verdade", lance pelo WMI:
-  `Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '...' }`.
-  Programas abertos diretamente pelo Claude gravam ajustes numa cópia que o Shell não vê.
+- Windows 11, Visual Studio 2022 ou Build Tools 2022 (MSVC v143), Windows SDK 10.0.26100.0, C++20.
+- De um PC com Linux: o código Windows se compila e testa numa VM (`docs/windows-vm.md`); o CI compila
+  `build.cmd` e `build.cmd janelas` em cada pull request.
 - `DllImport` no PowerShell com `CharSet = CharSet.Unicode`.
 - Scripts .ps1 do Windows PowerShell 5.1 **com BOM UTF-8** (sem BOM os acentos quebram).
   `ajustes.txt` é UTF-8 com BOM.
@@ -68,7 +65,7 @@ Objetivo de qualidade: **ficar idêntico ao Mac** (medidas, curvas, tempos, text
 
 ### 4.1 Build
 `build.cmd [alvo]` na raiz. Alvos: (vazio = tudo), `shell`, `finder`, `ajustes`, `monitor`, `terminal`,
-`calculadora`, `notas`, `captura`, `menu` (bancada MenuTeste), `titulos` (LiquinixTitleBars.exe; também sai no `janelas`), `janelas` (SequoiaWindow.dll 64/32 +
+`calculadora`, `notas`, `captura`, `menu` (bancada MenuTeste), `titulos` (LiquinixTitleBars.exe; também sai no `janelas`), `janelas` (LiquinixWindow.dll 64/32 +
 host 32), `dialogo` (DialogoMac.dll), `bandeja`. O build "tudo" **não** inclui `janelas` nem `dialogo`.
 Ícone e descrição de cada exe: `tools/recursos.ps1` (gerado no build).
 Flags: `/O2 /W3 /std:c++20 /utf-8 /DUNICODE`. Sem MSBuild, sem projeto .vcxproj.
@@ -76,26 +73,26 @@ Flags: `/O2 /W3 /std:c++20 /utf-8 /DUNICODE`. Sem MSBuild, sem projeto .vcxproj.
 ### 4.2 Antes de compilar
 1. Conferir se há `cl.exe`/`link.exe` rodando (outra sessão pode estar compilando; o PDB do shell
    conflita).
-2. Executáveis em uso não podem ser sobrescritos: **mova** o exe em uso para
-   `%LOCALAPPDATA%\SequoiaBinariosAntigos\<nome>-<data>.exe` antes do build (Windows deixa renomear arquivo
-   em uso). Só mova o que está travado. Se mover algo que o alvo não recompila (ex.: o host de 32 bits no
-   build "tudo"), devolva a cópia.
+2. Executáveis em uso não podem ser sobrescritos: **mova** o exe em uso para fora de `bin\` antes do build
+   (o Windows deixa renomear arquivo em uso). Só mova o que está travado. Se mover algo que o alvo não
+   recompila (ex.: o host de 32 bits no build "tudo"), devolva a cópia. Detalhes: skill `liquinix-build-verify`.
 
 ### 4.3 Reiniciar o Shell
 `PostMessage(FindWindowW(L"ShellMensagens"), RegisterWindowMessageW(L"ShellReiniciar"))`.
-**Só depois de conferir que `bin\SequoiaShell.exe` existe.** Se o Shell morreu e não há exe, devolva a
-versão anterior de `SequoiaBinariosAntigos` e abra pelo WMI (seção 3).
+**Só depois de conferir que `bin\LiquinixShell.exe` existe.** Se o Shell morreu e não há exe, devolva a
+versão anterior que você tirou de `bin\` e abra de novo.
 O Finder mantém uma **reserva** escondida (janela `ArquivosJanela` com título `\u200BArquivosReserva`)
 do exe antigo: depois de recompilar o Finder, mande `WM_CLOSE` para ela; o Shell abre outra (`finder_reserva`).
 
 ### 4.4 Pacote de instalação
-`tools/empacotar.ps1` (rodar pelo WMI, para pegar os ajustes/fontes/cursor reais) gera
-`dist/SequoiaShell-AAAA-MM-DD.zip`: `bin` (só os exes/dlls de produção), `icones`, `sons`, `fontes` SF,
-`cursor`, `ajustes`, `tools` (ícones do sistema e diálogo) e `instalador/*`.
-`instalador/instalar.ps1` instala em `%LOCALAPPDATA%\Programs\SequoiaShell` (sem administrador),
-pergunta: cursor do Mac, Abrir/Salvar do Mac, ícones do Mac no Windows (HKCU e, opcional, HKLM/desktop.ini),
-início automático (tarefa agendada `SequoiaShell`), abrir agora. `desinstalar.ps1` desfaz tudo pelo
-`instalacao.log`. **Fora do pacote:** a troca da tela de logon (AuthUX, seção 12).
+`tools/empacotar.ps1 -SemSistema -SemAjustes` gera `dist/Liquinix-AAAA-MM-DD.zip` (é o que `tools/publicar.ps1`
+publica nas releases): `bin` (só os exes/dlls de produção), `icones` (só os rastreados pelo git), `tools` e
+`instalador/*`. **Nunca** entram fontes, sons, cursores nem nada da Apple: o instalador oferece baixar isso no
+PC do usuário (`tools/baixar-apple.ps1`), e o `empacotar.ps1` recusa o pacote se encontrar algum.
+O `LiquinixSetup.exe` (`src/setup`) e o `instalador/instalar.ps1` instalam em `%LOCALAPPDATA%\Programs\Liquinix`
+(sem administrador) e perguntam: só os apps, só as barras de título, ou tudo; cursor e fontes do Mac; Abrir/Salvar
+do Mac; ícones do Mac no Windows; início automático (tarefa agendada `Liquinix`). `desinstalar.ps1` desfaz tudo
+pelo `instalacao.log`. Uma instalação antiga com o nome "Sequoia Shell" é migrada (`instalar.ps1`, passo 1b).
 
 ---
 
@@ -103,20 +100,22 @@ início automático (tarefa agendada `SequoiaShell`), abrir agora. `desinstalar.
 
 | Exe / DLL | Fonte | O que é |
 |---|---|---|
-| `SequoiaShell.exe` | `src/shell` (46 arquivos, ~27 mil linhas) | barra de menus, Dock, Launchpad, Spotlight, Central de Controle, Notificações, Mission Control, mesa, widgets, bloqueio, Alt+Tab, gênio, etc. |
-| `SequoiaFinder.exe` | `src/finder` | Finder: ícones/lista/colunas/galeria, abas, Quick Look, etiquetas, busca, Obter Informações, Abrir/Salvar |
-| `SequoiaSettings.exe` | `src/ajustes` | Ajustes do Sistema (Sequoia), muda o Windows de verdade |
-| `SequoiaActivityMonitor.exe` | `src/monitor` | Monitor de Atividade |
-| `SequoiaTerminal.exe` | `src/terminal` | Terminal (PowerShell e cmd) |
-| `SequoiaCalculator.exe` | `src/calculadora` | Calculadora (Básica/Científica/Programador) |
-| `SequoiaNotes.exe` | `src/notas` | Notas (texto rico, `%APPDATA%\Shell\Notas`) |
-| `SequoiaScreenshot.exe` | `src/captura` | Captura de Tela (Win+Shift+3/4/5) |
+| `LiquinixShell.exe` | `src/shell` (46 arquivos, ~27 mil linhas) | barra de menus, Dock, Launchpad, Spotlight, Central de Controle, Notificações, Mission Control, mesa, widgets, bloqueio, Alt+Tab, gênio, etc. |
+| `LiquinixFinder.exe` | `src/finder` | Finder: ícones/lista/colunas/galeria, abas, Quick Look, etiquetas, busca, Obter Informações, Abrir/Salvar |
+| `LiquinixSettings.exe` | `src/ajustes` | Ajustes do Sistema (Sequoia), muda o Windows de verdade |
+| `LiquinixActivityMonitor.exe` | `src/monitor` | Monitor de Atividade |
+| `LiquinixTerminal.exe` | `src/terminal` | Terminal (PowerShell e cmd) |
+| `LiquinixCalculator.exe` | `src/calculadora` | Calculadora (Básica/Científica/Programador) |
+| `LiquinixNotes.exe` | `src/notas` | Notas (texto rico, `%APPDATA%\Shell\Notas`) |
+| `LiquinixScreenshot.exe` | `src/captura` | Captura de Tela (Win+Shift+3/4/5) |
 | `LiquinixWindow.dll` / `LiquinixWindow32.dll` | `src/janelas` | barra de título do Mac e controles nas janelas dos outros programas (gancho em 64 bits pelo Shell; 32 bits pela própria DLL dentro do rundll32 de 32 bits do Windows, entrada LiquinixHost) |
 | `LiquinixTitleBars.exe` | `src/titulos` + `src/shell/janelas.cpp` | só as barras de título do Mac, sem o Shell (`--sair` desliga; o Shell fecha e assume). Os apps sem botões próprios (app2d.h, Pré-Visualização) carregam a `LiquinixWindow.dll` sozinhos (`src/comum/barra_mac.h`, entrada `LiquinixPropria`); o Shell não põe gancho em exe com "liquinix" no nome |
 | `DialogoMac.dll` / `DialogoMac32.dll` | `src/dialogo` | troca IFileOpenDialog/IFileSaveDialog pelo Finder (HKCU CLSID, `tools/dialogo-ligar.ps1`) |
+| `LiquinixPreview.exe`, `LiquinixReminders.exe`, `LiquinixCalendar.exe`, `LiquinixTextEdit.exe`, `LiquinixClock.exe`, `LiquinixWeather.exe`, `LiquinixContacts.exe`, `LiquinixPhotos.exe`, `LiquinixTimeMachine.exe`, `LiquinixMusic.exe`, `LiquinixQuickTime.exe`, `LiquinixForceQuit.exe` | `src/preview`, `src/lembretes`, `src/calendario`, `src/textedit`, `src/relogio`, `src/clima`, `src/contatos`, `src/fotos`, `src/timemachine`, `src/musica`, `src/quicktime`, `src/forcar` | os outros apps (a maioria sobre `src/comum/app2d.h`) |
+| `LiquinixSetup.exe` | `src/setup` | instalar, atualizar, mudar e desinstalar |
 | `ferramentas\MenuTeste.exe` | `src/tools/menu_teste.cpp` | bancada do menu de contexto (`--dump`, `--demo`, `--demo <pasta> --quente`) |
 
-Nomes antigos (Shell.exe, Arquivos.exe, Ajustes.exe, MacJanela.dll...) só aparecem em `src/comum/nomes.h`
+Nomes antigos (Shell.exe, Arquivos.exe, Ajustes.exe, MacJanela.dll, Sequoia*.exe...) só aparecem em `src/comum/nomes.h`
 para reconhecer processos velhos. Use sempre as macros `EXE_*`.
 
 ### 5.1 Módulos do Shell (src/shell)
@@ -126,7 +125,7 @@ apps (Dock: fixos em dock.txt, abertos, recentes), atalhos (tarefas do app no me
 backdrop (vidro: Composition + **vidro real** por captura de janelas), bloqueio (tela de bloqueio própria),
 boot (tela de inicialização), cantos (Cantos Ativos), central (Central de Controle + Editar Controles),
 dialogs (Abrir/Salvar trocado por fora), dock, foto/fotogpu (fotos de janelas), genio (efeito gênio),
-indice (índice de arquivos do Spotlight), instalados (lista de apps), jogo (Modo Jogo: jogo na frente desliga vidro real, ganchos de posição e de mouse, Cantos Ativos e o índice; `modo_jogo`, `jogos.txt`), janelas (aplica a SequoiaWindow.dll),
+indice (índice de arquivos do Spotlight), instalados (lista de apps), jogo (Modo Jogo: jogo na frente desliga vidro real, ganchos de posição e de mouse, Cantos Ativos e o índice; `modo_jogo`, `jogos.txt`), janelas (aplica a LiquinixWindow.dll),
 launchpad (Launchpad/Apps do Tahoe), limites (barra e Dock são limites das janelas), liquid (desenho do Tahoe),
 menubar, menus (menus Win32 dos apps no visual do Mac, sem injetar), mesa (papel de parede e ícones, sem
 Explorer), mesas (áreas virtuais), missioncontrol (Mission Control e Exposé), notarapida, notificacoes,
@@ -150,11 +149,12 @@ verde), widgets (widgets da mesa).
 ## 6. Referência visual (não fuja disso)
 
 - **Fonte:** SF Pro Text/Display/Rounded/Mono se instalada; senão Inter; senão Segoe UI Variable. Texto
-  em Regular com SF Pro; Medium com Inter. A fonte não vai no repositório (licença Apple; o pacote leva
-  para uso pessoal).
-- **Ícones:** `icones/sequoia`, `icones/tahoe`, `icones/tahoe-macosicons`, `icones/simbolos` (SF Symbols em
-  SVG), `icones/bloqueio`, `icones/extra`. Ícones do sistema do Windows trocados por `tools/icones-sistema*.ps1`
-  (.ico em `bin/icones-sistema`, gerados por `tools/icones-sistema.py`).
+  em Regular com SF Pro; Medium com Inter. A SF não vai no repositório nem no pacote (licença da Apple): o
+  instalador oferece baixá-la do site da Apple no PC do usuário.
+- **Ícones:** no repositório só `icones/tahoe` (tema MacTahoe, GPL-3.0). O código também procura
+  `icones/sequoia`, `icones/simbolos`, `icones/bloqueio`, `icones/extra`, `icones/leopard`... e, sem eles (o normal
+  aqui), cai nos ícones do Windows e nos desenhos próprios. Ícones do sistema do Windows trocados por
+  `tools/icones-sistema*.ps1` (.ico em `bin/icones-sistema`, gerados por `tools/icones-sistema.py`).
 - **Barra de menus:** 24 pt, SF Pro 13 pt, nome do app em negrito, destaque arredondado (raio 4 pt);
   no Tahoe, cápsula de vidro no item do painel aberto.
 - **Dock:** ícone 48 pt, ampliação até 128 pt (desligada por padrão), ponto de 4 pt, etiqueta ao passar o
@@ -168,10 +168,10 @@ verde), widgets (widgets da mesa).
   em perspectiva com reflexo e a luz azul do app aberto (`dock.cpp`, sem o vidro de fundo), botões de gel
   (`semaforo::DrawGel`) e o metal cinza das janelas "unified" (`comum/leopard.h`: DLL das janelas, Finder, Ajustes).
   Finder e Ajustes ficam sempre claros (o 10.5 não tinha modo escuro). Ícones em `icones\leopard`
-  (`tools/icones-leopard.py`, do pacote "Leopard Icons" do usuário; o que faltar vem do Sequoia). O papel de parede
+  quando existem localmente (`tools/icones-leopard.py`; não vêm no repositório). O papel de parede
   Aurora é só sugestão (botão em Aparência); trocar de tema nunca muda o papel de parede.
   Cursor: ao entrar no Leopard o Shell aplica o esquema "Mac OS X Leopard" em HKCU (seta clássica e o cata-vento
-  colorido; `cursor\Leopard`, `tools/cursor-leopard.py`) e guarda o anterior em `%APPDATA%\Shell\cursor-antes.txt`,
+  colorido; `cursor\Leopard`, gerado localmente por `tools/cursor-leopard.py`, fora do repositório) e guarda o anterior em `%APPDATA%\Shell\cursor-antes.txt`,
   que volta ao sair do tema (`ponteiro::TemaLeopard`). Finder: barra de 55 px (título centralizado na linha de 22,
   botões com moldura metálica), pastas azuis do pacote, seleção azul em degradê e barra de rolagem Aqua. Ajustes:
   caixas de seleção, pop-ups e botões em gel Aqua, fundo cinza 232. Medidas tiradas de capturas do 10.5 a 1x.
@@ -194,8 +194,8 @@ verde), widgets (widgets da mesa).
   fade de saída do menu 160 ms; piscada do item escolhido 2×50 ms; miniaturas entram com fade de 150 ms;
   Launchpad 220 ms com mola; Spotlight com mola ágil (96%→100%). Curvas e molas em `src/shell/anim.cpp`.
   O menu de contexto **abre instantâneo** (como no Mac) e só some com fade.
-- **Textos:** os nomes e a ordem do macOS em pt-BR (ex.: "Ajustes do Sistema", "Obter Informações",
-  "Mover para a Lixeira").
+- **Textos:** os nomes e a ordem do macOS, escritos em pt-BR no código (ex.: "Ajustes do Sistema",
+  "Obter Informações", "Mover para a Lixeira") e traduzidos pelo `Tr()` (seção 7.4).
 
 ---
 
@@ -203,8 +203,7 @@ verde), widgets (widgets da mesa).
 
 ### 7.1 Ajustes
 Arquivo `%APPDATA%\Shell\ajustes.txt` (UTF-8 com BOM, `chave=valor`). Leitura: `shell::Setting(L"chave",
-L"padrão")`. Depois de gravar, avisar com a mensagem `ShellAjustesMudaram` (broadcast). Para gravar de
-fora do contêiner: `bin/icones-sistema/ajuste.ps1` lançado pelo WMI.
+L"padrão")`. Depois de gravar, avisar com a mensagem `ShellAjustesMudaram` (broadcast).
 
 Chaves (padrão): `ajustes_pagina=geral` `ampliacao=0` `ampliacao_tamanho=128` `animar_abertura=1`
 `animar_janelas=1` `animar_paineis=1` `aparencia_auto` `apps_ordem` `atalhos_mac=1` `banners_mac=1`
@@ -213,7 +212,7 @@ Chaves (padrão): `ajustes_pagina=geral` `ampliacao=0` `ampliacao_tamanho=128` `
 `bloqueio_winl=1` `boot=0` `canto_nota_rapida=1` `central_veu=1` `chromium_sem_oclusao=1`
 `clique_mostra_mesa=1` `destaque=azul` `dialogo_por_fora=1` `dock_clique_oculta=1` `estilo_icones=padrao`
 (padrao/escuro/transparente/tingido) `explorer` (1 / 0 / fundo) `finder_padrao=1` `finder_reserva=1`
-`genio=1` `genio_motor=composicao` `idioma=pt` (pt/en) `indicadores=1` `janelas_mac=1`
+`genio=1` `genio_motor=composicao` `idioma=en` (en, pt, es, fr, de, it, ja, zh, ko, ru, pl, tr) `indicadores=1` `janelas_mac=1`
 `launchpad_motor=composicao` `launchpad_ocultos` `leopard` (tema Mac OS X Leopard; só vale com `liquid_glass=0`) `limitar_janelas=1` `liquid_estilo=nitido`
 `liquid_glass` `liquid_refracao=0.6` `mc_motor=composicao` `menus_do_windows=1` `menus_fade=1` `ocultar=0`
 `pilha_ordem=adicao` `pilha_ver=auto` `pilhas=1` `progresso_mac=1` `pulo_notificacao=1`
@@ -244,7 +243,7 @@ Explorador) Ctrl+Alt+Shift+F11.
 
 ### 7.4 Tradução
 `idioma::Tr(L"texto em pt")` em todo texto visível; pares em `src/comum/idioma_en.inc`
-(`{ L"pt", L"en" },`). Todo texto novo precisa do par em inglês.
+(`{ L"pt", L"en" },`). Todo texto novo precisa do par em inglês (skill `liquinix-translations`).
 Idiomas (`idioma=<código>` no ajustes.txt, Ajustes > Geral > Idioma): pt, en (padrão), es, fr, de, it, ja,
 zh (chinês simplificado), ko, ru, pl, tr. Um dicionário por idioma, `idioma_<código>.inc`, com as mesmas
 chaves em português do `idioma_en.inc`; o que faltar num idioma sai em inglês. `idioma::Code()`/`Locale()`
@@ -267,16 +266,17 @@ chaves que faltam em cada idioma (texto novo: pôr no en e, se der, nos outros).
   backup em `%APPDATA%\Arquivos\padrao-backup.txt`. Pastas comuns vão pelo `pastas.cpp`.
 - **Abrir/Salvar do Mac**: `DialogoMac.dll` registrada em HKCU (64 e 32 bits) + fallback "por fora"
   (`dialogs.cpp`, `dialogo_por_fora`).
-- **Barra de título do Mac nos outros apps**: `SequoiaWindow.dll` por gancho (64 bits) e pelo host de
+- **Barra de título do Mac nos outros apps**: `LiquinixWindow.dll` por gancho (64 bits) e pelo host de
   32 bits; apps Chromium/Store recebem só a sombra (`sombras.cpp`).
 - **Menus dos apps** (`menus.cpp`): os menus Win32 reais desenhados no visual do Mac, sem injetar DLL.
-- **Ícones do Windows trocados**: `tools/icones-sistema.ps1` (HKCU; backup `docs/backup-icones-sistema.json`;
-  `-Desfazer`) e `tools/icones-sistema-extra.ps1` (desktop.ini das pastas do usuário + HKLM Shell Icons com
+- **Ícones do Windows trocados**: `tools/icones-sistema.ps1` (HKCU; backup `docs/backup-icones-sistema.json`,
+  gerado na hora e fora do git; `-Desfazer`) e `tools/icones-sistema-extra.ps1` (desktop.ini das pastas do usuário + HKLM Shell Icons com
   administrador; backups em `docs/`).
 - **Tela de bloqueio própria** (`bloqueio.cpp`): Win+L do Windows não pode ser desligado sem administrador
   (a chave `DisableLockWorkstation` é só leitura para o usuário), então a do Windows ainda aparece em
   alguns casos. A troca completa da tela de logon/bloqueio do Windows é o trabalho do AuthUX (seção 12).
-- **Atualizações**: travadas no 25H2 (`tools/travar-atualizacoes.ps1`, backup `docs/backup-atualizacoes.json`).
+- **Atualizações do Windows**: `tools/travar-atualizacoes.ps1` (opcional, como administrador) trava o Windows
+  Update numa versão; backup em `docs/backup-atualizacoes.json` (gerado na hora, fora do git) e `-Desfazer`.
 
 ---
 
@@ -317,19 +317,16 @@ chaves que faltam em cada idioma (texto novo: pôr no en e, se der, nos outros).
   mede e fecha).
 - Gravar a tela para ver piscadas: `ffmpeg -f gdigrab -framerate 30 -t 5 -i desktop ...` e extrair quadros
   em mosaico (`-vf "select=...,tile=8x8"`).
-- Medir abertura do Finder: iniciar `SequoiaFinder.exe "<pasta>"` e medir até a janela `ArquivosJanela`
+- Medir abertura do Finder: iniciar `LiquinixFinder.exe "<pasta>"` e medir até a janela `ArquivosJanela`
   nova ficar visível e sem cloak (`DWMWA_CLOAKED`).
 - "Mostrar na pasta": `explorer.exe /select,"<arquivo>"` e registrar a janela da frente a cada 15 ms.
 - Diagnóstico do vidro: mensagem `ShellVidroFoto` grava `bin\vidro-*.bmp`.
 
-### 10.3 VM de testes (Hyper-V `AuthUX-Teste`)
-Windows 11 Pro en-US, Geração 2, vTPM, Secure Boot. Pontos de verificação: "antes do AuthUX",
-"antes do Windows Mac". Ferramentas (pedem UAC; lançar pelo WMI):
-`tools/vm-foto.ps1` (tela → `docs/vm-tela.png`), `tools/vm-digitar.ps1` (`-Texto`, `-Enter`, `-Teclas "9,13"`,
-`-Combo "91,82"`, `-Clique "x,y"`, `-Texto CTRLALTDEL`), `tools/vm-enviar.ps1` (arquivo do PC → VM, sem
-senha), `tools/vm-authux.ps1`, `tools/vm-windows-mac*.ps1`, `tools/vm-resolucao.ps1`, `tools/vm-gpu-estado.ps1`.
-A conta Teste foi vinculada à conta Microsoft: PowerShell Direct com a senha local **não funciona** mais;
-use `vm-enviar.ps1` + Win+R. Não reinicie nem faça logoff da VM sem avisar o usuário.
+### 10.3 VM de testes
+Ver `docs/windows-vm.md`: uma VM do Windows 11 (KVM/QEMU) para compilar, rodar e conferir, com instantâneos para
+voltar atrás. Trocar o shell do Windows, mexer na tela de logon e o que mais for arriscado só se testa nela.
+Os `tools/vm-*.ps1` e `tools/criar-vm-authux.ps1` são do WacOS: dirigem uma VM Hyper-V (`AuthUX-Teste`) a partir de
+um Windows e não servem num host Linux.
 
 ---
 
@@ -342,31 +339,28 @@ use `vm-enviar.ps1` + Win+R. Não reinicie nem faça logoff da VM sem avisar o u
 4. Conferir `cl/link` rodando; mover os exes travados; compilar o alvo; ver `error`/`fatal`.
 5. Conferir que o exe novo existe; reiniciar o Shell (ou fechar a reserva do Finder).
 6. Verificar de verdade (log, foto, gravação, medida). Se não deu para verificar, dizer isso claramente.
-7. Mudou algo no sistema? Anotar em `docs/registro-mudancas.txt` com o desfazer.
-8. Fechar as janelas de teste que abriu. Não commitar.
-9. Relatar em pt-BR: o que mudou, números antes/depois, o que não foi testado.
+7. Mudou algo no sistema? Deixar o desfazer pronto e anotado (log ou backup do script).
+8. Fechar as janelas de teste que abriu. Commits, branches e pull requests como diz o `AGENTS.md`.
+9. Relatar: o que mudou, números antes/depois, o que não foi testado (skill `liquinix-build-verify`).
 
 ---
 
 ## 12. Tela de logon do Windows (AuthUX) — só na VM
 
-- Projeto `%USERPROFILE%\Documents\AuthUX` (fork de explorer7-team/AuthUX), `sdk/inc/version.h` com
-  `CONSOLELOGON_FOR_GE` (builds 26100/26120/26200). Build: `MSBuild AuthUX.sln -p:Configuration=Release.GE
-  -p:Platform=x64`.
-- Instala trocando 2 valores protegidos: `HKLM\SOFTWARE\Microsoft\WindowsRuntime\ActivatableClassId\
-  Windows.Internal.UI.Logon.Controller.LogonUX\DllPath` e `...LockScreenHost\DllPath` (padrões:
-  `%SystemRoot%\system32\Windows.UI.Logon.dll` e `...\logoncontroller.dll`). Teste seguro: Ctrl+Alt+Del.
-- Redesenho Mac: `AuthUX\mac\layout_mac.py`, `mac\gerar_recursos.py`, relógio/desfoque/avatar redondo em
-  `logonframe.cpp`/`usertileelement.cpp`; versão com Windows.UI.Composition (pílula de vidro, animações com
-  relógio próprio a 60 Hz). DirectUI rejeita BMP totalmente transparente e pré-multiplica o alfa sozinho
-  (grave alfa direto). Erros em `C:\Users\Public\AuthUX-mac.log` na VM.
-- Na VM funcionam: Ctrl+Alt+Del, bloquear, desbloquear com senha e com PIN da conta Microsoft.
-  Em aberto: "Switch User" volta para a conta bloqueada; correções do "Welcome"/fade ao reiniciar ainda
-  sendo testadas. **Nada disso vai para o PC real sem o OK explícito do usuário.**
+O WacOS experimentou trocar a tela de logon e de bloqueio do Windows por uma versão Mac, com um fork do
+[AuthUX](https://github.com/explorer7-team/AuthUX) fora deste repositório. A troca mexe em dois valores protegidos
+de `HKLM\SOFTWARE\Microsoft\WindowsRuntime\ActivatableClassId\...` (`LogonUX` e `LockScreenHost`), então
+**só na VM**, nunca num PC real sem o OK explícito do usuário. Nada disso faz parte do Liquinix hoje; os
+`tools/vm-authux*.ps1` ficaram do WacOS. Antes de retomar, conferir a licença do AuthUX e o `AGENTS.md`.
 
 ---
 
-## 13. Pendências (estado em 2026-11-11)
+## 13. Pendências
+
+O que falta fazer está no quadro do projeto, na ordem do [`ROADMAP.md`](ROADMAP.md). As listas antigas do WacOS
+continuam em `docs/pendencias.md`, e as limitações conhecidas em `docs/problemas-conhecidos.md`.
+
+Herdadas do WacOS (estado de 2026-11-11), ainda sem cartão no quadro:
 
 - Pilhas na mesa (agrupar arquivos da área de trabalho por tipo).
 - Animação de abrir nos apps de 32 bits.
@@ -378,6 +372,3 @@ use `vm-enviar.ps1` + Win+R. Não reinicie nem faça logoff da VM sem avisar o u
   maiores.
 - Barra de menus (sessão "substituir o Windows"): Central de Controle ainda abre as configurações rápidas do
   Windows no canto de baixo; o relógio ainda não abre as notificações.
-- Gerar o pacote de novo (o `dist\SequoiaShell-2026-11-11.zip` é anterior às melhorias de desempenho).
-- Limpar `%LOCALAPPDATA%\SequoiaBinariosAntigos` (só com autorização: apaga arquivos).
-- Limitações conhecidas: `docs/problemas-conhecidos.md`.
