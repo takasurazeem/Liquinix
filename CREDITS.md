@@ -22,14 +22,12 @@ If you see your work here credited wrongly, or missing, please
 - **Windows 11 Settings Styler** (a Windhawk mod) by Michael Maltsev (m417z):
   <https://github.com/ramensoftware/windhawk-mods> (GPL-3.0).
   `docs/windhawk/bloqueio-sequoia/sequoia-lockscreen.wh.cpp` is a modified copy of version 1.2.1, retargeted to
-  the Windows lock screen (`LockApp.exe`) with its statistics timer removed. That file also contains:
+  the Windows lock screen (`LockApp.exe`), with its statistics timer and its built-in Settings themes removed
+  (those only styled the Settings app). That file also contains:
   - code based on **TranslucentTB** (ExplorerTAP, XamlBlurBrush): <https://github.com/TranslucentTB/TranslucentTB>
     (GPL-3.0);
   - small snippets from Stack Overflow answers by Giovanni Funchal and Jeff T. (CC BY-SA 3.0) and by Arafat Hasan,
-    Justin and Phidelux (CC BY-SA 4.0), each linked next to the snippet;
-  - built-in Settings themes from the
-    [Windows 11 Settings styling guide](https://github.com/ramensoftware/windows-11-settings-styling-guide), by
-    eugenesvk, milestprower92, Nimai-HK, FireBlade211, linkvegas12, Nathaniel4JC, wasixgamer and ArvindSaini978.
+    Justin and Phidelux (CC BY-SA 4.0), each linked next to the snippet.
 - **Natural Earth** 1:50m land polygons, version 5.1.2: <https://www.naturalearthdata.com/> (public domain).
   The World Clock map in `src/relogio/mapa_mundi.inc` is generated from them by `tools/mapa-mundi.py`.
 

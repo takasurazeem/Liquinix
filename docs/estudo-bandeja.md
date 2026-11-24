@@ -1,7 +1,7 @@
 # Estudo: como funciona a bandeja (área de notificação)
 
 Fontes lidas: ReactOS `base/shell/explorer/syspager.cpp` (GPL, só como referência) e
-ManagedShell `src/ManagedShell.WindowsTray` (MIT, base do Cairo Desktop). Nenhum código foi copiado;
+ManagedShell `src/ManagedShell.WindowsTray` (Apache-2.0, base do Cairo Desktop). Nenhum código foi copiado;
 o protótipo (`src/tools/bandeja_teste.cpp`) é nosso.
 
 ## O protocolo
