@@ -115,37 +115,65 @@ inline void DrawGel(ID2D1RenderTarget* rt, int k, D2D1_POINT_2F c, float r, floa
     }
 }
 
-#include "semaforo_mac27.inc"  // os três botões do macOS 27 tirados da captura 2x (tools/semaforo-mac27.py)
-
-// Desenha o botão k (0 fechar, 1 minimizar, 2 zoom) do macOS 27 pixel a pixel: a imagem tirada da captura do Mac
-// (36 px = o botão de 28 px e o brilho em volta), escalada para o raio pedido. dark > 0 escurece (botão apertado).
-inline void DrawMac27(ID2D1RenderTarget* rt, int k, D2D1_POINT_2F c, float r, float dark) {
-    // escolhe a imagem mais perto do tamanho na tela (36 px = 2x, 18 px = 1x, já reduzida com Lanczos): encolher na hora
-    // com o filtro simples serrilhava a borda. Em escala inteira, o centro vai para o meio de um pixel (sem borrão).
-    float dpiX = 96, dpiY = 96; rt->GetDpi(&dpiX, &dpiY);
-    float k1 = dpiX / 96.f, sizePx = 2 * r * 36.f / 28.f * k1;  // lado da imagem na tela, em px
-    bool one = sizePx < 27;
-    UINT n = one ? 18 : 36;
-    ID2D1Bitmap* bmp = nullptr;
-    D2D1_BITMAP_PROPERTIES bp = D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED), dpiX, dpiY);
-    if (FAILED(rt->CreateBitmap(D2D1::SizeU(n, n), one ? MAC27_LIGHTS_1X[k] : MAC27_LIGHTS[k], n * 4, bp, &bmp)) || !bmp) return;
-    float h = r * 36.f / 28.f;  // a imagem tem 36 px para um botão de 28 px
-    D2D1_RECT_F dst = D2D1::RectF(c.x - h, c.y - h, c.x + h, c.y + h);
-    if (std::fabs(sizePx - (float)n) < 0.6f) {  // 1:1 na tela: encaixa na grade de pixels
-        float x0 = std::round((c.x - h) * k1) / k1, y0 = std::round((c.y - h) * k1) / k1;
-        dst = D2D1::RectF(x0, y0, x0 + n / k1, y0 + n / k1);
+// Desenha o botão k do Golden Gate só com Direct2D (sem bitmap): 0 fechar, 1 minimizar, 2 zoom, 3 inativo claro,
+// 4 inativo escuro. Degradê de cima para baixo, aro escuro forte só dos lados e, nos coloridos, um brilho fino da
+// própria cor em volta (mais forte embaixo). dark > 0 escurece (botão apertado). Os símbolos (×, −, +) ficam com quem
+// chama, como nos outros temas.
+inline void DrawGolden(ID2D1RenderTarget* rt, int k, D2D1_POINT_2F c, float r, float dark) {
+    struct Cor { int top[3], bot[3], rim[3]; };
+    static const Cor cores[5] = {
+        { { 254, 111, 100 }, { 243, 139, 131 }, { 196, 9, 10 } },   // fechar
+        { { 251, 185, 39 }, { 254, 211, 66 }, { 157, 9, 9 } },     // minimizar
+        { { 96, 208, 40 }, { 152, 218, 120 }, { 9, 85, 9 } },      // zoom
+        { { 221, 221, 221 }, { 209, 209, 209 }, { 150, 150, 150 } }, // inativo, fundo claro
+        { { 84, 83, 83 }, { 74, 73, 73 }, { 0, 0, 0 } },           // inativo, fundo escuro (o aro é claro, abaixo)
+    };
+    k = (std::max)(0, (std::min)(4, k));
+    float d = 1 - (std::max)(0.f, (std::min)(0.6f, dark));
+    auto C = [&](const int* v, float a = 1) { return D2D1::ColorF(v[0] * d / 255.f, v[1] * d / 255.f, v[2] * d / 255.f, a); };
+    const Cor& p = cores[k];
+    const bool colorido = k < 3;
+    auto linear = [&](const D2D1_GRADIENT_STOP* st, UINT n, float y0, float y1, auto&& draw) {
+        ID2D1GradientStopCollection* gs = nullptr;
+        ID2D1LinearGradientBrush* lb = nullptr;
+        if (SUCCEEDED(rt->CreateGradientStopCollection(st, n, &gs)) &&
+            SUCCEEDED(rt->CreateLinearGradientBrush(D2D1::LinearGradientBrushProperties({ c.x, y0 }, { c.x, y1 }), gs, &lb)))
+            draw(lb);
+        if (lb) lb->Release();
+        if (gs) gs->Release();
+    };
+    {   // o corpo: chapado no alto, a cor de baixo a partir de ~80 % da altura
+        D2D1_GRADIENT_STOP st[3] = { { 0, C(p.top) }, { 0.29f, C(p.top) }, { 0.80f, C(p.bot) } };
+        linear(st, 3, c.y - r, c.y + r, [&](ID2D1Brush* b) { rt->FillEllipse(D2D1::Ellipse(c, r, r), b); });
     }
-    rt->DrawBitmap(bmp, dst, 1, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
-    bmp->Release();
-    if (dark > 0.01f) {
-        ID2D1SolidColorBrush* b = nullptr;
-        if (SUCCEEDED(rt->CreateSolidColorBrush(D2D1::ColorF(0, 0, 0, dark), &b))) { rt->FillEllipse(D2D1::Ellipse(c, r, r), b); b->Release(); }
+    if (k == 4) {
+        // inativo escuro: sem aro escuro, só um fio claro em cima e outro mais claro embaixo
+        D2D1_GRADIENT_STOP rs[4] = { { 0, D2D1::ColorF(1, 1, 1, 0.28f) }, { 0.25f, D2D1::ColorF(1, 1, 1, 0) }, { 0.75f, D2D1::ColorF(1, 1, 1, 0) }, { 1, D2D1::ColorF(1, 1, 1, 0.5f) } };
+        linear(rs, 4, c.y - r, c.y + r, [&](ID2D1Brush* b) { rt->DrawEllipse(D2D1::Ellipse(c, r - 0.25f, r - 0.25f), b, 0.5f); });
+        return;
+    }
+    {
+        // aro: a força depende da distância horizontal ao centro (pincel radial bem alto = |dx| / r): forte dos
+        // lados, fraco em cima e embaixo. No inativo claro, bem mais leve.
+        float m = colorido ? 1.f : 0.45f;
+        D2D1_GRADIENT_STOP st[3] = { { 0, C(p.rim, 0.10f * m) }, { 0.6f, C(p.rim, 0.35f * m) }, { 0.92f, C(p.rim, m) } };
+        ID2D1GradientStopCollection* gs = nullptr;
+        ID2D1RadialGradientBrush* rb = nullptr;
+        if (SUCCEEDED(rt->CreateGradientStopCollection(st, 3, &gs)) &&
+            SUCCEEDED(rt->CreateRadialGradientBrush(D2D1::RadialGradientBrushProperties(c, { 0, 0 }, r, r * 60), gs, &rb)))
+            rt->DrawEllipse(D2D1::Ellipse(c, r - 0.4f, r - 0.4f), rb, 0.8f);
+        if (rb) rb->Release();
+        if (gs) gs->Release();
+    }
+    if (colorido) {  // o brilho colorido em volta, mais forte embaixo
+        D2D1_GRADIENT_STOP st[2] = { { 0, C(p.top, 0.03f) }, { 1, C(p.top, 0.20f) } };
+        linear(st, 2, c.y - r, c.y + r + 1, [&](ID2D1Brush* b) { rt->DrawEllipse(D2D1::Ellipse(c, r + 0.6f, r + 0.6f), b, 1.2f); });
     }
 }
 
 // Chame logo depois de pintar o círculo do botão (FillEllipse), com o mesmo pincel: pinta por cima o degradê e o aro
-// do Golden Gate, escolhidos pela cor que está no pincel (vermelho, amarelo, verde; cinza/apagado fica com um degradê
-// leve da própria cor). Não mexe na cor do pincel. Fora do Golden Gate não faz nada.
+// do Golden Gate (DrawGolden) ou o gel do Leopard, escolhidos pela cor que está no pincel (vermelho, amarelo, verde;
+// cinza/apagado vira o botão inativo). Não mexe na cor do pincel. Fora desses dois temas não faz nada.
 inline void Gloss(ID2D1RenderTarget* rt, D2D1_POINT_2F c, float r, ID2D1SolidColorBrush* fillBrush) {
     if (!rt || !fillBrush || !(Aqua() || Leopard())) return;
     D2D1_COLOR_F base = fillBrush->GetColor();
@@ -161,86 +189,18 @@ inline void Gloss(ID2D1RenderTarget* rt, D2D1_POINT_2F c, float r, ID2D1SolidCol
         DrawGel(rt, 3, c, r, 0);
         return;
     }
-    auto C = [](int R, int G, int B, float a = 1) { return D2D1::ColorF(R / 255.f, G / 255.f, B / 255.f, a); };
-    D2D1_COLOR_F top, bot, rim;
+    // Golden Gate: vermelho, amarelo ou verde (também apertado, mais escuro), desenhados por DrawGolden
     bool solid = base.a >= 0.9f;
-    {   // vermelho, amarelo ou verde (também apertado, mais escuro): a imagem do Mac
-        float mx = (std::max)(base.r, (std::max)(base.g, base.b));
-        if (solid && mx > 0.5f) {
-            float nr = base.r / mx, ng = base.g / mx, nb = base.b / mx;
-            int k = nr > 0.9f && ng < 0.5f ? 0 : nr > 0.9f && ng >= 0.5f && nb < 0.5f ? 1 : ng > 0.9f && nr < 0.45f ? 2 : -1;
-            static const float ref[3] = { 1.0f, 0.996f, 0.784f };  // o canal mais forte da cor normal de cada um
-            if (k >= 0) { DrawMac27(rt, k, c, r, (std::min)(0.6f, (std::max)(0.f, 1 - mx / ref[k]))); return; }
-        }
-        // cinza (janela inativa, Grafite): o botão inativo do Mac, o claro ou o escuro (pelo fundo que o app pediu)
-        bool darkUi = solid ? (0.2126f * base.r + 0.7152f * base.g + 0.0722f * base.b) < 0.5f : base.r > 0.5f;
-        DrawMac27(rt, darkUi ? 4 : 3, c, r, 0);
-        return;
+    float mx = (std::max)(base.r, (std::max)(base.g, base.b));
+    if (solid && mx > 0.5f) {
+        float nr = base.r / mx, ng = base.g / mx, nb = base.b / mx;
+        int k = nr > 0.9f && ng < 0.5f ? 0 : nr > 0.9f && ng >= 0.5f && nb < 0.5f ? 1 : ng > 0.9f && nr < 0.45f ? 2 : -1;
+        static const float ref[3] = { 1.0f, 0.996f, 0.784f };  // o canal mais forte da cor normal de cada um
+        if (k >= 0) { DrawGolden(rt, k, c, r, (std::min)(0.6f, (std::max)(0.f, 1 - mx / ref[k]))); return; }
     }
-    if (solid && base.r > 0.85f && base.g < 0.5f) { top = C(254, 111, 100); bot = C(243, 139, 131); rim = C(196, 9, 10); }
-    else if (solid && base.r > 0.85f && base.g >= 0.5f) { top = C(251, 185, 39); bot = C(254, 211, 66); rim = C(157, 9, 9); }
-    else if (solid && base.g > 0.55f && base.r < 0.45f) { top = C(96, 208, 40); bot = C(152, 218, 120); rim = C(9, 85, 9); }
-    else {
-        // cinza (janela inativa, Grafite) ou apagado. Medido na janela inativa do modo escuro: (84,83,83) em cima ->
-        // (74,73,73) embaixo, com um fio claro na borda de cima (128) e outro mais claro embaixo (171), sem aro escuro
-        auto mix = [](D2D1_COLOR_F a, float k, float t) { return D2D1::ColorF(a.r + (k - a.r) * t, a.g + (k - a.g) * t, a.b + (k - a.b) * t, a.a); };
-        top = mix(base, 1, 0.05f); bot = mix(base, 0, 0.06f);
-        D2D1_GRADIENT_STOP st[3] = { { 0, top }, { 0.2f, top }, { 0.9f, bot } };
-        ID2D1GradientStopCollection* gs = nullptr;
-        ID2D1LinearGradientBrush* lb = nullptr;
-        if (SUCCEEDED(rt->CreateGradientStopCollection(st, 3, &gs)) &&
-            SUCCEEDED(rt->CreateLinearGradientBrush(D2D1::LinearGradientBrushProperties({ c.x, c.y - r }, { c.x, c.y + r }), gs, &lb)))
-            rt->FillEllipse(D2D1::Ellipse(c, r, r), lb);
-        if (lb) lb->Release();
-        if (gs) gs->Release();
-        D2D1_GRADIENT_STOP rs[4] = { { 0, D2D1::ColorF(1, 1, 1, 0.28f) }, { 0.25f, D2D1::ColorF(1, 1, 1, 0) }, { 0.75f, D2D1::ColorF(1, 1, 1, 0) }, { 1, D2D1::ColorF(1, 1, 1, 0.5f) } };
-        gs = nullptr; lb = nullptr;
-        if (SUCCEEDED(rt->CreateGradientStopCollection(rs, 4, &gs)) &&
-            SUCCEEDED(rt->CreateLinearGradientBrush(D2D1::LinearGradientBrushProperties({ c.x, c.y - r }, { c.x, c.y + r }), gs, &lb)))
-            rt->DrawEllipse(D2D1::Ellipse(c, r - 0.25f, r - 0.25f), lb, 0.5f);
-        if (lb) lb->Release();
-        if (gs) gs->Release();
-        return;
-    }
-    D2D1_ELLIPSE disc = D2D1::Ellipse(c, r, r);
-    {
-        D2D1_GRADIENT_STOP st[3] = { { 0, top }, { 0.29f, top }, { 0.80f, bot } };  // medido: chapado até 29 %, a cor de baixo em 80 %
-        ID2D1GradientStopCollection* gs = nullptr;
-        ID2D1LinearGradientBrush* lb = nullptr;
-        if (SUCCEEDED(rt->CreateGradientStopCollection(st, 3, &gs)) &&
-            SUCCEEDED(rt->CreateLinearGradientBrush(D2D1::LinearGradientBrushProperties({ c.x, c.y - r }, { c.x, c.y + r }), gs, &lb)))
-            rt->FillEllipse(disc, lb);
-        if (lb) lb->Release();
-        if (gs) gs->Release();
-    }
-    {
-        // aro: a força depende da distância horizontal ao centro (pincel radial bem alto = |dx| / r): forte dos lados,
-        // fraco em cima e embaixo (medido pixel a pixel na captura 2x do Finder)
-        D2D1_COLOR_F a0 = rim; a0.a = 0.10f;
-        D2D1_COLOR_F a1 = rim; a1.a = 0.35f;
-        D2D1_COLOR_F a2 = rim; a2.a = 1;
-        D2D1_GRADIENT_STOP st[3] = { { 0, a0 }, { 0.6f, a1 }, { 0.92f, a2 } };
-        ID2D1GradientStopCollection* gs = nullptr;
-        ID2D1RadialGradientBrush* rb = nullptr;
-        if (SUCCEEDED(rt->CreateGradientStopCollection(st, 3, &gs)) &&
-            SUCCEEDED(rt->CreateRadialGradientBrush(D2D1::RadialGradientBrushProperties(c, { 0, 0 }, r, r * 60), gs, &rb)))
-            rt->DrawEllipse(D2D1::Ellipse(c, r - 0.4f, r - 0.4f), rb, 0.8f);
-        if (rb) rb->Release();
-        if (gs) gs->Release();
-    }
-    // o brilho colorido que o botão solta em volta, mais forte embaixo (medido: ~12 % da cor logo abaixo)
-    if (solid) {
-        D2D1_COLOR_F a0 = top; a0.a = 0.03f;
-        D2D1_COLOR_F a1 = top; a1.a = 0.20f;
-        D2D1_GRADIENT_STOP st[2] = { { 0, a0 }, { 1, a1 } };
-        ID2D1GradientStopCollection* gs = nullptr;
-        ID2D1LinearGradientBrush* lb = nullptr;
-        if (SUCCEEDED(rt->CreateGradientStopCollection(st, 2, &gs)) &&
-            SUCCEEDED(rt->CreateLinearGradientBrush(D2D1::LinearGradientBrushProperties({ c.x, c.y - r }, { c.x, c.y + r + 1 }), gs, &lb)))
-            rt->DrawEllipse(D2D1::Ellipse(c, r + 0.6f, r + 0.6f), lb, 1.2f);
-        if (lb) lb->Release();
-        if (gs) gs->Release();
-    }
+    // cinza (janela inativa, Grafite): o botão inativo claro ou escuro (pelo fundo que o app pediu)
+    bool darkUi = solid ? (0.2126f * base.r + 0.7152f * base.g + 0.0722f * base.b) < 0.5f : base.r > 0.5f;
+    DrawGolden(rt, darkUi ? 4 : 3, c, r, 0);
 }
 
 inline const D2D1_COLOR_F* Pick(const D2D1_COLOR_F* normal, Kind k) {
