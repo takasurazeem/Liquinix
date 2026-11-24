@@ -1,7 +1,7 @@
 # Monta icones\tahoe a partir do tema MacTahoe (github.com/vinceliuice/MacTahoe-icon-theme, GPL-3.0).
 # O tema e de Linux (SVG, nomes do freedesktop); aqui cada icone vira um PNG de 512 px com o nome que o
 # Shell procura (o mesmo do pacote Sequoia: "Finder", "Settings", "folder downloads", "trashempty@2x"...).
-# Uso pessoal: os icones sao do autor do tema (ver CREDITOS.txt gerado na pasta).
+# Licenca GPL-3.0, a mesma do tema; o autor e o credito ficam no CREDITOS.txt gerado na pasta.
 #   powershell -File tools\icones-mactahoe.ps1 -Tema <pasta MacTahoe-icon-theme-main descompactada>
 param(
     [Parameter(Mandatory = $true)][string]$Tema,
@@ -24,7 +24,7 @@ $mapa = [ordered]@{
     "Terminal"          = "utilities-terminal", "org.gnome.Terminal", "terminal"
     "Activity Monitor"  = "gnome-system-monitor", "utilities-system-monitor", "system-monitor"
     "Notes"             = "org.gnome.Notes", "gnome-notes", "notes", "accessories-notes"
-    "Launchpad"         = "appgrid", "launchpad", "view-app-grid"
+    "Launchpad"         = "view-app-grid", "appgrid", "launchpad"
     "Screenshot"        = "org.gnome.Screenshot", "gnome-screenshot", "accessories-screenshot"
     "Preview"           = "org.gnome.Loupe", "eog", "org.gnome.eog", "image-viewer"
     "Photos"            = "org.gnome.Photos", "gnome-photos", "shotwell"
@@ -37,6 +37,9 @@ $mapa = [ordered]@{
     "Clock"             = "org.gnome.clocks", "gnome-clocks"
     "Maps"              = "org.gnome.Maps", "gnome-maps"
     "Contacts"          = "org.gnome.Contacts", "gnome-contacts"
+    "Reminders"         = "gnome-todo", "org.gnome.Todo"
+    "Time Machine"      = "deja-dup", "org.gnome.DejaDup", "timeshift"
+    "QuickTime Player"  = "org.gnome.Totem", "totem"
     "TextEdit"          = "org.gnome.TextEditor", "gedit", "accessories-text-editor"
     "Google Chrome"     = "google-chrome"
     "Firefox"           = "firefox"
@@ -45,6 +48,7 @@ $mapa = [ordered]@{
     "Spotify"           = "spotify-client", "spotify"
     "Steam"             = "steam"
     "Telegram"          = "telegram", "org.telegram.desktop"
+    "WhatsApp"          = "whatsapp"
     "Visual Studio Code" = "visual-studio-code", "code", "vscode", "com.visualstudio.code"
     "OBS Studio"        = "com.obsproject.Studio", "obs"
     "VLC"               = "vlc"
@@ -86,7 +90,7 @@ function Resolver([string]$f, [int]$n = 0) {
 }
 
 $ok = 0; $faltam = @()
-$cred = @("Icones do tema MacTahoe de vinceliuice (https://github.com/vinceliuice/MacTahoe-icon-theme), GPL-3.0.", "Convertidos de SVG para PNG ($Tamanho px) por tools\icones-mactahoe.ps1. Uso pessoal.", "")
+$cred = @("Icones do tema MacTahoe de vinceliuice (https://github.com/vinceliuice/MacTahoe-icon-theme), GPL-3.0.", "Convertidos de SVG para PNG ($Tamanho px) por tools\icones-mactahoe.ps1. Licenca GPL-3.0, a mesma do tema.", "")
 foreach ($alvo in $mapa.Keys) {
     $src = $null
     foreach ($nome in $mapa[$alvo]) {
