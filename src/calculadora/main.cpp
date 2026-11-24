@@ -1908,7 +1908,22 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         return 0;
     }
     case WM_ERASEBKGND: return 1;
-    case WM_PAINT: { PAINTSTRUCT ps; BeginPaint(h, &ps); bool moving = StepAnim(); Render(); EndPaint(h, &ps); if (moving) Invalidate(); return 0; }
+    case WM_PAINT: {
+        PAINTSTRUCT ps; BeginPaint(h, &ps);
+        bool moving = StepAnim();
+        Render();
+        EndPaint(h, &ps);
+        if (moving) {
+            // o EndDraw espera o vsync; onde não espera (VM, área de trabalho remota, alguns drivers) o quadro volta em
+            // menos de 4 ms e o DwmFlush segura até a próxima composição, em vez de girar a 300+ quadros/s
+            static double last;
+            double t = NowMs();
+            if (t - last < 4) DwmFlush();
+            last = NowMs();
+            Invalidate();
+        }
+        return 0;
+    }
     case WM_ACTIVATE: g_active = LOWORD(w) != WA_INACTIVE; Invalidate(); return 0;
     case WM_SETTINGCHANGE: {
         g_dark = ReadDark();
