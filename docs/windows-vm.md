@@ -4,8 +4,13 @@ How to build, run and check Liquinix's Windows code from a Linux computer, in a 
 (`.github/workflows/build.yml`) tells you whether the code compiles; the VM is where you see whether it works.
 For the Linux side of the project, see `docs/linux-dev.md`.
 
-Written for KVM/QEMU with virt-manager on Fedora-based systems (Nobara). The steps are the usual ones for a
-Windows 11 guest; this exact setup hasn't been run end to end yet, so fix this file when something differs.
+Two ways to set it up, both with KVM/QEMU on Fedora-based systems (Nobara):
+- **[quickemu](#quick-route-quickemu)**: tested end to end (November 2026). It needs no root, is scriptable,
+  and is what an AI agent can drive over SSH.
+- **virt-manager** (sections 1 to 6): the usual graphical route. It hasn't been run end to end yet, so fix
+  this file when something differs.
+
+Sections 5 to 7 (building, snapshots, the visual check) apply to both.
 
 ## What the VM is for
 
@@ -24,6 +29,69 @@ Do performance work and final checks before a release on a real Windows PC.
 
 Replacing the Windows shell (`Winlogon\Shell`) is only ever tested in the VM, never on a real PC (see the
 `liquinix-build-verify` skill).
+
+## Quick route: quickemu
+
+[quickemu](https://github.com/quickemu-project/quickemu) wraps QEMU with a config file per VM: UEFI, an emulated
+TPM 2.0, an unattended Windows install with a local account, and a SPICE window with clipboard sharing.
+
+```sh
+sudo dnf install quickemu edk2-ovmf   # quickemu brings QEMU, swtpm (TPM) and spicy; edk2-ovmf is the UEFI firmware
+mkdir -p ~/VMs && cd ~/VMs
+quickget windows 11              # writes windows-11.conf and downloads the virtio drivers and the answer file
+```
+
+What we ran into, and the fixes:
+
+- **Microsoft may block the ISO download** ("blocked the automated download request based on your IP"). Download
+  a Windows 11 ISO in a browser instead. The **Windows 11 Enterprise evaluation** from the
+  [Evaluation Center](https://www.microsoft.com/evalcenter/download-windows-11-enterprise) works without a key
+  for 90 days, which is fine for a test VM. Save it as `~/VMs/windows-11/windows-11.iso`.
+- **The evaluation ISO rejects quickget's Pro key.** quickget's `windows-11/unattended/autounattend.xml` sets
+  Microsoft's public setup key for Windows Pro. For the Enterprise evaluation, remove both `<ProductKey>`
+  entries and rebuild the answer disc:
+  `mkisofs -quiet -J -o windows-11/unattended.iso windows-11/unattended/` (keep backups outside that folder, or
+  they end up on the disc).
+- **The virtio driver download can come back as a 4 KB HTML page.** fedorapeople.org shows a bot check to
+  quickget's browser user agent. A plain `curl` gets the real file:
+  `curl -fL -o windows-11/virtio-win.iso https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso`
+  (check that it's several hundred MB). Windows Setup needs it: quickemu gives Windows a virtio disk.
+- **Clipboard sharing needs the SPICE display.** Add these to `windows-11.conf`:
+
+  ```
+  display="spice"
+  ram="8G"
+  cpu_cores="4"
+  disk_size="80G"
+  ```
+
+Then `quickemu --vm windows-11.conf`. Setup asks for the language and keyboard (press Enter on both) and does
+the rest, including a local account `Quickemu` (password `quickemu`). It's a neutral name, so screenshots can
+go into pull requests. In Windows:
+
+- **Check the drivers:** `Get-PnpDevice | Where-Object { $_.Status -ne 'OK' -and $_.Present }` should print
+  nothing. If it doesn't, run `virtio-win-guest-tools.exe` from the virtio-win CD.
+- **Install Git and Build Tools.** Older winget versions fail on the Microsoft Store source with a certificate
+  error, so name the source:
+  `winget install --id Git.Git -e --source winget` and
+  `winget install --id Microsoft.VisualStudio.2022.BuildTools -e --source winget --override "--wait --quiet --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"`.
+- **Optional, for driving it from Linux:** turn on OpenSSH Server (Settings > System > Optional features, or
+  `Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0`, then `Start-Service sshd`). quickemu
+  forwards host port 22220 to it: `ssh -p 22220 Quickemu@localhost`. Programs started over SSH run in an
+  invisible session; to show one on the desktop, start it with a scheduled task that uses
+  `New-ScheduledTaskPrincipal -LogonType Interactive`.
+- **Turn off the screen timeout** (`powercfg /change monitor-timeout-ac 0`). If the display is off when the
+  shell starts, Liquinix's own lock screen comes up (`bloqueio_ao_apagar`).
+
+Snapshots, with the VM shut down:
+
+```sh
+quickemu --vm windows-11.conf --snapshot create clean
+quickemu --vm windows-11.conf --snapshot apply clean     # go back to it
+```
+
+The QEMU monitor (`windows-11/windows-11-monitor.socket`) can take screenshots (`screendump file.ppm`) and type
+(`sendkey ret`). With the SPICE display, screenshots work once Windows has loaded the QXL driver.
 
 ## 1. Install the virtualisation tools
 
