@@ -1206,6 +1206,8 @@
 { L"Cidade não encontrada.", L"找不到城市。" },
 { L"Tempestade", L"雷暴" },
 { L"Sem conexão com o serviço do tempo.", L"无法连接天气服务。" },
+{ L"Dados do tempo por Open-Meteo.com", L"天气数据来自 Open-Meteo.com" },
+{ L"Busca de cidades por Open-Meteo.com", L"城市搜索由 Open-Meteo.com 提供" },
 { L"Máx.: %d°  Mín.: %d°", L"最高 %d°  最低 %d°" },
 { L"PREVISÃO POR HORA", L"每小时预报" },
 { L"PREVISÃO PARA 10 DIAS", L"10 天预报" },

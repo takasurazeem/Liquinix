@@ -1206,6 +1206,8 @@
 { L"Cidade não encontrada.", L"Ville introuvable." },
 { L"Tempestade", L"Orage" },
 { L"Sem conexão com o serviço do tempo.", L"Impossible de joindre le service météo." },
+{ L"Dados do tempo por Open-Meteo.com", L"Données météo fournies par Open-Meteo.com" },
+{ L"Busca de cidades por Open-Meteo.com", L"Recherche de villes fournie par Open-Meteo.com" },
 { L"Máx.: %d°  Mín.: %d°", L"Max. : %d°  Min. : %d°" },
 { L"PREVISÃO POR HORA", L"PRÉVISIONS HEURE PAR HEURE" },
 { L"PREVISÃO PARA 10 DIAS", L"PRÉVISIONS SUR 10 JOURS" },

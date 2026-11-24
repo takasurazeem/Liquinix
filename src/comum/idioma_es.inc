@@ -1206,6 +1206,8 @@
 { L"Cidade não encontrada.", L"Ciudad no encontrada." },
 { L"Tempestade", L"Tormenta" },
 { L"Sem conexão com o serviço do tempo.", L"No se puede conectar con el servicio del tiempo." },
+{ L"Dados do tempo por Open-Meteo.com", L"Datos meteorológicos de Open-Meteo.com" },
+{ L"Busca de cidades por Open-Meteo.com", L"Búsqueda de ciudades de Open-Meteo.com" },
 { L"Máx.: %d°  Mín.: %d°", L"Máx.: %d°  Mín.: %d°" },
 { L"PREVISÃO POR HORA", L"PRONÓSTICO POR HORAS" },
 { L"PREVISÃO PARA 10 DIAS", L"PRONÓSTICO A 10 DÍAS" },

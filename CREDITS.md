@@ -47,8 +47,19 @@ never part of this repository or of a Liquinix release.
 
 ## Services and runtime dependencies
 
-- **Open-Meteo**: <https://open-meteo.com>. Weather and geocoding data for Weather, Clock and the desktop widget.
-  Weather data by Open-Meteo.com, licensed CC BY 4.0.
+- **Open-Meteo**: <https://open-meteo.com>. Weather and geocoding data for Weather, Clock and the desktop widgets.
+  Weather data by Open-Meteo.com, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The apps credit
+  it where the data appears:
+  - Weather: a link under the forecast;
+  - Clock: a line under the "Other City…" search;
+  - the Weather and Sunrise widgets: an item in their right-click menu.
+
+  Liquinix uses Open-Meteo's free, non-commercial API without a key. Usage is far inside the free tier's limits:
+  - the widgets make 1 request every 15 minutes;
+  - the Weather app makes 1 request per city every 15 minutes, and only while it's open;
+  - geocoding runs only when you search for a city.
+
+  A commercial redistribution of Liquinix would need its own Open-Meteo plan.
 - **Windhawk** by Ramen Software: <https://windhawk.net> (GPL-3.0). Needed only for the optional mods in
   `docs/windhawk/`, which also configure *Windows 11 File Explorer Styler* by m417z and *Explorer Font Changer* by
   Gabriela Cristei.

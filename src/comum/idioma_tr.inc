@@ -1206,6 +1206,8 @@
 { L"Cidade não encontrada.", L"Şehir bulunamadı." },
 { L"Tempestade", L"Fırtına" },
 { L"Sem conexão com o serviço do tempo.", L"Hava durumu hizmetine ulaşılamıyor." },
+{ L"Dados do tempo por Open-Meteo.com", L"Hava durumu verileri: Open-Meteo.com" },
+{ L"Busca de cidades por Open-Meteo.com", L"Şehir arama: Open-Meteo.com" },
 { L"Máx.: %d°  Mín.: %d°", L"Y: %d°  D: %d°" },
 { L"PREVISÃO POR HORA", L"SAATLİK TAHMİN" },
 { L"PREVISÃO PARA 10 DIAS", L"10 GÜNLÜK TAHMİN" },

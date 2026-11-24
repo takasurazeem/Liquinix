@@ -1206,6 +1206,8 @@
 { L"Cidade não encontrada.", L"都市が見つかりません。" },
 { L"Tempestade", L"雷雨" },
 { L"Sem conexão com o serviço do tempo.", L"天気サービスに接続できません。" },
+{ L"Dados do tempo por Open-Meteo.com", L"気象データ: Open-Meteo.com" },
+{ L"Busca de cidades por Open-Meteo.com", L"都市検索: Open-Meteo.com" },
 { L"Máx.: %d°  Mín.: %d°", L"最高:%d°  最低:%d°" },
 { L"PREVISÃO POR HORA", L"1時間ごとの予報" },
 { L"PREVISÃO PARA 10 DIAS", L"10日間予報" },

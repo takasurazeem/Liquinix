@@ -1206,6 +1206,8 @@
 { L"Cidade não encontrada.", L"Nie znaleziono miasta." },
 { L"Tempestade", L"Burza" },
 { L"Sem conexão com o serviço do tempo.", L"Brak połączenia z serwisem pogody." },
+{ L"Dados do tempo por Open-Meteo.com", L"Dane pogodowe: Open-Meteo.com" },
+{ L"Busca de cidades por Open-Meteo.com", L"Wyszukiwanie miast: Open-Meteo.com" },
 { L"Máx.: %d°  Mín.: %d°", L"Maks.: %d°  Min.: %d°" },
 { L"PREVISÃO POR HORA", L"PROGNOZA GODZINOWA" },
 { L"PREVISÃO PARA 10 DIAS", L"PROGNOZA 10-DNIOWA" },

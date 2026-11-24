@@ -19,6 +19,7 @@ namespace {
 
 float TB = 56;  // macOS 27: 52 (barra unificada)
 const UINT WM_FIELDLOST = WM_APP + 77, WM_CITYFOUND = WM_APP + 8;
+HWND g_cityField;  // o campo do "Outra Cidade…" enquanto aberto (o crédito do Open-Meteo aparece embaixo dele)
 int g_tab = 0;  // 0 mundial, 1 alarmes, 2 cronômetro, 3 timer
 IDWriteTextFormat *g_tfSeg, *g_tfBig, *g_tfBigR, *g_tfHuge, *g_tfRow, *g_tfSub, *g_tfBtn, *g_tfIcon, *g_tfMono;
 
@@ -437,6 +438,13 @@ void Paint() {
         const wchar_t* b = !g_tmRun ? Tr(L"Iniciar") : g_tmPaused ? Tr(L"Retomar") : Tr(L"Pausar");
         Button(D2D1::RectF(cx + 30, y, cx + 190, y + 44), b, g_tmRun && !g_tmPaused ? Rgb(255, 159, 10, 0.25f) : Rgb(48, 209, 88, 0.25f), g_tmRun && !g_tmPaused ? Rgb(255, 159, 10) : Rgb(48, 209, 88), H_TM_B);
     }
+    if (field.h && field.h == g_cityField) {  // crédito do Open-Meteo (CC BY 4.0) embaixo da busca de cidade
+        std::wstring c = Tr(L"Busca de cidades por Open-Meteo.com");
+        float cw = TextW(g_tfSub, c) + 16, right = sz.width - 24;
+        D2D1_RECT_F r = D2D1::RectF(right - cw, TB + 40, right, TB + 60);
+        Fill(r, dark || gg ? Rgb(44, 44, 46, 0.92f) : Rgb(242, 242, 247, 0.96f), 6);
+        Text(c, g_tfSub, D2D1::RectF(r.left + 8, r.top, r.right, r.bottom), dark || gg ? Rgb(235, 235, 245, 0.75f) : gray);
+    }
     EndPaint();
 }
 
@@ -549,6 +557,8 @@ void AddCity(POINT scr) {
     if (c == 9999) {  // digita o nome; Enter procura
         D2D1_SIZE_F sz = Size();
         FieldOpen(D2D1::RectF(sz.width - 300, TB + 12, sz.width - 24, TB + 36), L"", 14, false, [](const std::wstring& t, int key) { if (key == VK_RETURN) FindCity(t); });
+        g_cityField = field.h;
+        InvalidateRect(wnd, nullptr, FALSE);
         return;
     }
     if (c > 0 && c <= NCITIES && std::find(g_world.begin(), g_world.end(), c - 1) == g_world.end()) { g_world.push_back(c - 1); Save(); }

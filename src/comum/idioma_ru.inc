@@ -1206,6 +1206,8 @@
 { L"Cidade não encontrada.", L"Город не найден." },
 { L"Tempestade", L"Гроза" },
 { L"Sem conexão com o serviço do tempo.", L"Нет связи с сервисом погоды." },
+{ L"Dados do tempo por Open-Meteo.com", L"Данные о погоде: Open-Meteo.com" },
+{ L"Busca de cidades por Open-Meteo.com", L"Поиск городов: Open-Meteo.com" },
 { L"Máx.: %d°  Mín.: %d°", L"Макс.: %d°  Мин.: %d°" },
 { L"PREVISÃO POR HORA", L"ПОЧАСОВОЙ ПРОГНОЗ" },
 { L"PREVISÃO PARA 10 DIAS", L"ПРОГНОЗ НА 10 ДНЕЙ" },
