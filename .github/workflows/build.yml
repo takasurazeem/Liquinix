@@ -1,4 +1,5 @@
 # On every commit to main and every pull request into main: checks that Liquinix builds (build.cmd plus the 32/64-bit title bar DLLs).
+# Skipped when a push or pull request only changes docs (Markdown, docs/, .claude/); run it by hand to build anyway.
 # Releases are published with tools\publicar.ps1. They never carry Apple's fonts, sounds or cursors: the installer
 # downloads those on the user's PC.
 name: build
@@ -6,8 +7,16 @@ name: build
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.claude/**'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.claude/**'
   workflow_dispatch:
 
 jobs:
