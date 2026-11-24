@@ -54,7 +54,7 @@ build.cmd setup      only LiquinixSetup.exe (install, update, uninstall)
 ```
 
 `build.cmd` lists every target in its header. Output goes to `bin\` (ignored by git). CI
-(`.github/workflows/build.yml`) runs `build.cmd` and `build.cmd janelas` on `windows-2022` for every push to `main`.
+(`.github/workflows/build.yml`) runs `build.cmd` and `build.cmd janelas` on `windows-2022` for every push to `main` and every pull request into `main`.
 
 Release: `tools\publicar.ps1` (calls `tools\empacotar.ps1 -SemSistema -SemAjustes`, then creates a GitHub release).
 
