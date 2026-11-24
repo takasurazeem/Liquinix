@@ -32,8 +32,9 @@ Before adding any image, icon, font, sound, cursor, video, or a pixel table gene
    screenshots) cannot be in the repository or in a release, whatever the source site says.
    - **Fan-made Apple-style icons** (macOSicons.com, DeviantArt, VIN STAR, "Big Sur icon packs") are usually
      redraws of Apple's icons with no license. Treat them like Apple's.
-   - **Bitmaps traced or extracted from macOS screenshots are Apple artwork too.** Known cases to replace:
-     `src/comum/semaforo_mac27.inc` and `src/relogio/mapa_mundi.inc`.
+   - **Bitmaps traced or extracted from macOS screenshots are Apple artwork too.** Known case to replace:
+     `src/relogio/mapa_mundi.inc`. (The macOS 27 window buttons were such a case; they are now drawn in code by
+     `semaforo::DrawGolden`.)
 2. **Does its license allow redistribution, and is it GPL-3.0 compatible?** Good sources:
    - the MacTahoe icon theme (GPL-3.0) for `icones/tahoe/`, converted with `tools/icones-mactahoe.ps1`;
    - WhiteSur (GPL-3.0);
