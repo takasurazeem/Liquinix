@@ -50,7 +50,8 @@ the order changes, update both.
 | 14 | [#15](https://github.com/takasurazeem/Liquinix/issues/15) | Harden the GitHub Actions workflow | P3 | none | Any |
 | 15 | [#16](https://github.com/takasurazeem/Liquinix/issues/16) | Small licensing cleanups in the Windhawk mod and docs | P3 | none | Any |
 | 16 | [#14](https://github.com/takasurazeem/Liquinix/issues/14) | Move the Calculator's key animation off `SetTimer` | P3 | none | Windows to verify |
-| 17 | [#13](https://github.com/takasurazeem/Liquinix/issues/13) | Update `docs/BRIEFING.md` for the fork | P3 | none | Any |
+| 17 | [#33](https://github.com/takasurazeem/Liquinix/issues/33) | Move the remaining `SetTimer` animations onto the display clock | P3 | #14 | Windows to verify |
+| 18 | [#13](https://github.com/takasurazeem/Liquinix/issues/13) | Update `docs/BRIEFING.md` for the fork | P3 | none | Any |
 
 **Why this order:**
 - **1–6 make a clean first release possible:**
@@ -60,7 +61,7 @@ the order changes, update both.
   - The two small fixes (Open-Meteo credit, DLL paths) come before the release.
   - The release itself waits on the P0s.
 - **7–10 start the Linux port** in dependency order.
-- **11–17 are polish:** pick them up whenever there's a gap, or when the main track is blocked.
+- **11–18 are polish:** pick them up whenever there's a gap, or when the main track is blocked.
 
 **"Can run on":** most of the code is Windows-only. A session on Linux can write Windows code, but it can't build
 or run it; CI builds only `build.cmd` and `build.cmd janelas`. Prefer cards a session can actually verify, and
