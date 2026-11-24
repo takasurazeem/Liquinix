@@ -1,5 +1,5 @@
 ﻿Icones do tema MacTahoe de vinceliuice (https://github.com/vinceliuice/MacTahoe-icon-theme), GPL-3.0.
-Convertidos de SVG para PNG (512 px) por tools\icones-mactahoe.ps1. Uso pessoal.
+Convertidos de SVG para PNG (512 px) por tools\icones-mactahoe.ps1. Licença GPL-3.0, a mesma do tema.
 
 Finder	file-manager.svg
 Settings	preferences-system.svg
@@ -7,7 +7,7 @@ Calculator	calc.svg
 Terminal	terminal.svg
 Activity Monitor	utilities-system-monitor.svg
 Notes	tomboy.svg
-Launchpad	system-software-install.svg
+Launchpad	view-app-grid.svg
 Screenshot	accessories-screenshot.svg
 Preview	org.gnome.Loupe.svg
 Photos	shotwell.svg
@@ -45,8 +45,9 @@ folder games	folder-games.svg
 folder library	folder-library.svg
 trashempty@2x	user-trash.svg
 trashfull@2x	user-trash-full.svg
-WhatsApp.png - macOSicons.com, enviado por Credit Lost (2026-11-12)
-WhatsApp.png - macOSicons.com, enviado por Credit Lost (2026-11-12)
-Reminders	Reminders (MacOS Tahoe)	w1xced	https://macosicons.com/#/u/w1xced
-Time Machine	Time Machine (MacOS Tahoe)	w1xced	https://macosicons.com/#/u/w1xced
-QuickTime Player	QuickTime Player (MacOS Tahoe)	w1xced	https://macosicons.com/#/u/w1xced
+Reminders	gnome-todo.svg
+Time Machine	deja-dup.svg
+QuickTime Player	org.gnome.Totem.svg
+WhatsApp	whatsapp.svg
+
+Fonte: MacTahoe-icon-theme, commit 839848b9a8a38a92a6936e30c4abe35cc6f2546d (2026-09-10).

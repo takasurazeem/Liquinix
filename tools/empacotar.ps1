@@ -1,6 +1,6 @@
 ﻿# Monta o pacote do Liquinix: dist\Liquinix-AAAA-MM-DD.zip, o que vai nas releases do GitHub.
 # Dentro: os programas (sem logs e sem as ferramentas de teste), os ícones que estão no repositório (MacTahoe,
-# GPL-3.0), os scripts e o instalador. No outro PC: extrair e abrir LiquinixSetup.exe.
+# GPL-3.0), os scripts, o instalador, a licença (LICENSE.txt) e os créditos (CREDITS.md, PROVENANCE.md). No outro PC: extrair e abrir LiquinixSetup.exe.
 # NUNCA entra no pacote o que é da Apple ou de terceiros sem licença para redistribuir: fontes SF, sons do
 # macOS, cursores, ícones fora do git (pacote Sequoia, SF Symbols, macOSicons...) e os ícones do sistema de
 # bin\icones-sistema (gerados a partir do pacote Sequoia). O instalador baixa fontes, sons e cursor no próprio
@@ -75,6 +75,11 @@ if (-not $SemAjustes) {
 Copy-Item "$root\instalador\*" $pkg
 # o instalador único (instalar, atualizar, desinstalar), na raiz do pacote: é o que a pessoa abre
 if (Test-Path "$bin\LiquinixSetup.exe") { Copy-Item "$bin\LiquinixSetup.exe" "$pkg\LiquinixSetup.exe" } else { Write-Host 'faltando: bin\LiquinixSetup.exe' }
+# licença e créditos: a GPL-3.0 exige que o texto da licença vá junto dos programas
+if (-not (Test-Path "$root\LICENSE")) { throw 'LICENSE não encontrado: o pacote não pode sair sem a licença' }
+Copy-Item "$root\LICENSE" "$pkg\LICENSE.txt"
+foreach ($doc in 'CREDITS.md', 'PROVENANCE.md') { if (Test-Path "$root\$doc") { Copy-Item "$root\$doc" "$pkg\$doc" } }
+
 # checagem final: nada da Apple ou de terceiros sem licença no pacote
 $proibidos = Get-ChildItem $pkg -Recurse -File | Where-Object {
     $_.Extension -in '.otf', '.ttf', '.ttc', '.dfont', '.cur', '.ani', '.wav', '.aif', '.aiff', '.caf', '.mp3', '.m4a', '.heic', '.mp4', '.mov' -or
