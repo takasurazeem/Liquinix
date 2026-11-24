@@ -30,7 +30,7 @@ $itens = @(
     'LiquinixPhotos|Photos|Photos.png',
     'LiquinixTimeMachine|Time Machine|Time Machine.png',
     'LiquinixTitleBars|Liquinix Title Bars|',
-    'LiquinixSetup|Liquinix Setup|repo:docs\logo-256.png',
+    'LiquinixSetup|Liquinix Setup|',
     'LiquinixWindow|Liquinix Window Frames|',
     'LiquinixWindow32|Liquinix Window Frames (32-bit)|'
 )
@@ -67,7 +67,7 @@ foreach ($linha in $itens) {
     $nome, $desc, $png = $linha.Split('|')
     $ext = if ($nome -like 'LiquinixWindow' -or $nome -like 'LiquinixWindow32') { 'dll' } else { 'exe' }
     $iconLine = ''
-    # "repo:<caminho>": um PNG do próprio repositório (o logo do Liquinix, docs\logo-256.png) em vez do pacote de ícones
+    # "repo:<caminho>": um PNG do próprio repositório (ex.: um logo do projeto) em vez do pacote de ícones
     $pngPath = if ($png -like 'repo:*') { Join-Path (Split-Path $PSScriptRoot -Parent) $png.Substring(5) } elseif ($png) { Join-Path $pack $png } else { '' }
     if ($pngPath -and (Test-Path $pngPath)) {
         $ico = Join-Path $Out "$nome.ico"

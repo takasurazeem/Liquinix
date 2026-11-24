@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="docs/logo-256.png" alt="Liquinix logo" width="128" height="128">
-
 # Liquinix
 
 **macOS on top of Windows 11: menu bar, Dock, Finder, Spotlight, Control Center and Liquid Glass, in native C++.**

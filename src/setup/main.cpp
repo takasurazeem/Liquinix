@@ -1265,7 +1265,7 @@ static void Foto(const wstring& dir) {
     wic->Release();
 }
 
-static void LoadLogo(HINSTANCE hi) {  // o logo (docs\logo-256.png, embutido como recurso 2)
+static void LoadLogo(HINSTANCE hi) {  // o logo, se o build embutir um (recurso 2); sem ele, a barra lateral fica sem imagem
     HRSRC r = FindResourceW(hi, MAKEINTRESOURCEW(2), RT_RCDATA); if (!r) return;
     HGLOBAL g = LoadResource(hi, r); DWORD n = SizeofResource(hi, r); void* p = LockResource(g);
     IWICImagingFactory* wic = nullptr; if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&wic)))) return;

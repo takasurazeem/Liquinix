@@ -60,10 +60,12 @@ recorded here, wherever a copy is found.
 
 The first commit of Liquinix is the upstream tree with these changes only:
 
-- **Removed (642 files)**, because they are not covered by the GPL or contain the original author's personal data:
+- **Removed (645 files)**, because they are not covered by the GPL, contain the original author's personal data,
+  or carry the WacOS brand:
   third-party icon packs (`icones/sequoia`, `icones/extra`, `icones/tahoe-macosicons`), Apple SF Symbols
   (`icones/simbolos`), Apple wallpapers (`icones/bloqueio`), screenshots (`docs/screenshots`, `docs/authux-*`,
-  `docs/vm-*`, `docs/fotos-ilha`, `docs/diagnostico`), and machine-specific backups and logs from `docs/`.
+  `docs/vm-*`, `docs/fotos-ilha`, `docs/diagnostico`), machine-specific backups and logs from `docs/`, and the WacOS logo (`docs/logo.png`, `docs/logo-256.png`,
+  `tools/logo-wacos.py`).
 - **Modified (6 files)**: the original author's Windows account path was replaced with `%USERPROFILE%` /
   `$env:USERPROFILE` (`docs/BRIEFING.md`, `docs/sem-explorer.md`, `src/finder/main.cpp`, in two comments only,
   `tools/criar-vm-authux.ps1`, `tools/vm-authux-pacotes.ps1`), and `.gitignore` gained entries for those backups.
@@ -78,7 +80,7 @@ git fetch https://github.com/renzyxx/WacOS.git 0afb96a69ae2fd130621de41a74f1880a
 git rev-parse FETCH_HEAD^{tree}                       # 52da3f628de1c84be80530d4c87c5c764bc89439
 git show FETCH_HEAD:LICENSE | head -2                 # GNU GENERAL PUBLIC LICENSE, Version 3
 IMPORT=$(git rev-list --max-parents=0 HEAD)
-git diff --name-status FETCH_HEAD "$IMPORT" | cut -f1 | sort | uniq -c   # 642 D, 6 M
+git diff --name-status FETCH_HEAD "$IMPORT" | cut -f1 | sort | uniq -c   # 645 D, 6 M
 git diff FETCH_HEAD "$IMPORT" --diff-filter=M          # only the changes listed above
 ```
 
