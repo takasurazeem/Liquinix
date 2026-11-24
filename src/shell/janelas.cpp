@@ -12,6 +12,7 @@
 // A decisão é guardada por processo; a DLL confere de novo ao carregar e recusa entrar em jogo.
 #include "shell.h"
 #include "../comum/jogos.h"
+#include "../comum/dll.h"
 #include <shellapi.h>
 #include <shlobj.h>
 #include <map>
@@ -280,7 +281,7 @@ void janelas::Start() {
         Log(L"janelas: não deu para copiar " DLL_WINDOW);
         return;
     }
-    g_dll = LoadLibraryW(copy.c_str());
+    g_dll = DllAbsoluta(copy);
     g_proc = g_dll ? (HOOKPROC)GetProcAddress(g_dll, "GetMsgProc") : nullptr;
     if (!g_proc) { Log(L"janelas: " DLL_WINDOW L" não encontrada"); return; }
     LoadExtra();

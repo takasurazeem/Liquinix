@@ -3,6 +3,7 @@
 // Ctrl+N novo (outra janela), Ctrl+O abrir, Ctrl+S salvar, Ctrl+Shift+S salvar como, Ctrl+Shift+T texto simples
 // / formatado, Ctrl+B/I/U, Ctrl+W fechar (pergunta se há alterações). Título: nome — Editado.
 #include "../comum/app2d.h"
+#include "../comum/dll.h"
 #include <richedit.h>
 #include <shobjidl.h>
 #include <shellapi.h>
@@ -522,7 +523,7 @@ LRESULT CALLBACK Proc(HWND h, UINT m, WPARAM w, LPARAM l) {
 
 int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, PWSTR, int show) {
     if (!Init()) return 1;
-    LoadLibraryW(L"Msftedit.dll");
+    DllSistema(L"Msftedit.dll");
     g_tfBtn = Fmt(12.5f, DWRITE_FONT_WEIGHT_NORMAL, DWRITE_TEXT_ALIGNMENT_CENTER);
     g_tfIcon = Fmt(13, DWRITE_FONT_WEIGHT_NORMAL, DWRITE_TEXT_ALIGNMENT_CENTER, false, IconFamily());
     g_tfB = Fmt(14, DWRITE_FONT_WEIGHT_BOLD, DWRITE_TEXT_ALIGNMENT_CENTER, false, L"Georgia");

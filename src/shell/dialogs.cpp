@@ -8,6 +8,7 @@
 //     programa recebe o arquivo pelo caminho de sempre. Cancelou: Cancelar na original.
 // Shift segurado quando a janela aparece deixa a original. Programas elevados ficam com a original.
 #include "shell.h"
+#include "../comum/dll.h"
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <UIAutomation.h>
@@ -285,7 +286,7 @@ int(WINAPI* g_escolher)(const wchar_t*);
 int Embutido(HWND dlg, const std::wstring& args) {
     static std::once_flag once;
     std::call_once(once, [] {
-        HMODULE m = LoadLibraryW(L"MacDialogo.dll");
+        HMODULE m = DllAbsoluta(shell::dir + L"\\MacDialogo.dll");
         g_escolher = m ? (int(WINAPI*)(const wchar_t*))GetProcAddress(m, "MacEscolher") : nullptr;
         if (!g_escolher) { Log(L"MacDialogo.dll indisponível: Abrir/Salvar por fora pelo exe"); return; }
         g_evPedido = CreateEventW(nullptr, FALSE, FALSE, nullptr);

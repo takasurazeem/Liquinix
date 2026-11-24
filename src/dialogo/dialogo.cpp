@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 #include <cstdio>
+#include "../comum/dll.h"
 
 static HMODULE g_self;
 #ifdef DIALOGO_NATIVO
@@ -47,7 +48,7 @@ static void Log(const wchar_t* fmt, ...) {
 
 // O original do Windows (comdlg32.dll) para esta classe.
 static HRESULT RealFactory(REFCLSID clsid, IClassFactory** out) {
-    static HMODULE comdlg = LoadLibraryW(L"comdlg32.dll");
+    static HMODULE comdlg = DllSistema(L"comdlg32.dll");
     using Fn = HRESULT(WINAPI*)(REFCLSID, REFIID, void**);
     auto fn = comdlg ? (Fn)GetProcAddress(comdlg, "DllGetClassObject") : nullptr;
     if (!fn) return CLASS_E_CLASSNOTAVAILABLE;
