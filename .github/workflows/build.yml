@@ -1,6 +1,6 @@
 # On every commit to main: checks that Liquinix builds (build.cmd plus the 32/64-bit title bar DLLs).
-# Releases are published from the author's PC with tools\publicar.ps1: the full package carries the SF fonts,
-# macOS sounds and cursor, which are not in this repository.
+# Releases are published with tools\publicar.ps1. They never carry Apple's fonts, sounds or cursors: the installer
+# downloads those on the user's PC.
 name: build
 
 on:

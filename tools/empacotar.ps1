@@ -1,10 +1,14 @@
-﻿# Monta o instalador do Liquinix para levar a outro PC: dist\Liquinix-AAAA-MM-DD.zip
-# Dentro: os programas (sem logs e sem as ferramentas de teste), ícones, sons, as fontes SF instaladas neste
-# PC, o cursor do Mac em uso e o instalar.cmd / desinstalar.cmd. No outro PC: extrair e abrir instalar.cmd.
-# Os ícones, sons, fontes e cursor do Mac são da Apple: o pacote é só para uso pessoal, nos seus PCs.
-# -SemSistema: sem o que mexe no próprio Windows (janela de Abrir/Salvar do Mac injetada nos programas e ícones
-# do sistema trocados no registro); o resto (apps, Dock, Finder, fontes, cursor opcional) continua
-# -Atualizacao (GitHub Actions): pacote só de atualização: sem fontes, cursor e ajustes deste PC; -Zip escolhe o nome
+﻿# Monta o pacote do Liquinix: dist\Liquinix-AAAA-MM-DD.zip, o que vai nas releases do GitHub.
+# Dentro: os programas (sem logs e sem as ferramentas de teste), os ícones que estão no repositório (MacTahoe,
+# GPL-3.0), os scripts e o instalador. No outro PC: extrair e abrir LiquinixSetup.exe.
+# NUNCA entra no pacote o que é da Apple ou de terceiros sem licença para redistribuir: fontes SF, sons do
+# macOS, cursores, ícones fora do git (pacote Sequoia, SF Symbols, macOSicons...) e os ícones do sistema de
+# bin\icones-sistema (gerados a partir do pacote Sequoia). O instalador baixa fontes, sons e cursor no próprio
+# PC da pessoa, de onde os donos publicam (tools\baixar-apple.ps1). Uma checagem no fim recusa o pacote se
+# algum desses arquivos aparecer.
+# -SemSistema: sem a janela de Abrir/Salvar do Mac injetada nos programas
+# -SemAjustes: sem os ajustes deste PC (as releases sempre usam)
+# -Atualizacao: o mesmo que -SemAjustes (mantido por compatibilidade); -Zip escolhe o nome
 param([switch]$SemAjustes, [switch]$SemSistema, [switch]$Atualizacao, [string]$Zip = '')
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -27,61 +31,27 @@ foreach ($p in $progs) {
     if (Test-Path "$bin\$p") { Copy-Item "$bin\$p" "$pkg\bin\$p" } else { Write-Host "faltando: bin\$p" }
 }
 
-# extras opcionais do instalador: ícones do Mac no próprio Windows e janela de Abrir/Salvar do Mac
-# (os scripts acham as coisas pela pasta de cima: <instalação>\bin\icones-sistema e <instalação>\docs)
+# extras opcionais do instalador: janela de Abrir/Salvar do Mac
+# (os ícones do sistema de bin\icones-sistema não vão: são gerados a partir do pacote Sequoia, de terceiros;
+# os scripts deles vão só para o desinstalar poder desfazer o que um pacote antigo trocou)
 # Os scripts de DESFAZER vão sempre (mesmo com -SemSistema): um PC que recebeu esses extras de um pacote antigo
 # precisa deles para o desinstalar devolver os ícones e a janela do Windows
 New-Item -ItemType Directory -Force "$pkg\tools" | Out-Null
 foreach ($s in 'icones-sistema.ps1', 'icones-sistema-extra.ps1', 'dialogo-desligar.ps1', 'musica-registrar.ps1', 'quicktime-registrar.ps1', 'atualizar-github.ps1', 'baixar-apple.ps1') { Copy-Item "$PSScriptRoot\$s" "$pkg\tools\$s" }
 if (-not $SemSistema) {
-    New-Item -ItemType Directory -Force "$pkg\bin\icones-sistema" | Out-Null
-    Get-ChildItem "$bin\icones-sistema" -File | Where-Object { $_.Extension -in '.ico', '.ps1' } | Copy-Item -Destination "$pkg\bin\icones-sistema"
     Copy-Item "$PSScriptRoot\dialogo-ligar.ps1" "$pkg\tools\dialogo-ligar.ps1"
 }
 
-# ícones e sons (a pasta inteira de cada, com icones\leopard: o tema Mac OS X Leopard saiu em 20/11/2026)
-foreach ($pasta in 'icones', 'sons') {
-    if (Test-Path "$root\$pasta") { robocopy "$root\$pasta" "$pkg\$pasta" /E /NFL /NDL /NJH /NJS /NP | Out-Null }
-}
-# o cursor do tema Leopard (o Shell aplica ao entrar no tema e devolve o anterior ao sair: ponteiro::TemaLeopard)
-if (Test-Path "$root\cursor\Leopard") { robocopy "$root\cursor\Leopard" "$pkg\cursor-leopard\Leopard" /E /NFL /NDL /NJH /NJS /NP | Out-Null }
-
-# fontes SF instaladas neste PC (por usuário e do sistema)
-if (-not $Atualizacao) {
-New-Item -ItemType Directory -Force "$pkg\fontes" | Out-Null
-foreach ($d in (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'), (Join-Path $env:WINDIR 'Fonts')) {
-    # só as famílias e pesos que os apps usam (Text, Display, Rounded, Mono; Light a Heavy; itálico só no
-    # Text, das Notas). Sem isso o pacote passava de 230 MB (o "SF Pro" variável sozinho tem 40 MB)
-    Get-ChildItem $d -File -ErrorAction SilentlyContinue | Where-Object {
-        $n = $_.Name
-        $n -match '^SF' -and $_.Extension -in '.otf', '.ttf' -and $n -notmatch '^SF-Pro(-Italic)?\.ttf$' -and
-        $n -notmatch '(?i)ultralight|thin|black' -and ($n -notmatch '(?i)italic' -or $n -match '^SF-Pro-Text')
-    } |
-        ForEach-Object { if (-not (Test-Path "$pkg\fontes\$($_.Name)")) { Copy-Item $_.FullName "$pkg\fontes\" } }
-}
-
-}
-
-# cursor em uso (se for um esquema de arquivos próprio): a pasta dele e o mapa papel=arquivo
-$creg = Get-ItemProperty 'HKCU:\Control Panel\Cursors'
-# com o tema Leopard ligado neste PC o cursor em uso é o do Leopard (esse vai à parte, em cursor-leopard): vai o que o Shell guardou
-# antes de trocar (%APPDATA%\Shell\cursor-antes.txt, papel=caminho), o cursor do Tahoe
-$antes = Join-Path $env:APPDATA 'Shell\cursor-antes.txt'
-if ((Split-Path (Split-Path $creg.Arrow) -Leaf) -eq 'Leopard' -and (Test-Path $antes)) {
-    $creg = [pscustomobject]@{}
-    foreach ($l in Get-Content $antes -Encoding utf8) { if ($l -match '^([^=]+)=(.*)$') { $creg | Add-Member -NotePropertyName $Matches[1] -NotePropertyValue $Matches[2] -Force } }
-}
-$arrow = $creg.Arrow
-if (-not $Atualizacao -and $arrow -and (Test-Path $arrow)) {
-    $cdir = Split-Path $arrow
-    $nome = Split-Path $cdir -Leaf
-    robocopy $cdir "$pkg\cursor\$nome" /E /NFL /NDL /NJH /NJS /NP | Out-Null
-    $mapa = foreach ($papel in 'AppStarting', 'Arrow', 'Crosshair', 'Hand', 'Help', 'IBeam', 'No', 'NWPen', 'Person', 'Pin', 'SizeAll',
-                               'SizeNESW', 'SizeNS', 'SizeNWSE', 'SizeWE', 'UpArrow', 'Wait') {
-        $v = $creg.$papel
-        if ($v -and (Split-Path $v) -eq $cdir) { "$papel=$(Split-Path $v -Leaf)" }
-    }
-    Set-Content -Encoding utf8 "$pkg\cursor\cursores.txt" $mapa
+# ícones: só os arquivos que estão no git (icones\tahoe, MacTahoe GPL-3.0, e o LEIA-ME). Pastas baixadas ou
+# geradas neste PC (sequoia, simbolos, extra, tahoe-macosicons, leopard...) ficam de fora.
+# Sons, fontes e cursores não vão: o instalador baixa no PC da pessoa.
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'git não encontrado: precisa dele para saber quais ícones estão no repositório' }
+$icones = @(git -C $root -c core.quotepath=off ls-files -- icones)
+if ($LASTEXITCODE -ne 0 -or -not $icones) { throw 'git ls-files icones falhou' }
+foreach ($rel in $icones) {
+    $dst = Join-Path $pkg $rel
+    New-Item -ItemType Directory -Force (Split-Path $dst) | Out-Null
+    Copy-Item (Join-Path $root $rel) $dst
 }
 
 # ajustes deste PC (rodando por você, não pelo Claude: o AppData dele é outra cópia)
@@ -105,6 +75,20 @@ if (-not $SemAjustes) {
 Copy-Item "$root\instalador\*" $pkg
 # o instalador único (instalar, atualizar, desinstalar), na raiz do pacote: é o que a pessoa abre
 if (Test-Path "$bin\LiquinixSetup.exe") { Copy-Item "$bin\LiquinixSetup.exe" "$pkg\LiquinixSetup.exe" } else { Write-Host 'faltando: bin\LiquinixSetup.exe' }
+# checagem final: nada da Apple ou de terceiros sem licença no pacote
+$proibidos = Get-ChildItem $pkg -Recurse -File | Where-Object {
+    $_.Extension -in '.otf', '.ttf', '.ttc', '.dfont', '.cur', '.ani', '.wav', '.aif', '.aiff', '.caf', '.mp3', '.m4a', '.heic', '.mp4', '.mov' -or
+    $_.FullName -match '\\(fontes|sons|cursor|cursor-leopard|icones-sistema)\\'
+}
+$rels = @($icones | ForEach-Object { $_ -replace '/', '\' })
+$foraDoGit = Get-ChildItem (Join-Path $pkg 'icones') -Recurse -File | Where-Object { $rels -notcontains $_.FullName.Substring($pkg.Length + 1) }
+$ruins = @($proibidos) + @($foraDoGit) | Where-Object { $_ }
+if ($ruins) {
+    $ruins | ForEach-Object { Write-Host "não pode ir no pacote: $($_.FullName.Substring($pkg.Length + 1))" }
+    Remove-Item $pkg -Recurse -Force
+    throw 'pacote recusado: tem arquivos da Apple ou de terceiros'
+}
+
 if (Test-Path $zip) { Remove-Item $zip }
 Compress-Archive -Path "$pkg\*" -DestinationPath $zip -CompressionLevel Optimal
 Remove-Item $pkg -Recurse -Force

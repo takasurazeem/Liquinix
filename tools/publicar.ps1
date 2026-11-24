@@ -1,11 +1,12 @@
-﻿# Publishes a new Liquinix version on GitHub with the FULL package (programs, icons, SF fonts, macOS sounds and
-# cursor), built on this PC: the fonts, sounds and cursor are not in the repository, so GitHub Actions can't build
-# this package (it only checks that the code compiles).
+﻿# Publishes a new Liquinix version on GitHub, built on this PC. The package holds only what Liquinix may
+# redistribute: the programs, the icons tracked in git (MacTahoe, GPL-3.0), scripts and the installer.
+# Apple's SF fonts, macOS sounds, cursors and any untracked icon packs are never included: tools\empacotar.ps1
+# leaves them out and refuses to build a package that contains them. The installer downloads fonts, sounds and
+# the cursor on the user's own PC instead (tools\baixar-apple.ps1).
 #   1. next version = build-<number of build-N releases + 1>
 #   2. writes bin\versao.txt (version, commit, date): the updater compares it with the latest release
 #   3. tools\empacotar.ps1 -SemSistema -SemAjustes (no personal settings) -> dist\Liquinix-<date>.zip
 #   4. git push, then a release with that zip as the latest
-# Run it from a normal PowerShell of the user (it reads the installed fonts and the cursor in use).
 param([string]$Notas = '')
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
