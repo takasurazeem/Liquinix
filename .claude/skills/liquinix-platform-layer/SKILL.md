@@ -45,6 +45,18 @@ down the Windows version, which is the one users run.
 If you pick a toolkit (Qt or GTK), choose once for the whole Linux side, write down why in `docs/`, and check its
 license (Qt is LGPL-3.0/GPL; GTK is LGPL-2.1+). Both are fine for a GPL-3.0 project.
 
+## Where to run it
+
+Follow `docs/linux-dev.md`:
+- **Build** in a toolbox.
+- **Run and debug** in a nested KWin: `tools/linux/nested-kwin.sh`, then
+  `WAYLAND_DISPLAY=wayland-liquinix <program>`.
+- **Test the real desktop and measure performance** in a separate test account.
+- **Root-level or session work** goes in a VM.
+
+Never run untested Liquinix code as the user's real desktop shell, install into `/usr`, or add autostart to the
+user's own account. Name every Linux binary `liquinix-…`, so `tools/linux/kill-liquinix.sh` can stop it.
+
 ## Before writing Linux code
 
 - **Check the plan with the user.** Which desktop first (GNOME, KDE, wlroots compositors), Wayland-only or X11
