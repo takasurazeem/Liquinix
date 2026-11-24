@@ -1,0 +1,14 @@
+# Nome do app no Windows|termo de busca no macOSicons
+Ableton Live 12 Suite|Ableton Live
+CapCut|CapCut
+Cubase 15|Cubase
+FL Studio 2026|FL Studio
+Sononym|Sononym
+Topaz Video|Topaz Video AI
+Claude|Claude
+Codex|Codex
+ChatGPT|ChatGPT
+Discord|Discord
+Google Chrome|Google Chrome
+Proton VPN|Proton VPN
+Streamlabs Desktop|Streamlabs

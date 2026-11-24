@@ -1,0 +1,37 @@
+bin/
+*.obj
+*.pdb
+*.ilk
+*.log
+
+# macOS sounds (Apple, personal use: do not distribute)
+sons/mac/
+arquivo-morto/
+dist/
+
+# empty file created by mistake, and the release notes written by the build
+função)
+notes.md
+
+# kept out of GitHub: another project (audio files) and third-party binaries kept for study
+vocal-test/
+docs/vm-barra/
+docs/**/*.dll
+docs/**/*.exe
+docs/nativo-fontes-*.zip
+
+# macOS 27 icons (Apple, exported by zagnut531): personal use, rebuilt by tools/icones-goldengate.py
+icones/goldengate/
+
+# Mac OS X Leopard icons ("Leopard Icons" pack, downloaded by the user): personal use, rebuilt by tools/icones-leopard.py
+icones/leopard/
+# Mac OS X cursor pack (RaZcaLinSIDe), downloaded by the user: personal use, rebuilt by tools/cursor-leopard.py
+cursor/Leopard/
+
+# Python bytecode of the tools
+__pycache__/
+
+# per-machine backups and logs written by the icon and debloat scripts
+docs/backup-*.json
+docs/backup-desktopini/
+docs/debloat-log.txt

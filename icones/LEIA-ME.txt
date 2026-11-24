@@ -1,0 +1,6 @@
+﻿Icones do pacote 'macOS Sequoia' (VIN STAR / vinstartheme.com), copiados de Downloads para uso pessoal.
+NAO distribuir junto com o projeto: se publicar, apague esta pasta e oriente o usuario a usar o pacote dele.
+O Shell e o Finder procuram aqui; sem a pasta, usam os icones do Windows e os desenhos proprios.
+Icones do tema macOS Tahoe (usados com Ajustes > Aparencia > Tema = macOS Tahoe; o que faltar vem de sequoia\).
+tahoe\            tema MacTahoe (vinceliuice, GPL-3.0) convertido por tools\icones-mactahoe.ps1
+tahoe-macosicons\ baixados do macOSicons.com por tools\baixar-icones.ps1 (a chave da API nao fica no projeto)

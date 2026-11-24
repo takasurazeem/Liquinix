@@ -1,0 +1,52 @@
+﻿Icones do tema MacTahoe de vinceliuice (https://github.com/vinceliuice/MacTahoe-icon-theme), GPL-3.0.
+Convertidos de SVG para PNG (512 px) por tools\icones-mactahoe.ps1. Uso pessoal.
+
+Finder	file-manager.svg
+Settings	preferences-system.svg
+Calculator	calc.svg
+Terminal	terminal.svg
+Activity Monitor	utilities-system-monitor.svg
+Notes	tomboy.svg
+Launchpad	system-software-install.svg
+Screenshot	accessories-screenshot.svg
+Preview	org.gnome.Loupe.svg
+Photos	shotwell.svg
+Music	gnome-music.svg
+Safari	safari.svg
+App Store	softwarecenter.svg
+Mail	internet-mail.svg
+Calendar	calendar.svg
+Weather	indicator-weather.svg
+Clock	preferences-system-time.svg
+Maps	gnome-maps.svg
+Contacts	addressbook.svg
+TextEdit	text-editor.svg
+Google Chrome	google-chrome.svg
+Firefox	firefox.svg
+Microsoft Edge	microsoft-edge.svg
+Discord	discord.svg
+Spotify	spotify-client.svg
+Steam	steam.svg
+Telegram	telegram.svg
+Visual Studio Code	visual-studio-code.svg
+OBS Studio	obs.svg
+VLC	vlc.svg
+Claude	claude.svg
+folder default	folder.svg
+folder downloads	folder-download.svg
+folder docs	folder-documents.svg
+folder desktop	user-desktop.svg
+folder home	user-home.svg
+folder music	folder-music.svg
+folder pictures	folder-images.svg
+folder videos	folder-videos.svg
+folder cloud	folder-cloud.svg
+folder games	folder-games.svg
+folder library	folder-library.svg
+trashempty@2x	user-trash.svg
+trashfull@2x	user-trash-full.svg
+WhatsApp.png - macOSicons.com, enviado por Credit Lost (2026-11-12)
+WhatsApp.png - macOSicons.com, enviado por Credit Lost (2026-11-12)
+Reminders	Reminders (MacOS Tahoe)	w1xced	https://macosicons.com/#/u/w1xced
+Time Machine	Time Machine (MacOS Tahoe)	w1xced	https://macosicons.com/#/u/w1xced
+QuickTime Player	QuickTime Player (MacOS Tahoe)	w1xced	https://macosicons.com/#/u/w1xced

@@ -1,0 +1,21 @@
+# On every commit to main: checks that WacOS builds (build.cmd plus the 32/64-bit title bar DLLs).
+# Releases are published from the author's PC with tools\publicar.ps1: the full package carries the SF fonts,
+# macOS sounds and cursor, which are not in this repository.
+name: build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        shell: cmd
+        run: |
+          call build.cmd || exit /b 1
+          call build.cmd janelas || exit /b 1
