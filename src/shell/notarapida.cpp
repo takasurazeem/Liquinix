@@ -5,6 +5,7 @@
 // (DirectComposition), não por quadros do Shell, então fica liso mesmo com o Shell ocupado.
 // Desligar: `canto_nota_rapida=0` em %APPDATA%\Shell\ajustes.txt.
 #include "shell.h"
+#include "../comum/dll.h"
 #include <shellapi.h>
 #include <windowsx.h>
 #include <cmath>
@@ -87,7 +88,7 @@ void Show(const RECT& mon, HMONITOR hm) {
     g_mon = mon;
     float sc = GetDpiForSystem() / 96.f;
     using F = HRESULT(WINAPI*)(HMONITOR, int, UINT*, UINT*);
-    static F f = (F)GetProcAddress(LoadLibraryW(L"shcore.dll"), "GetDpiForMonitor");
+    static F f = (F)GetProcAddress(DllSistema(L"shcore.dll"), "GetDpiForMonitor");
     UINT dx = 96, dy = 96;
     if (f && SUCCEEDED(f(hm, 0, &dx, &dy))) sc = dx / 96.f;
     int box = (int)std::lround((SHADOW + HOVER) * sc);

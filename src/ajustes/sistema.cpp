@@ -1,6 +1,7 @@
 // O que as páginas do Ajustes leem e mudam no Windows. Só APIs públicas, exceto IPolicyConfig
 // (trocar o dispositivo de som padrão), que é a mesma interface usada pelo próprio Windows.
 #include "ajustes.h"
+#include "../comum/dll.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <shlwapi.h>
@@ -365,7 +366,7 @@ std::vector<sys::NetIf> sys::Interfaces() {
 // ================= Energia
 int sys::PowerMode() {
     using Fn = DWORD(WINAPI*)(GUID*);
-    static Fn get = (Fn)GetProcAddress(LoadLibraryW(L"powrprof.dll"), "PowerGetEffectiveOverlayScheme");
+    static Fn get = (Fn)GetProcAddress(DllSistema(L"powrprof.dll"), "PowerGetEffectiveOverlayScheme");
     GUID g{};
     if (!get || get(&g) != ERROR_SUCCESS) return 1;
     if (IsEqualGUID(g, MODE_SAVER)) return 0;
@@ -374,7 +375,7 @@ int sys::PowerMode() {
 }
 void sys::SetPowerMode(int m) {
     using Fn = DWORD(WINAPI*)(GUID);
-    static Fn set = (Fn)GetProcAddress(LoadLibraryW(L"powrprof.dll"), "PowerSetActiveOverlayScheme");
+    static Fn set = (Fn)GetProcAddress(DllSistema(L"powrprof.dll"), "PowerSetActiveOverlayScheme");
     if (set) set(m == 0 ? MODE_SAVER : m == 2 ? MODE_PERF : GUID{});
 }
 int sys::DisplayOffMinutes() { return ReadPower(SUB_VIDEO, VIDEO_OFF); }
