@@ -842,6 +842,10 @@ void Menu(Widget* wd, POINT pt) {  // wd nulo: "Editar Widgets…" da mesa (só 
     ctxmenu::Item sep; sep.separator = true; items.push_back(sep);
     if (wd) { ctxmenu::Item rm; rm.label = Tr(L"Remover Widget"); rm.id = 1; items.push_back(rm); }
     ctxmenu::Item reset; reset.label = Tr(L"Organizar Widgets"); reset.id = 2; items.push_back(reset);
+    if (wd && (wd->kind == K_WEATHER || wd->kind == K_SUN)) {  // os dados do Open-Meteo são CC BY 4.0: crédito com link
+        ctxmenu::Item sep2; sep2.separator = true; items.push_back(sep2);
+        ctxmenu::Item om; om.label = Tr(L"Dados do tempo por Open-Meteo.com"); om.id = 3; items.push_back(om);
+    }
     HWND fg = GetForegroundWindow();
     DWORD ft = fg ? GetWindowThreadProcessId(fg, nullptr) : 0, me = GetCurrentThreadId();
     bool att = ft && ft != me && AttachThreadInput(me, ft, TRUE);
@@ -849,6 +853,11 @@ void Menu(Widget* wd, POINT pt) {  // wd nulo: "Editar Widgets…" da mesa (só 
     if (att) AttachThreadInput(me, ft, FALSE);
     int id = ctxmenu::ShowItems(g_menuOwner, pt, items);
     if (id == 1 && wd) { Show(*wd, false); shell::SetSetting((std::wstring(L"widget.") + wd->id + L".on").c_str(), L"0"); }
+    else if (id == 3) std::thread([] {  // o site abre numa thread, sem prender o shell
+        HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        ShellExecuteW(nullptr, L"open", L"https://open-meteo.com/", nullptr, nullptr, SW_SHOWNORMAL);
+        if (SUCCEEDED(hr)) CoUninitialize();
+    }).detach();
     else if (id == 2) {
         for (auto& w : g_w) w.rc = -1;
         for (auto& w : g_w) { shell::SetSetting((std::wstring(L"widget.") + w.id).c_str(), L""); if (w.on) Position(w, true, true); }

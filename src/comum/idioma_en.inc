@@ -1219,6 +1219,8 @@
 { L"Cidade não encontrada.", L"City not found." },
 { L"Tempestade", L"Thunderstorm" },
 { L"Sem conexão com o serviço do tempo.", L"Can’t reach the weather service." },
+{ L"Dados do tempo por Open-Meteo.com", L"Weather data by Open-Meteo.com" },
+{ L"Busca de cidades por Open-Meteo.com", L"City search by Open-Meteo.com" },
 { L"Máx.: %d°  Mín.: %d°", L"H: %d°  L: %d°" },
 { L"PREVISÃO POR HORA", L"HOURLY FORECAST" },
 { L"PREVISÃO PARA 10 DIAS", L"10-DAY FORECAST" },

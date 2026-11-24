@@ -1206,6 +1206,8 @@
 { L"Cidade não encontrada.", L"도시를 찾을 수 없습니다." },
 { L"Tempestade", L"뇌우" },
 { L"Sem conexão com o serviço do tempo.", L"날씨 서비스에 연결할 수 없습니다." },
+{ L"Dados do tempo por Open-Meteo.com", L"날씨 데이터 제공: Open-Meteo.com" },
+{ L"Busca de cidades por Open-Meteo.com", L"도시 검색 제공: Open-Meteo.com" },
 { L"Máx.: %d°  Mín.: %d°", L"최고: %d°  최저: %d°" },
 { L"PREVISÃO POR HORA", L"시간별 일기예보" },
 { L"PREVISÃO PARA 10 DIAS", L"10일간의 일기예보" },

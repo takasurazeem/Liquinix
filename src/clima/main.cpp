@@ -215,6 +215,15 @@ int WdayOf(double unix, int off) { time_t t = (time_t)unix + off; tm g{}; gmtime
 struct Hit { int kind, arg; D2D1_RECT_F r; };
 std::vector<Hit> g_hits;
 
+// os dados do Open-Meteo são CC BY 4.0: crédito com link; o site abre numa thread, sem prender a janela
+const wchar_t* OpenMeteoCredit() { return Tr(L"Dados do tempo por Open-Meteo.com"); }
+void OpenMeteoSite() {
+    std::thread([] {
+        HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        ShellExecuteW(nullptr, L"open", L"https://open-meteo.com/", nullptr, nullptr, SW_SHOWNORMAL);
+        if (SUCCEEDED(hr)) CoUninitialize();
+    }).detach();
+}
 void Card(D2D1_RECT_F r) { Fill(r, Rgb(255, 255, 255, 0.14f), 14); }
 const wchar_t* CondText(int c);
 const wchar_t* CondEmoji(int c, bool day);
@@ -415,7 +424,12 @@ void PaintGoldenWx() {
             Fill(D2D1::RectF(c.left + 12, c.top + 112, c.right - 12, c.top + 112.6f), Rgb(255, 255, 255, 0.5f));
         }
     }
-    g_gTotal = std::max(c5.bottom, y2 + 141) + g_gScroll + 20;
+    // crédito do Open-Meteo, clicável
+    float yc = std::max(c5.bottom, y2 + 141) + 14;
+    D2D1_RECT_F credit = D2D1::RectF(x0, yc, x0 + std::min(GW, TextW(g_tfHdr, OpenMeteoCredit()) + 2), yc + 16);
+    Text(OpenMeteoCredit(), g_tfHdr, credit, dim);
+    if (credit.top >= 52) g_hits.push_back({ 4, 0, credit });  // escondido sob a barra: não clica
+    g_gTotal = credit.bottom + g_gScroll + 20;
     rt->PopAxisAlignedClip();
 }
 
@@ -547,6 +561,10 @@ void Paint() {
     quad(2, Tr(L"VENTO"), t, L"");
     if (!w.days.empty()) quad(3, Tr(L"NASCER DO SOL"), HmOf(w.days[0].rise, w.off), std::wstring(Tr(L"Pôr do sol: ")) + HmOf(w.days[0].set, w.off));
     if (g_tfCity) g_tfCity->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+    // crédito do Open-Meteo, clicável, na margem de baixo
+    D2D1_RECT_F credit = D2D1::RectF(SB + pad, sz.height - pad + 2, SB + pad + TextW(g_tfSmall, OpenMeteoCredit()) + 2, sz.height - 2);
+    Text(OpenMeteoCredit(), g_tfSmall, credit, dim);
+    g_hits.push_back({ 4, 0, credit });
     (void)cx;
     EndPaint();
 }
@@ -587,6 +605,7 @@ LRESULT CALLBACK Proc(HWND h, UINT m, WPARAM w, LPARAM l) {
         float s = Sc(), x = GET_X_LPARAM(l) / s, y = GET_Y_LPARAM(l) / s;
         for (auto& ht : g_hits) if (In(ht.r, x, y)) {
             if (ht.kind == 3) { g_side = !g_side; InvalidateRect(h, nullptr, FALSE); return 0; }
+            if (ht.kind == 4) { if (m == WM_LBUTTONDOWN) OpenMeteoSite(); return 0; }
             if (ht.kind == 2) {
                 if (!g_side) { g_side = true; Paint(); }  // a busca fica na lateral
                 D2D1_RECT_F fr = BAR > 0 ? D2D1::RectF(38, 71, 256, 89) : D2D1::RectF(12, 12, SB_W - 46, 36);
