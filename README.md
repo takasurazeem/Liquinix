@@ -26,12 +26,13 @@ macOS Sequoia look, or the classic **Mac OS X Leopard** (2007) Aqua look.
 Everything is native C++ (Win32, Direct2D, DirectComposition). No Electron, no web views. It uses about 750 MB of RAM
 and under 1% CPU on a 3440×1440 desktop.
 
-![Liquinix desktop in the macOS 27 Golden Gate theme](docs/screenshots/golden-gate-desktop.png)
+**Contents:** [Themes](#themes) · [Features](#features) · [Install](#install) · [Is it safe?](#is-it-safe) ·
+[Roadmap](#roadmap) · [Build](#build) · [License](#license)
 
-**Contents:** [Screenshots](#screenshots) · [Features](#features) · [Install](#install) · [Is it safe?](#is-it-safe) ·
-[Roadmap](#roadmap) · [Support the project](#support-the-project) · [Build](#build) · [License](#license)
+## Themes
 
-## Screenshots
+Screenshots were removed because they showed Apple wallpapers and icons that Liquinix cannot
+redistribute. New ones will be added as Liquinix gets its own artwork.
 
 Four themes, in System Settings > Appearance > Theme. Switching themes never changes your own wallpaper.
 
@@ -40,17 +41,16 @@ Four themes, in System Settings > Appearance > Theme. Switching themes never cha
 The newest look, matched to Apple's macOS 27 screenshots: frosted Liquid Glass on windows, menus and the Dock,
 unified toolbars, the macOS 27 icons and the Golden Gate wallpaper.
 
-
 | | |
 |---|---|
-| ![Quick Look, Golden Gate](docs/screenshots/golden-gate-quick-look.png) **Quick Look** plays video and music, with a frosted header and an animated open/close | ![Photos, Golden Gate](docs/screenshots/golden-gate-photos.png) **Photos** with search |
-| ![Finder, Golden Gate](docs/screenshots/golden-gate-finder.png) **Finder** | ![System Settings, Golden Gate](docs/screenshots/golden-gate-system-settings.png) **System Settings** > Appearance, for every theme |
-| ![Notes, Golden Gate](docs/screenshots/golden-gate-notes.png) **Notes** | ![Calendar, Golden Gate](docs/screenshots/golden-gate-calendar.png) **Calendar** |
-| ![Reminders, Golden Gate](docs/screenshots/golden-gate-reminders.png) **Reminders** | ![Music, Golden Gate](docs/screenshots/golden-gate-music.png) **Music** with search |
-| ![Clock, Golden Gate](docs/screenshots/golden-gate-clock.png) **Clock** with sunrise and sunset times | ![Weather, Golden Gate](docs/screenshots/golden-gate-weather.png) **Weather** |
-| ![Activity Monitor, Golden Gate](docs/screenshots/golden-gate-activity-monitor.png) **Activity Monitor** | ![Preview, Golden Gate](docs/screenshots/golden-gate-preview.png) **Preview** |
-| ![Calculator, Golden Gate](docs/screenshots/golden-gate-calculator.png) **Calculator** | ![Terminal, Golden Gate](docs/screenshots/golden-gate-terminal.png) **Terminal** |
-| ![TextEdit, Golden Gate](docs/screenshots/golden-gate-textedit.png) **TextEdit** | |
+| **Quick Look** plays video and music, with a frosted header and an animated open/close | **Photos** with search |
+| **Finder** | **System Settings** > Appearance, for every theme |
+| **Notes** | **Calendar** |
+| **Reminders** | **Music** with search |
+| **Clock** with sunrise and sunset times | **Weather** |
+| **Activity Monitor** | **Preview** |
+| **Calculator** | **Terminal** |
+| **TextEdit** | |
 
 Also new with this theme: QuickTime Player with a frosted title bar over the video, the option to hide desktop icons,
 **Edit Widgets…** on the desktop menu, clicking the empty strip beside the Dock to show the desktop, Win+D handled by
@@ -60,27 +60,23 @@ the shell, grouped notifications that open on click, and smoother glass over ani
 
 The macOS 26 look: clear Liquid Glass with real refraction and chromatic aberration.
 
-![Liquinix desktop in the Tahoe theme](docs/screenshots/desktop.png)
-
 | | |
 |---|---|
-| ![Control Center in Liquid Glass](docs/screenshots/control-center.png) **Control Center** in Liquid Glass, with real refraction and chromatic aberration | ![Notification Center](docs/screenshots/notification-center.png) **Notification Center** with widgets |
-| ![Spotlight](docs/screenshots/spotlight.png) **Spotlight** | ![Spotlight Applications mode](docs/screenshots/spotlight-apps.png) **Applications** (Spotlight's Apps mode, with categories) |
-| ![Finder](docs/screenshots/finder.png) **Finder** | ![System Settings](docs/screenshots/system-settings.png) **System Settings** |
-| ![Activity Monitor](docs/screenshots/activity-monitor.png) **Activity Monitor** | ![Force Quit Applications](docs/screenshots/force-quit.png) **Force Quit Applications** (Ctrl+Alt+Esc) |
-| ![macOS alert](docs/screenshots/alert.png) Windows message boxes become **macOS alerts** | ![Dock icon styles](docs/screenshots/dock-icon-styles.png) **Dock icon styles**: Default, Dark, Clear and Tinted |
+| **Control Center** in Liquid Glass, with real refraction and chromatic aberration | **Notification Center** with widgets |
+| **Spotlight** | **Applications** (Spotlight's Apps mode, with categories) |
+| **Finder** | **System Settings** |
+| **Activity Monitor** | **Force Quit Applications** (Ctrl+Alt+Esc) |
+| Windows message boxes become **macOS alerts** | **Dock icon styles**: Default, Dark, Clear and Tinted |
 
 ### 3. macOS Sequoia
 
 The same shell with the macOS 15 look (System Settings > Appearance > Theme).
 
-![Liquinix desktop in the Sequoia theme](docs/screenshots/sequoia-desktop.png)
-
 | | |
 |---|---|
-| ![Control Center, Sequoia](docs/screenshots/sequoia-control-center.png) **Control Center** | ![Notification Center, Sequoia](docs/screenshots/sequoia-notification-center.png) **Notification Center** |
-| ![Launchpad](docs/screenshots/sequoia-launchpad.png) **Launchpad** | ![Spotlight, Sequoia](docs/screenshots/sequoia-spotlight.png) **Spotlight** |
-| ![Finder, Sequoia](docs/screenshots/sequoia-finder.png) **Finder** | ![System Settings, Sequoia](docs/screenshots/sequoia-system-settings.png) **System Settings** with the Sequoia wallpapers |
+| **Control Center** | **Notification Center** |
+| **Launchpad** | **Spotlight** |
+| **Finder** | **System Settings** with the Sequoia wallpapers |
 
 ### 4. Mac OS X Leopard (new)
 
@@ -89,12 +85,10 @@ reflections, the translucent menu bar, gel buttons, brushed-metal windows, Cover
 laid out like 10.5, Quick Look as a dark HUD, Dashboard, Spaces, Time Machine and the Leopard cursor (your previous cursor comes back when you switch
 themes).
 
-![Dock, Leopard](docs/screenshots/leopard-dock.png)
-
 | | |
 |---|---|
-| ![Finder with Cover Flow, Leopard](docs/screenshots/leopard-finder.png) **Finder** with Cover Flow | ![System Preferences, Leopard](docs/screenshots/leopard-system-preferences.png) **System Preferences** |
-| ![Quick Look, Leopard](docs/screenshots/leopard-quick-look.png) **Quick Look** HUD | ![About This Mac, Leopard](docs/screenshots/leopard-about.png) **About This Mac** with your PC's real specs |
+| **Finder** with Cover Flow | **System Preferences** |
+| **Quick Look** HUD | **About This Mac** with your PC's real specs |
 
 ## Features
 
@@ -227,10 +221,12 @@ License v3.0. Liquinix is an independent project and is not affiliated with or e
 
 The Liquinix source code is released under the [GNU General Public License v3.0](LICENSE): you can use, study, change
 and share it, and if you distribute a modified version, its source code has to be released under the GPL too.
-Apple's icons, fonts, sounds and wallpapers, and the third-party icon and cursor packs bundled in the release package,
-are not covered by it: they belong to their owners and are included for personal use only.
+Liquinix does not bundle Apple's icons, fonts, sounds or wallpapers. The only bundled icons are from vinceliuice's
+[MacTahoe icon theme](https://github.com/vinceliuice/MacTahoe-icon-theme) (GPL-3.0), in `icones/tahoe`.
+Anything the installer downloads (fonts, sounds, cursors) stays under its owner's license.
+See [PROVENANCE.md](PROVENANCE.md) for how Liquinix was forked from WacOS.
 
 ## Note
 
 Apple, macOS, Finder and related names and icons belong to Apple Inc. This is a personal, non-commercial project
-and is not affiliated with Apple. The bundled icons, fonts and sounds are for personal use only.
+and is not affiliated with Apple.
