@@ -14,6 +14,16 @@
 
 // Source code is published under The GNU General Public License v3.0.
 //
+// MODIFIED VERSION. This file is a modified copy of "Windows 11 Settings Styler" version 1.2.1 by
+// Michael Maltsev (m417z), from https://github.com/ramensoftware/windhawk-mods (GPL-3.0). It is not the
+// original mod, and m417z is not responsible for these changes.
+// Changes, made in November 2026 by renzyxx for WacOS and continued by the Liquinix contributors
+// (https://github.com/takasurazeem/Liquinix):
+//   - @id, @name and @description changed to "sequoia-lockscreen" / "Sequoia Lock Screen (LockApp styler)";
+//   - @include changed to LockApp.exe, so it styles the Windows lock screen instead of Settings;
+//   - the mod's usage statistics timer removed.
+// @author, @github, @twitter and @homepage above still point to the original author, m417z.
+//
 // For bug reports and feature requests, please open an issue here:
 // https://github.com/ramensoftware/windhawk-mods/issues
 //
