@@ -222,7 +222,8 @@ and share it, and if you distribute a modified version, its source code has to b
 Liquinix does not bundle Apple's icons, fonts, sounds or wallpapers. The only bundled icons are from vinceliuice's
 [MacTahoe icon theme](https://github.com/vinceliuice/MacTahoe-icon-theme) (GPL-3.0), in `icones/tahoe`.
 Anything the installer downloads (fonts, sounds, cursors) stays under its owner's license.
-See [PROVENANCE.md](PROVENANCE.md) for how Liquinix was forked from WacOS.
+See [PROVENANCE.md](PROVENANCE.md) for how Liquinix was forked from WacOS, and [CREDITS.md](CREDITS.md) for
+the projects and people Liquinix builds on.
 
 ## Note
 
