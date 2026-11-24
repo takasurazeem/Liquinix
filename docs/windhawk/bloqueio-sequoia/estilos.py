@@ -37,7 +37,7 @@ out = ['Windows Registry Editor Version 5.00', '',
        f'[-{KEY}]', '', f'[{KEY}]',
        f'"LibraryFileName"={q(dll)}', '"Disabled"=dword:00000000', '"Include"="LockApp.exe"', '"Exclude"=""',
        '"Architecture"="x86-64"', '"Version"="1.0"', f'"SettingsChangeTime"=dword:{int(time.time()) & 0xFFFFFFFF:08x}', '',
-       f'[{KEY}\\Settings]', '"theme"=""', '"styleConstants[0]"=""', '"themeResourceVariables[0]"=""']
+       f'[{KEY}\\Settings]', '"styleConstants[0]"=""', '"themeResourceVariables[0]"=""']
 # o tipo de cada elemento não está no .xbf de um jeito fácil de ler: "#Nome" sozinho vira uma regra para cada
 # tipo provável (as que não casam não fazem nada)
 TIPOS = ['Grid', 'StackPanel', 'Border', 'Canvas', 'ContentControl', 'ContentPresenter', 'Rectangle', 'Image',
