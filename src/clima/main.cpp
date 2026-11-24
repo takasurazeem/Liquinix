@@ -563,7 +563,7 @@ void Paint() {
     if (g_tfCity) g_tfCity->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
     // crédito do Open-Meteo, clicável, na margem de baixo
     D2D1_RECT_F credit = D2D1::RectF(SB + pad, sz.height - pad + 2, SB + pad + TextW(g_tfSmall, OpenMeteoCredit()) + 2, sz.height - 2);
-    Text(OpenMeteoCredit(), g_tfSmall, credit, gray);
+    Text(OpenMeteoCredit(), g_tfSmall, credit, dim);
     g_hits.push_back({ 4, 0, credit });
     (void)cx;
     EndPaint();
