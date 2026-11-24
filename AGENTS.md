@@ -10,6 +10,16 @@ DirectComposition, with no frameworks. Linux support is planned. It is licensed 
 
 Liquinix is a fork of WacOS by renzyxx, taken from the last GPL-3.0 revision. See `PROVENANCE.md`.
 
+## What to work on
+
+Work is tracked as GitHub issues on the [project board](https://github.com/users/takasurazeem/projects/10).
+**`docs/ROADMAP.md` gives the order to pick them in** and a short routine for choosing the next card:
+- the first open issue whose dependencies are closed;
+- confirmed with the user before starting;
+- one branch and one pull request per card, with `Fixes #N`.
+
+When a session starts without a specific task, or the user says "get started" or "next card", follow that file.
+
 ## Hard rules
 
 These protect the project legally. Do not break them, even if asked to "just make it work".
