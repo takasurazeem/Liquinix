@@ -201,7 +201,7 @@ tools\empacotar.ps1  the installer package (dist\Liquinix-<date>.zip)
 - `src/menu`: context menus on top of the real Windows shell extensions.
 - `src/comum`: shared code (names, language, glass, shadows).
 - `instalador`: install, update and uninstall scripts. `tools`: build and packaging tools.
-- `icones`: icon packs (Sequoia, Tahoe) and SF Symbols.
+- `icones`: the bundled MacTahoe icons (GPL-3.0). `AGENTS.md`: guidance for AI coding agents.
 
 ## Performance
 
