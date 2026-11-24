@@ -96,6 +96,8 @@ Use a VM for anything that needs root or changes how the system starts:
 virt-manager or GNOME Boxes with a Fedora KDE image works well (`sudo dnf install virt-manager`). Graphics in a
 VM are slow, so don't use it for performance work.
 
+To test the Windows side from Linux, see `docs/windows-vm.md`.
+
 ## Safety nets
 
 **Kill switch.** `tools/linux/kill-liquinix.sh` ends every process whose name starts with `liquinix`, and

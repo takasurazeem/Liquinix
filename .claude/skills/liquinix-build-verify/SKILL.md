@@ -61,6 +61,8 @@ You can't compile or run the Windows code here. Don't claim it builds.
 - Python tools in `tools/` can run here with `python3 -I`. PowerShell scripts can be syntax-checked with `pwsh`
   if installed.
 - Push to a branch and let CI build it; check the result with `gh run list` / `gh run view`.
+- To run it and check how it looks, use the Windows 11 VM in `docs/windows-vm.md`. Say what was checked there
+  and what still needs a real PC (performance, glass and blur).
 
 ## Reporting
 
