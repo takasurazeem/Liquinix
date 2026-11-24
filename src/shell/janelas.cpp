@@ -32,7 +32,7 @@ const UINT HOST_HOOK = WM_APP + 1, HOST_QUIT = WM_APP + 2;
 // Jogos, launchers, anti-cheat e partes do próprio Windows: nunca recebem a DLL
 const wchar_t* EXCLUDED_EXE[] = {
     L"explorer.exe", L"dwm.exe", L"shell.exe", L"arquivos.exe", L"ajustes.exe", L"monitoratividade.exe", L"terminal.exe", L"calculadora.exe", L"notas.exe",
-    L"wacosshell.exe", L"wacosfinder.exe", L"wacossettings.exe", L"wacosactivitymonitor.exe", L"wacosterminal.exe", L"wacoscalculator.exe", L"wacosnotes.exe", L"wacoswindow32host.exe", L"searchhost.exe", L"startmenuexperiencehost.exe",
+    L"liquinixshell.exe", L"liquinixfinder.exe", L"liquinixsettings.exe", L"liquinixactivitymonitor.exe", L"liquinixterminal.exe", L"liquinixcalculator.exe", L"liquinixnotes.exe", L"liquinixwindow32host.exe", L"searchhost.exe", L"startmenuexperiencehost.exe",
     L"applicationframehost.exe", L"textinputhost.exe", L"lockapp.exe", L"shellexperiencehost.exe", L"systemsettings.exe", L"taskmgr.exe",
     L"steam.exe", L"steamwebhelper.exe", L"gameoverlayui.exe", L"battle.net.exe", L"agent.exe", L"eadesktop.exe", L"eabackgroundservice.exe",
     L"origin.exe", L"epicgameslauncher.exe", L"epicwebhelper.exe", L"riotclientservices.exe", L"riotclientux.exe", L"riotclientuxrender.exe",
@@ -134,10 +134,10 @@ Permissao Allowed(HWND h, DWORD pid, bool* is32) {
     // Xbox/jogos da Loja continuam fora (anti-cheat)
     if (full.find(L"\\windowsapps\\") != std::wstring::npos && (full.find(L"microsoft.gaming") != std::wstring::npos || full.find(L"xbox") != std::wstring::npos)) { r.ok = false; por = L"Xbox"; }
     for (auto e : EXCLUDED_EXE) if (exe == e) r.ok = false;
-    // os apps do WacOS: os que usam esta barra carregam a DLL eles mesmos (src\comum\barra_mac.h), com ou sem o
+    // os apps do Liquinix: os que usam esta barra carregam a DLL eles mesmos (src\comum\barra_mac.h), com ou sem o
     // Shell; os outros desenham a própria. O gancho aqui punha uma segunda cópia por cima
-    // (também as cópias renomeadas na hora de instalar, "inst-...-wacosfinder.exe")
-    if (exe.find(L"wacos") != std::wstring::npos) r.ok = false;
+    // (também as cópias renomeadas na hora de instalar, "inst-...-liquinixfinder.exe")
+    if (exe.find(L"liquinix") != std::wstring::npos) r.ok = false;
     for (auto e : EXCLUDED_PATH) if (full.find(e) != std::wstring::npos) r.ok = false;
     for (auto& e : g_extra) if (exe == e || full.find(e) != std::wstring::npos) { r.ok = false; por = L"lista do usuário"; }
     // jogo, launcher ou anti-cheat (nome, pasta, arquivos ao lado do .exe): nunca
@@ -262,19 +262,19 @@ std::wstring OwnCopy(const std::wstring& file, const wchar_t* prefix) {
 
 void janelas::Start() {
     if (g_dll) return;
-    // só as barras, sem o Shell (WacOSTitleBars.exe, src\titulos): o Shell assume. Fechar devolve as janelas
+    // só as barras, sem o Shell (LiquinixTitleBars.exe, src\titulos): o Shell assume. Fechar devolve as janelas
     // ao Windows e o gancho daqui entra logo depois (esperando ele sair: dois ganchos na mesma thread não)
-    if (HWND only = FindWindowW(L"WacOSBarrasDeTitulo", nullptr)) {
+    if (HWND only = FindWindowW(L"LiquinixBarrasDeTitulo", nullptr)) {
         DWORD pid = 0; GetWindowThreadProcessId(only, &pid);
         if (pid != GetCurrentProcessId()) {
             HANDLE ph = OpenProcess(SYNCHRONIZE, FALSE, pid);
             PostMessageW(only, WM_CLOSE, 0, 0);
             if (ph) { WaitForSingleObject(ph, 3000); CloseHandle(ph); }
-            Log(L"janelas: WacOSTitleBars fechado (o Shell assume as barras)");
+            Log(L"janelas: LiquinixTitleBars fechado (o Shell assume as barras)");
         }
     }
     if (shell::Setting(L"janelas_mac", L"1") != L"1") return;
-    std::wstring copy = OwnCopy(DLL_WINDOW, L"WacOSWindow");
+    std::wstring copy = OwnCopy(DLL_WINDOW, L"LiquinixWindow");
     // sem cópia própria, nada de gancho: o mesmo caminho com outra versão trava os programas (ver Consider)
     if (copy.empty()) {
         Log(L"janelas: não deu para copiar " DLL_WINDOW);
@@ -284,14 +284,14 @@ void janelas::Start() {
     g_proc = g_dll ? (HOOKPROC)GetProcAddress(g_dll, "GetMsgProc") : nullptr;
     if (!g_proc) { Log(L"janelas: " DLL_WINDOW L" não encontrada"); return; }
     LoadExtra();
-    // programas de 32 bits: a DLL de 32 bits fica no rundll32.exe de 32 bits do Windows (entrada WacOSHost, ver
+    // programas de 32 bits: a DLL de 32 bits fica no rundll32.exe de 32 bits do Windows (entrada LiquinixHost, ver
     // macjanela.cpp), que recebe os pedidos de gancho pela janela "MacJanela32Host"
     wchar_t wow[MAX_PATH]{};
     std::wstring copy32;
     if (GetSystemWow64DirectoryW(wow, MAX_PATH) && !FindWindowExW(HWND_MESSAGE, nullptr, L"MacJanela32Host", nullptr) &&
-        !(copy32 = OwnCopy(DLL_WINDOW32, L"WacOSWindow32")).empty()) {
+        !(copy32 = OwnCopy(DLL_WINDOW32, L"LiquinixWindow32")).empty()) {
         STARTUPINFOW si{ sizeof(si) }; PROCESS_INFORMATION pi{};
-        std::wstring cmd = L"\"" + std::wstring(wow) + L"\\rundll32.exe\" \"" + copy32 + L"\",WacOSHost";
+        std::wstring cmd = L"\"" + std::wstring(wow) + L"\\rundll32.exe\" \"" + copy32 + L"\",LiquinixHost";
         if (CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
             WaitForInputIdle(pi.hProcess, 2000);
             CloseHandle(pi.hProcess); CloseHandle(pi.hThread);

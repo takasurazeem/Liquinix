@@ -1,14 +1,14 @@
-// WacOSSetup.exe: instalar, atualizar, modificar e desinstalar o WacOS num programa só, no visual do Instalador do
+// LiquinixSetup.exe: instalar, atualizar, modificar e desinstalar o Liquinix num programa só, no visual do Instalador do
 // macOS (barra lateral com as etapas, painel de conteúdo, "Voltar" / "Continuar"). Tudo nativo: copia os arquivos,
 // atalhos (IShellLink), tarefa de login (Agendador de Tarefas por COM), fontes, cursor, Música e QuickTime em
 // "Abrir com", e se registra em Aplicativos instalados do Windows (HKCU, desinstalar por lá abre esta janela).
 // Nenhum PowerShell escondido (é o padrão que os antivírus acusam): a única exceção é desfazer os ícones do sistema,
 // que roda o tools\icones-sistema.ps1 numa janela visível, e só se eles estiverem aplicados.
-//   WacOSSetup.exe                 instalar (ou, já instalado: atualizar / modificar / desinstalar)
-//   WacOSSetup.exe --atualizar     procura a versão nova no GitHub (Ajustes > Geral > Atualização de Software)
-//   WacOSSetup.exe --desinstalar   desinstalar (Aplicativos instalados do Windows)
-//   WacOSSetup.exe --foto <pasta>  desenha cada tela num PNG, claro e escuro, sem instalar nada (conferir o visual)
-//   WacOSSetup.exe --diagnostico <arquivo>  consulta o GitHub, baixa, confere o SHA-256 e extrai num temporário
+//   LiquinixSetup.exe                 instalar (ou, já instalado: atualizar / modificar / desinstalar)
+//   LiquinixSetup.exe --atualizar     procura a versão nova no GitHub (Ajustes > Geral > Atualização de Software)
+//   LiquinixSetup.exe --desinstalar   desinstalar (Aplicativos instalados do Windows)
+//   LiquinixSetup.exe --foto <pasta>  desenha cada tela num PNG, claro e escuro, sem instalar nada (conferir o visual)
+//   LiquinixSetup.exe --diagnostico <arquivo>  consulta o GitHub, baixa, confere o SHA-256 e extrai num temporário
 // Mesmas regras do instalador antigo (instalador\instalar.ps1 / desinstalar.ps1): instalacao.log com o que muda,
 // modo.txt com o que foi instalado, ajustes do usuário (%APPDATA%\Shell) nunca trocados.
 #define WIN32_LEAN_AND_MEAN
@@ -142,7 +142,7 @@ static void Launch(const wstring& exe, const wstring& args = L"") {
 }
 static bool WaitGone(const wchar_t* exe, int ms) { for (int t = 0; t < ms; t += 250) { if (!Running(exe)) return true; Sleep(250); } return !Running(exe); }
 
-// o WacOSShell.exe que tem o modo ajudante (--sair, --aplicar-cursor...): os antigos abririam o Shell
+// o LiquinixShell.exe que tem o modo ajudante (--sair, --aplicar-cursor...): os antigos abririam o Shell
 static bool HasHelper(const wstring& exe) {
     HANDLE f = CreateFileW(exe.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, 0, nullptr);
     if (f == INVALID_HANDLE_VALUE) return false;
@@ -154,10 +154,10 @@ static bool HasHelper(const wstring& exe) {
     return std::search(b.begin(), b.begin() + got, k, k + kn) != b.begin() + got;
 }
 static wstring Helper() {
-    for (auto& e : { g_dest + L"\\bin\\WacOSShell.exe", g_src + L"\\bin\\WacOSShell.exe" })
+    for (auto& e : { g_dest + L"\\bin\\LiquinixShell.exe", g_src + L"\\bin\\LiquinixShell.exe" })
         if (Exists(e) && HasHelper(e)) {
             if (e.rfind(g_dest, 0) == 0 && !g_dest.empty()) {  // o da instalação pode sair junto com a pasta: usa uma cópia
-                wstring c = Env(L"TEMP") + L"\\WacOSShell-ajudante.exe";
+                wstring c = Env(L"TEMP") + L"\\LiquinixShell-ajudante.exe";
                 if (CopyFileW(e.c_str(), c.c_str(), FALSE)) return c;
             }
             return e;
@@ -265,18 +265,18 @@ static bool TaskLogon(const wchar_t* name, const wstring& exe, const wchar_t* de
 // ============================================================ o que dá para instalar
 struct AppInfo { const wchar_t* exe; const wchar_t* name; bool on; };
 static std::vector<AppInfo> g_apps = {
-    { L"WacOSFinder", L"Finder", true }, { L"WacOSSettings", L"System Settings", true }, { L"WacOSActivityMonitor", L"Activity Monitor", true },
-    { L"WacOSTerminal", L"Terminal", true }, { L"WacOSCalculator", L"Calculator", true }, { L"WacOSNotes", L"Notes", true },
-    { L"WacOSScreenshot", L"Screenshot", true }, { L"WacOSPreview", L"Preview", true }, { L"WacOSReminders", L"Reminders", true },
-    { L"WacOSCalendar", L"Calendar", true }, { L"WacOSTextEdit", L"TextEdit", true }, { L"WacOSClock", L"Clock", true },
-    { L"WacOSWeather", L"Weather", true }, { L"WacOSContacts", L"Contacts", true }, { L"WacOSPhotos", L"Photos", true },
-    { L"WacOSTimeMachine", L"Time Machine", true }, { L"WacOSMusic", L"Music", true }, { L"WacOSQuickTime", L"QuickTime Player", true },
-    { L"WacOSForceQuit", L"Force Quit Applications", true },
+    { L"LiquinixFinder", L"Finder", true }, { L"LiquinixSettings", L"System Settings", true }, { L"LiquinixActivityMonitor", L"Activity Monitor", true },
+    { L"LiquinixTerminal", L"Terminal", true }, { L"LiquinixCalculator", L"Calculator", true }, { L"LiquinixNotes", L"Notes", true },
+    { L"LiquinixScreenshot", L"Screenshot", true }, { L"LiquinixPreview", L"Preview", true }, { L"LiquinixReminders", L"Reminders", true },
+    { L"LiquinixCalendar", L"Calendar", true }, { L"LiquinixTextEdit", L"TextEdit", true }, { L"LiquinixClock", L"Clock", true },
+    { L"LiquinixWeather", L"Weather", true }, { L"LiquinixContacts", L"Contacts", true }, { L"LiquinixPhotos", L"Photos", true },
+    { L"LiquinixTimeMachine", L"Time Machine", true }, { L"LiquinixMusic", L"Music", true }, { L"LiquinixQuickTime", L"QuickTime Player", true },
+    { L"LiquinixForceQuit", L"Force Quit Applications", true },
 };
-static const wchar_t* OUR_PROCS[] = { L"WacOSFinder.exe", L"WacOSSettings.exe", L"WacOSActivityMonitor.exe", L"WacOSTerminal.exe", L"WacOSCalculator.exe",
-    L"WacOSNotes.exe", L"WacOSScreenshot.exe", L"WacOSWindow32Host.exe", L"WacOSPreview.exe", L"WacOSReminders.exe", L"WacOSCalendar.exe",
-    L"WacOSTextEdit.exe", L"WacOSClock.exe", L"WacOSWeather.exe", L"WacOSContacts.exe", L"WacOSPhotos.exe", L"WacOSTimeMachine.exe",
-    L"WacOSMusic.exe", L"WacOSQuickTime.exe", L"WacOSForceQuit.exe" };
+static const wchar_t* OUR_PROCS[] = { L"LiquinixFinder.exe", L"LiquinixSettings.exe", L"LiquinixActivityMonitor.exe", L"LiquinixTerminal.exe", L"LiquinixCalculator.exe",
+    L"LiquinixNotes.exe", L"LiquinixScreenshot.exe", L"LiquinixWindow32Host.exe", L"LiquinixPreview.exe", L"LiquinixReminders.exe", L"LiquinixCalendar.exe",
+    L"LiquinixTextEdit.exe", L"LiquinixClock.exe", L"LiquinixWeather.exe", L"LiquinixContacts.exe", L"LiquinixPhotos.exe", L"LiquinixTimeMachine.exe",
+    L"LiquinixMusic.exe", L"LiquinixQuickTime.exe", L"LiquinixForceQuit.exe" };
 
 enum Mode { M_FULL, M_APPS, M_BARS, M_APPSBARS };
 static const wchar_t* MODE_ID[] = { L"completo", L"apps", L"barras", L"apps+barras" };
@@ -333,15 +333,15 @@ static int CopyTrees(const std::vector<std::pair<wstring, wstring>>& trees, floa
 // ============================================================ etapas de trabalho
 static bool CloseEverything() {
     wstring help = Helper();
-    if (Running(L"WacOSShell.exe")) {
-        Status(T(L"Fechando o WacOS…", L"Quitting WacOS…"));
+    if (Running(L"LiquinixShell.exe")) {
+        Status(T(L"Fechando o Liquinix…", L"Quitting Liquinix…"));
         if (!help.empty()) RunWait(help, L"--sair", 20000);
-        if (!WaitGone(L"WacOSShell.exe", 20000)) { Fail(T(L"O WacOS não fechou. Feche-o com Ctrl+Alt+Shift+F12 e tente de novo.", L"WacOS didn't quit. Quit it with Ctrl+Alt+Shift+F12 and try again.")); return false; }
+        if (!WaitGone(L"LiquinixShell.exe", 20000)) { Fail(T(L"O Liquinix não fechou. Feche-o com Ctrl+Alt+Shift+F12 e tente de novo.", L"Liquinix didn't quit. Quit it with Ctrl+Alt+Shift+F12 and try again.")); return false; }
     }
-    if (Running(L"WacOSTitleBars.exe")) {
-        wstring tb = g_dest + L"\\bin\\WacOSTitleBars.exe";
+    if (Running(L"LiquinixTitleBars.exe")) {
+        wstring tb = g_dest + L"\\bin\\LiquinixTitleBars.exe";
         if (Exists(tb)) RunWait(tb, L"--sair", 10000);
-        if (!WaitGone(L"WacOSTitleBars.exe", 5000)) Kill(L"WacOSTitleBars.exe");
+        if (!WaitGone(L"LiquinixTitleBars.exe", 5000)) Kill(L"LiquinixTitleBars.exe");
     }
     for (auto p : OUR_PROCS) Kill(p);
     if (!Running(L"explorer.exe")) Launch(L"explorer.exe");
@@ -353,9 +353,9 @@ static wstring Programs() { return KnownFolder(FOLDERID_Programs); }
 struct Assoc { const wchar_t* exeName; const wchar_t* prog; const wchar_t* typeName; const wchar_t* app; const wchar_t* capKey; const wchar_t* regName; std::vector<const wchar_t*> exts; };
 static const Assoc ASSOC[] = {
     // nomes em inglês (aparecem em Configurações > Aplicativos padrão e no "Abrir com"; issue #2 no GitHub)
-    { L"WacOSMusic.exe", L"SequoiaMusic.Audio", L"Audio File", L"Music", L"Software\\SequoiaShell\\Musica\\Capabilities", L"WacOS Music",
+    { L"LiquinixMusic.exe", L"SequoiaMusic.Audio", L"Audio File", L"Music", L"Software\\SequoiaShell\\Musica\\Capabilities", L"Liquinix Music",
       { L".mp3", L".m4a", L".flac", L".wav", L".aac", L".ogg", L".wma", L".aif", L".aiff", L".opus" } },
-    { L"WacOSQuickTime.exe", L"SequoiaQuickTime.Video", L"Movie", L"QuickTime Player", L"Software\\SequoiaShell\\QuickTime\\Capabilities", L"WacOS QuickTime Player",
+    { L"LiquinixQuickTime.exe", L"SequoiaQuickTime.Video", L"Movie", L"QuickTime Player", L"Software\\SequoiaShell\\QuickTime\\Capabilities", L"Liquinix QuickTime Player",
       { L".mp4", L".mov", L".m4v", L".mkv", L".avi", L".wmv", L".webm", L".mpg", L".mpeg", L".3gp" } },
 };
 // o mesmo que tools\musica-registrar.ps1 / quicktime-registrar.ps1 (HKCU; o padrão quem escolhe é o usuário)
@@ -369,7 +369,7 @@ static void AssocRegister(const Assoc& a) {
     RegSetStr(HKEY_CURRENT_USER, ap, L"FriendlyAppName", a.app);
     RegSetStr(HKEY_CURRENT_USER, ap + L"\\shell\\open\\command", nullptr, cmd);
     RegSetStr(HKEY_CURRENT_USER, a.capKey, L"ApplicationName", a.app);
-    RegSetStr(HKEY_CURRENT_USER, a.capKey, L"ApplicationDescription", wstring(a.app) + L" (WacOS)");
+    RegSetStr(HKEY_CURRENT_USER, a.capKey, L"ApplicationDescription", wstring(a.app) + L" (Liquinix)");
     RegSetStr(HKEY_CURRENT_USER, a.capKey, L"ApplicationIcon", L"\"" + exe + L"\",0");
     for (auto e : a.exts) {
         RegSetNone(HKEY_CURRENT_USER, cls + e + L"\\OpenWithProgids", a.prog);
@@ -390,15 +390,15 @@ static void AssocUndo(const Assoc& a) {
     RegDelTree(HKEY_CURRENT_USER, Parent(a.capKey));
 }
 
-static const wchar_t* UNINST_KEY = L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\WacOS";
+static const wchar_t* UNINST_KEY = L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Liquinix";
 static void RegisterUninstall() {
-    wstring setup = g_dest + L"\\WacOSSetup.exe";
-    RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"DisplayName", L"WacOS");
+    wstring setup = g_dest + L"\\LiquinixSetup.exe";
+    RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"DisplayName", L"Liquinix");
     RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"DisplayVersion", VersionOf(g_dest));
-    RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"Publisher", L"WacOS (open source)");
+    RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"Publisher", L"Liquinix (open source)");
     RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"DisplayIcon", setup + L",0");
     RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"InstallLocation", g_dest);
-    RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"URLInfoAbout", L"https://github.com/renzyxx/WacOS");
+    RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"URLInfoAbout", L"https://github.com/takasurazeem/Liquinix");
     RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"UninstallString", L"\"" + setup + L"\" --desinstalar");
     RegSetStr(HKEY_CURRENT_USER, UNINST_KEY, L"ModifyPath", L"\"" + setup + L"\"");
     RegSetDword(HKEY_CURRENT_USER, UNINST_KEY, L"NoRepair", 1);
@@ -411,9 +411,9 @@ static void RegisterUninstall() {
 static void DoInstall(bool update) {
     g_progress = 0.02f;
     if (!CloseEverything()) { g_workOk = false; g_workDone = true; return; }
-    bool shellWasOpen = false;  // (fechado acima; quem volta a abrir é o "Abrir o WacOS" do fim)
+    bool shellWasOpen = false;  // (fechado acima; quem volta a abrir é o "Abrir o Liquinix" do fim)
     MkDirs(g_dest);
-    Anota((update ? L"atualizando de " : L"instalando de ") + g_src + L" (WacOSSetup)");
+    Anota((update ? L"atualizando de " : L"instalando de ") + g_src + L" (LiquinixSetup)");
     // 1. arquivos (quando a fonte não é a própria instalação)
     if (_wcsicmp(g_src.c_str(), g_dest.c_str())) {
         std::vector<std::pair<wstring, wstring>> trees;
@@ -421,13 +421,13 @@ static void DoInstall(bool update) {
         if (IsDir(g_src + L"\\cursor-leopard\\Leopard")) trees.push_back({ g_src + L"\\cursor-leopard\\Leopard", g_dest + L"\\cursor\\Leopard" });
         int fails = CopyTrees(trees, 0.05f, 0.7f);
         // o próprio instalador vai junto (Aplicativos instalados chama ele para desinstalar)
-        if (Exists(g_src + L"\\WacOSSetup.exe")) CopyOne(g_src + L"\\WacOSSetup.exe", g_dest + L"\\WacOSSetup.exe");
-        else if (_wcsicmp(g_self.c_str(), (g_dest + L"\\WacOSSetup.exe").c_str())) CopyOne(g_self, g_dest + L"\\WacOSSetup.exe");
+        if (Exists(g_src + L"\\LiquinixSetup.exe")) CopyOne(g_src + L"\\LiquinixSetup.exe", g_dest + L"\\LiquinixSetup.exe");
+        else if (_wcsicmp(g_self.c_str(), (g_dest + L"\\LiquinixSetup.exe").c_str())) CopyOne(g_self, g_dest + L"\\LiquinixSetup.exe");
         for (auto d : { L"instalar.cmd", L"atualizar.cmd", L"desinstalar.cmd", L"instalar.ps1", L"desinstalar.ps1" })
             if (Exists(g_src + L"\\" + d)) CopyOne(g_src + L"\\" + d, g_dest + L"\\tools\\" + d);
-        DeleteFileW((g_dest + L"\\bin\\WacOSWindow32Host.exe").c_str());
+        DeleteFileW((g_dest + L"\\bin\\LiquinixWindow32Host.exe").c_str());
         Anota(L"copiado: bin, icones, sons, tools" + (fails ? L" (" + std::to_wstring(fails) + L" arquivo(s) não copiados)" : wstring()));
-        if (fails) { Fail(std::to_wstring(fails) + T(L" arquivo(s) não puderam ser copiados. Feche os apps do WacOS e tente de novo.", L" file(s) could not be copied. Close the WacOS apps and try again.")); g_workOk = false; g_workDone = true; return; }
+        if (fails) { Fail(std::to_wstring(fails) + T(L" arquivo(s) não puderam ser copiados. Feche os apps do Liquinix e tente de novo.", L" file(s) could not be copied. Close the Liquinix apps and try again.")); g_workOk = false; g_workDone = true; return; }
     }
     g_progress = 0.72f;
     // 2. o que instalar (modo.txt; a atualização mantém o que estava)
@@ -494,29 +494,29 @@ static void DoInstall(bool update) {
         // 5. ajustes de um PC novo: área de trabalho e pastas do Mac
         wstring cfg = Env(L"APPDATA") + L"\\Shell", aj = cfg + L"\\ajustes.txt";
         if (!Exists(aj)) { MkDirs(cfg); WriteText(aj, L"explorer=fundo\r\nfinder_padrao=1\r\n"); Anota(L"ajuste: " + aj + L" (padrões: explorer=fundo, finder_padrao=1)"); }
-        if (ReadText(aj).find(L"finder_padrao=0") == wstring::npos && Exists(g_dest + L"\\bin\\WacOSFinder.exe")) {
-            RunWait(g_dest + L"\\bin\\WacOSFinder.exe", L"--quieto --padrao on", 30000);
-            Anota(L"pastas no Finder: WacOSFinder.exe --padrao on");
+        if (ReadText(aj).find(L"finder_padrao=0") == wstring::npos && Exists(g_dest + L"\\bin\\LiquinixFinder.exe")) {
+            RunWait(g_dest + L"\\bin\\LiquinixFinder.exe", L"--quieto --padrao on", 30000);
+            Anota(L"pastas no Finder: LiquinixFinder.exe --padrao on");
         }
-        wstring exe = g_dest + L"\\bin\\WacOSShell.exe";
-        if (Shortcut(progs + L"\\WacOS.lnk", exe, L"WacOS")) Anota(L"atalho: " + progs + L"\\WacOS.lnk");
-        RemoveDirectoryW((progs + L"\\WacOS").c_str());
-        if (g_ch.autostart) { if (TaskLogon(L"WacOS", exe, L"Starts WacOS at sign-in (WacOSSetup removes it)")) Anota(L"tarefa agendada: WacOS (ao entrar)"); }
-        else TaskDelete(L"WacOS");
-        TaskDelete(L"WacOS Title Bars");
+        wstring exe = g_dest + L"\\bin\\LiquinixShell.exe";
+        if (Shortcut(progs + L"\\Liquinix.lnk", exe, L"Liquinix")) Anota(L"atalho: " + progs + L"\\Liquinix.lnk");
+        RemoveDirectoryW((progs + L"\\Liquinix").c_str());
+        if (g_ch.autostart) { if (TaskLogon(L"Liquinix", exe, L"Starts Liquinix at sign-in (LiquinixSetup removes it)")) Anota(L"tarefa agendada: Liquinix (ao entrar)"); }
+        else TaskDelete(L"Liquinix");
+        TaskDelete(L"Liquinix Title Bars");
     } else {
-        // 6. só os apps e/ou as barras: atalhos na pasta "WacOS" do Menu Iniciar, nada do Shell
-        wstring menu = progs + L"\\WacOS"; MkDirs(menu);
+        // 6. só os apps e/ou as barras: atalhos na pasta "Liquinix" do Menu Iniciar, nada do Shell
+        wstring menu = progs + L"\\Liquinix"; MkDirs(menu);
         { WIN32_FIND_DATAW fd; HANDLE h = FindFirstFileW((menu + L"\\*.lnk").c_str(), &fd); if (h != INVALID_HANDLE_VALUE) { do DeleteFileW((menu + L"\\" + fd.cFileName).c_str()); while (FindNextFileW(h, &fd)); FindClose(h); } }
-        if (TaskExists(L"WacOS")) { TaskDelete(L"WacOS"); Anota(L"tarefa agendada WacOS removida (modo sem o Shell)"); }
-        DeleteFileW((progs + L"\\WacOS.lnk").c_str());
+        if (TaskExists(L"Liquinix")) { TaskDelete(L"Liquinix"); Anota(L"tarefa agendada Liquinix removida (modo sem o Shell)"); }
+        DeleteFileW((progs + L"\\Liquinix.lnk").c_str());
         if (apps) for (auto& a : g_apps) if (a.on) Shortcut(menu + L"\\" + a.name + L".lnk", g_dest + L"\\bin\\" + a.exe + L".exe");
         if (bars) {
-            wstring tb = g_dest + L"\\bin\\WacOSTitleBars.exe";
-            Shortcut(menu + L"\\WacOS Title Bars.lnk", tb);
-            if (g_ch.autostart) { if (TaskLogon(L"WacOS Title Bars", tb, L"Mac title bars on other apps, without the WacOS Shell (WacOSSetup removes it)")) Anota(L"tarefa agendada: WacOS Title Bars (ao entrar)"); }
-            else TaskDelete(L"WacOS Title Bars");
-        } else TaskDelete(L"WacOS Title Bars");
+            wstring tb = g_dest + L"\\bin\\LiquinixTitleBars.exe";
+            Shortcut(menu + L"\\Liquinix Title Bars.lnk", tb);
+            if (g_ch.autostart) { if (TaskLogon(L"Liquinix Title Bars", tb, L"Mac title bars on other apps, without the Liquinix Shell (LiquinixSetup removes it)")) Anota(L"tarefa agendada: Liquinix Title Bars (ao entrar)"); }
+            else TaskDelete(L"Liquinix Title Bars");
+        } else TaskDelete(L"Liquinix Title Bars");
         Anota(L"menu iniciar: " + menu);
     }
     g_progress = 0.94f;
@@ -529,7 +529,7 @@ static void DoInstall(bool update) {
         SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
     }
     RegisterUninstall();
-    Anota(L"instalação concluída (WacOSSetup)");
+    Anota(L"instalação concluída (LiquinixSetup)");
     Status(T(L"Pronto.", L"Done.")); g_progress = 1; g_workOk = true; g_workDone = true;
 }
 
@@ -556,11 +556,11 @@ static void DoUninstall() {
     }
     g_progress = 0.25f;
     Status(T(L"Removendo o início automático e os atalhos…", L"Removing autostart and shortcuts…"));
-    for (auto t : { L"WacOS", L"SequoiaShell", L"WacOS Title Bars" }) TaskDelete(t);
-    if (Exists(g_dest + L"\\bin\\WacOSFinder.exe")) RunWait(g_dest + L"\\bin\\WacOSFinder.exe", L"--quieto --padrao off", 30000);
+    for (auto t : { L"Liquinix", L"SequoiaShell", L"Liquinix Title Bars" }) TaskDelete(t);
+    if (Exists(g_dest + L"\\bin\\LiquinixFinder.exe")) RunWait(g_dest + L"\\bin\\LiquinixFinder.exe", L"--quieto --padrao off", 30000);
     wstring progs = Programs();
-    DeleteFileW((progs + L"\\WacOS.lnk").c_str());
-    SHFILEOPSTRUCTW op{}; wstring menu = progs + L"\\WacOS"; menu.push_back(0);
+    DeleteFileW((progs + L"\\Liquinix.lnk").c_str());
+    SHFILEOPSTRUCTW op{}; wstring menu = progs + L"\\Liquinix"; menu.push_back(0);
     op.wFunc = FO_DELETE; op.pFrom = menu.c_str(); op.fFlags = FOF_NO_UI; SHFileOperationW(&op);
     // janela de Abrir/Salvar do Mac
     for (auto raiz : { L"Software\\Classes\\CLSID\\", L"Software\\Classes\\WOW6432Node\\CLSID\\" })
@@ -607,7 +607,7 @@ static void DoUninstall() {
         } else if (f != wstring::npos) { wstring path = l.substr(f + 7); RemoveFontResourceW(path.c_str()); DeleteFileW(path.c_str()); }
     }
     RegDelTree(HKEY_CURRENT_USER, L"Software\\ShellProprio");
-    RegDelTree(HKEY_CURRENT_USER, L"Software\\Classes\\AppUserModelId\\WacOS.Atualizacao");
+    RegDelTree(HKEY_CURRENT_USER, L"Software\\Classes\\AppUserModelId\\Liquinix.Atualizacao");
     for (auto& a : ASSOC) AssocUndo(a);
     SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
     RegDelTree(HKEY_CURRENT_USER, UNINST_KEY);
@@ -618,7 +618,7 @@ static void DoUninstall() {
         std::vector<wstring> fs; ListFiles(g_dest, L"", fs);
         { WIN32_FIND_DATAW fd; HANDLE h = FindFirstFileW((g_dest + L"\\*.log").c_str(), &fd); if (h != INVALID_HANDLE_VALUE) { do fs.push_back(fd.cFileName); while (FindNextFileW(h, &fd)); FindClose(h); } }
         { WIN32_FIND_DATAW fd; HANDLE h = FindFirstFileW((g_dest + L"\\bin\\*.log").c_str(), &fd); if (h != INVALID_HANDLE_VALUE) { do fs.push_back(wstring(L"bin\\") + fd.cFileName); while (FindNextFileW(h, &fd)); FindClose(h); } }
-        wstring restos = Env(L"TEMP") + L"\\WacOS-restos";
+        wstring restos = Env(L"TEMP") + L"\\Liquinix-restos";
         for (auto& r : fs) {
             wstring p = g_dest + L"\\" + r;
             SetFileAttributesW(p.c_str(), FILE_ATTRIBUTE_NORMAL);
@@ -651,7 +651,7 @@ static void DoUninstall() {
     }
     if (!Running(L"explorer.exe")) Launch(L"explorer.exe");
     if (!help.empty() && help.find(Env(L"TEMP")) == 0) MoveFileExW(help.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
-    Status(Exists(g_dest) ? T(L"Alguns arquivos estavam em uso e saem depois de reiniciar o PC.", L"Some files were in use and go away after a restart.") : T(L"O WacOS foi removido.", L"WacOS was removed."));
+    Status(Exists(g_dest) ? T(L"Alguns arquivos estavam em uso e saem depois de reiniciar o PC.", L"Some files were in use and go away after a restart.") : T(L"O Liquinix foi removido.", L"Liquinix was removed."));
     if (Exists(g_dest)) MoveFileExW(g_dest.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
     g_progress = 1; g_workOk = true; g_workDone = true;
 }
@@ -661,7 +661,7 @@ struct Release { wstring tag, date, url, sha; std::vector<wstring> notes; ULONGL
 static Release g_rel; static wstring g_relErr;
 static std::string HttpGet(const wstring& host, const wstring& path, const wchar_t* accept, const wstring& outFile = L"", std::function<void(ULONGLONG, ULONGLONG)> prog = {}) {
     std::string body;
-    HINTERNET s = WinHttpOpen(L"WacOS-Setup/1.0", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    HINTERNET s = WinHttpOpen(L"Liquinix-Setup/1.0", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!s) return body;
     WinHttpSetTimeouts(s, 10000, 10000, 30000, 60000);
     HINTERNET c = WinHttpConnect(s, host.c_str(), INTERNET_DEFAULT_HTTPS_PORT, 0);
@@ -703,7 +703,7 @@ static wstring JsonStr(const std::string& j, const std::string& key, size_t from
 }
 static void CheckGitHub() {
     g_rel = {}; g_relErr.clear();
-    std::string j = HttpGet(L"api.github.com", L"/repos/renzyxx/WacOS/releases/latest", L"application/vnd.github+json");
+    std::string j = HttpGet(L"api.github.com", L"/repos/takasurazeem/Liquinix/releases/latest", L"application/vnd.github+json");
     if (j.empty()) { g_relErr = T(L"Não deu para falar com o GitHub. Confira a internet e tente de novo.", L"Couldn't reach GitHub. Check your connection and try again."); return; }
     g_rel.tag = JsonStr(j, "tag_name");
     wstring d = JsonStr(j, "published_at"); if (d.size() >= 10) g_rel.date = d.substr(8, 2) + L"/" + d.substr(5, 2) + L"/" + d.substr(0, 4);
@@ -740,8 +740,8 @@ static wstring Sha256File(const wstring& path) {
 }
 static void DoUpdate() {
     g_progress = 0.01f;
-    wstring tmp = Env(L"TEMP") + L"\\wacos-setup-" + std::to_wstring(GetTickCount()); MkDirs(tmp);
-    wstring zip = tmp + L"\\WacOS.zip";
+    wstring tmp = Env(L"TEMP") + L"\\liquinix-setup-" + std::to_wstring(GetTickCount()); MkDirs(tmp);
+    wstring zip = tmp + L"\\Liquinix.zip";
     Status(T(L"Baixando ", L"Downloading ") + g_rel.tag + L"…");
     size_t hs = g_rel.url.find(L"://") + 3, ps = g_rel.url.find(L'/', hs);
     std::string ok = HttpGet(g_rel.url.substr(hs, ps - hs), g_rel.url.substr(ps), L"application/octet-stream", zip, [](ULONGLONG got, ULONGLONG total) {
@@ -756,9 +756,9 @@ static void DoUpdate() {
     wstring out = tmp + L"\\pacote"; MkDirs(out);
     RunWait(wstring(sys) + L"\\tar.exe", L"-xf \"" + zip + L"\" -C \"" + out + L"\"", 600000);
     wstring root;
-    if (Exists(out + L"\\bin\\WacOSShell.exe")) root = out;
-    else { WIN32_FIND_DATAW fd; HANDLE h = FindFirstFileW((out + L"\\*").c_str(), &fd); if (h != INVALID_HANDLE_VALUE) { do if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && Exists(out + L"\\" + fd.cFileName + L"\\bin\\WacOSShell.exe")) root = out + L"\\" + fd.cFileName; while (root.empty() && FindNextFileW(h, &fd)); FindClose(h); } }
-    if (root.empty()) { Fail(T(L"O pacote baixado não tem os programas do WacOS.", L"The downloaded package has no WacOS programs.")); g_workOk = false; g_workDone = true; return; }
+    if (Exists(out + L"\\bin\\LiquinixShell.exe")) root = out;
+    else { WIN32_FIND_DATAW fd; HANDLE h = FindFirstFileW((out + L"\\*").c_str(), &fd); if (h != INVALID_HANDLE_VALUE) { do if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && Exists(out + L"\\" + fd.cFileName + L"\\bin\\LiquinixShell.exe")) root = out + L"\\" + fd.cFileName; while (root.empty() && FindNextFileW(h, &fd)); FindClose(h); } }
+    if (root.empty()) { Fail(T(L"O pacote baixado não tem os programas do Liquinix.", L"The downloaded package has no Liquinix programs.")); g_workOk = false; g_workDone = true; return; }
     g_src = root;
     // a atualização usa o mesmo caminho da instalação, só com os arquivos
     float base = g_progress;
@@ -911,7 +911,7 @@ static void Paint() {
     Circle(42, TB / 2, 6.5f, C(0xFEBC2E)); Hit(R(34, 10, 50, 30), B_MIN);
     Circle(62, TB / 2, 6.5f, off);
     if (overLights) { Line(19.5f, 17.5f, 24.5f, 22.5f, C(0x4D0000, 0.7f), 1.2f); Line(24.5f, 17.5f, 19.5f, 22.5f, C(0x4D0000, 0.7f), 1.2f); Line(39, 20, 45, 20, C(0x5A3A00, 0.7f), 1.2f); }
-    wstring title = g_flow == F_UNINSTALL ? T(L"Desinstalar o WacOS", L"Uninstall WacOS") : g_flow == F_UPDATE ? T(L"Atualizar o WacOS", L"Update WacOS") : T(L"Instalar o WacOS", L"Install WacOS");
+    wstring title = g_flow == F_UNINSTALL ? T(L"Desinstalar o Liquinix", L"Uninstall Liquinix") : g_flow == F_UPDATE ? T(L"Atualizar o Liquinix", L"Update Liquinix") : T(L"Instalar o Liquinix", L"Install Liquinix");
     Text(title, R(0, 0, W, TB), 13, Fg(), DWRITE_FONT_WEIGHT_SEMI_BOLD, false, DWRITE_TEXT_ALIGNMENT_CENTER, true);
     // barra lateral: logo e etapas
     PaintLogo(SIDE / 2 - 40, TB + 22, 80);
@@ -936,26 +936,26 @@ static void Paint() {
 
     switch (g_page) {
     case P_INTRO:
-        Heading(T(L"Bem-vindo ao instalador do WacOS", L"Welcome to the WacOS Installer"));
-        Para(T(L"O WacOS traz o macOS para o Windows 11: barra de menus, Dock, Finder, Spotlight, Central de Controle e Liquid Glass, em C++ nativo.",
-               L"WacOS brings macOS to Windows 11: menu bar, Dock, Finder, Spotlight, Control Center and Liquid Glass, in native C++."));
-        Para(T(L"Você vai escolher se instala o WacOS completo, só os apps ou só as barras de título do Mac. Tudo fica só para o seu usuário, sem administrador, e dá para desfazer depois em Aplicativos instalados.",
-               L"You'll choose the full WacOS, only the apps, or only the Mac title bars. Everything is installed for your user only, without administrator rights, and can be undone later in Installed apps."));
+        Heading(T(L"Bem-vindo ao instalador do Liquinix", L"Welcome to the Liquinix Installer"));
+        Para(T(L"O Liquinix traz o macOS para o Windows 11: barra de menus, Dock, Finder, Spotlight, Central de Controle e Liquid Glass, em C++ nativo.",
+               L"Liquinix brings macOS to Windows 11: menu bar, Dock, Finder, Spotlight, Control Center and Liquid Glass, in native C++."));
+        Para(T(L"Você vai escolher se instala o Liquinix completo, só os apps ou só as barras de título do Mac. Tudo fica só para o seu usuário, sem administrador, e dá para desfazer depois em Aplicativos instalados.",
+               L"You'll choose the full Liquinix, only the apps, or only the Mac title bars. Everything is installed for your user only, without administrator rights, and can be undone later in Installed apps."));
         if (!g_pkgVer.empty()) Para(wstring(T(L"Versão: ", L"Version: ")) + g_pkgVer, 12, Fg2());
-        Para(T(L"O WacOS é gratuito e de código aberto (GPL-3.0). Apple, macOS e os nomes e ícones relacionados são da Apple Inc.; este projeto não é afiliado à Apple.",
-               L"WacOS is free and open source (GPL-3.0). Apple, macOS and related names and icons belong to Apple Inc.; this project is not affiliated with Apple."), 11.5f, Fg2());
+        Para(T(L"O Liquinix é gratuito e de código aberto (GPL-3.0). Apple, macOS e os nomes e ícones relacionados são da Apple Inc.; este projeto não é afiliado à Apple.",
+               L"Liquinix is free and open source (GPL-3.0). Apple, macOS and related names and icons belong to Apple Inc.; this project is not affiliated with Apple."), 11.5f, Fg2());
         showBack = false;
         break;
     case P_HOME: {
-        Heading(L"WacOS " + g_instVer);
-        Para(T(L"O WacOS já está instalado neste PC. O que você quer fazer?", L"WacOS is already installed on this PC. What would you like to do?"));
+        Heading(L"Liquinix " + g_instVer);
+        Para(T(L"O Liquinix já está instalado neste PC. O que você quer fazer?", L"Liquinix is already installed on this PC. What would you like to do?"));
         Y += 4;
         wstring upd = g_fromPkg && g_pkgVer != g_instVer && !g_pkgVer.empty() ? wstring(T(L"Atualizar para ", L"Update to ")) + g_pkgVer : wstring(T(L"Procurar atualizações", L"Check for updates"));
         wstring updD = g_fromPkg && g_pkgVer != g_instVer && !g_pkgVer.empty() ? wstring(T(L"Troca os programas por estes, com os seus ajustes e escolhas mantidos.", L"Replaces the programs with these ones; your settings and choices stay."))
                                                                                 : wstring(T(L"Procura a versão mais nova no GitHub e instala, com os seus ajustes mantidos.", L"Looks for the latest version on GitHub and installs it; your settings stay."));
         RadioCard(R(L, Y, Rr, Y + 64), upd, updD, g_homeSel == 0, B_HOME0); Y += 76;
-        RadioCard(R(L, Y, Rr, Y + 64), T(L"Mudar o que está instalado", L"Change what's installed"), T(L"WacOS completo, só os apps ou só as barras de título.", L"Full WacOS, only the apps, or only the title bars."), g_homeSel == 1, B_HOME0 + 1); Y += 76;
-        RadioCard(R(L, Y, Rr, Y + 64), T(L"Desinstalar o WacOS", L"Uninstall WacOS"), T(L"Remove tudo e devolve o visual do Windows.", L"Removes everything and brings back the Windows look."), g_homeSel == 2, B_HOME0 + 2);
+        RadioCard(R(L, Y, Rr, Y + 64), T(L"Mudar o que está instalado", L"Change what's installed"), T(L"Liquinix completo, só os apps ou só as barras de título.", L"Full Liquinix, only the apps, or only the title bars."), g_homeSel == 1, B_HOME0 + 1); Y += 76;
+        RadioCard(R(L, Y, Rr, Y + 64), T(L"Desinstalar o Liquinix", L"Uninstall Liquinix"), T(L"Remove tudo e devolve o visual do Windows.", L"Removes everything and brings back the Windows look."), g_homeSel == 2, B_HOME0 + 2);
         showBack = false;
         break;
     }
@@ -963,7 +963,7 @@ static void Paint() {
         Heading(T(L"Tipo de instalação", L"Installation Type"));
         struct M { const wchar_t* t; const wchar_t* d; };
         M ms[4] = {
-            { T(L"WacOS completo", L"Full WacOS"), T(L"Barra de menus, Dock, Finder, Spotlight e todos os apps, no lugar da barra de tarefas.", L"Menu bar, Dock, Finder, Spotlight and all apps, replacing the taskbar.") },
+            { T(L"Liquinix completo", L"Full Liquinix"), T(L"Barra de menus, Dock, Finder, Spotlight e todos os apps, no lugar da barra de tarefas.", L"Menu bar, Dock, Finder, Spotlight and all apps, replacing the taskbar.") },
             { T(L"Só os apps", L"Only the apps"), T(L"Os apps que você escolher, no Menu Iniciar. A sua barra de tarefas fica como está.", L"The apps you pick, in the Start menu. Your taskbar stays as it is.") },
             { T(L"Só as barras de título do Mac", L"Only the Mac title bars"), T(L"Os botões e a barra do Mac nas janelas dos outros programas.", L"The Mac buttons and title bar on other programs' windows.") },
             { T(L"Apps e barras de título", L"Apps and title bars"), T(L"Os dois juntos, sem trocar a barra de tarefas.", L"Both, without replacing the taskbar.") },
@@ -975,12 +975,12 @@ static void Paint() {
         }
         Y += 202;
         bool full = g_ch.mode == M_FULL, bars = g_ch.mode == M_BARS || g_ch.mode == M_APPSBARS;
-        if (full || bars) { CheckBox(L, Y, full ? T(L"Abrir o WacOS ao entrar no Windows", L"Open WacOS when you sign in") : T(L"Ligar as barras de título ao entrar no Windows", L"Turn on the title bars when you sign in"), g_ch.autostart, B_CHK0); Y += 28; }
+        if (full || bars) { CheckBox(L, Y, full ? T(L"Abrir o Liquinix ao entrar no Windows", L"Open Liquinix when you sign in") : T(L"Ligar as barras de título ao entrar no Windows", L"Turn on the title bars when you sign in"), g_ch.autostart, B_CHK0); Y += 28; }
         if (full && IsDir(g_src + L"\\cursor")) { CheckBox(L, Y, T(L"Usar o cursor do Mac", L"Use the Mac cursor"), g_ch.cursor, B_CHK0 + 1); Y += 28; }
         if (IsDir(g_src + L"\\fontes")) { CheckBox(L, Y, T(L"Instalar as fontes SF Pro (o visual fica igual ao do Mac)", L"Install the SF Pro fonts (for the exact Mac look)"), g_ch.fonts, B_CHK0 + 2); Y += 28; }
         if (g_ch.mode != M_BARS) { CheckBox(L, Y, T(L"Pôr o Música e o QuickTime em \"Abrir com\"", L"Add Music and QuickTime to \"Open with\""), g_ch.assoc, B_CHK0 + 3); Y += 28; }
-        if (std::any_of(std::begin(OUR_PROCS), std::end(OUR_PROCS), [](const wchar_t* p) { return Running(p); }) || Running(L"WacOSShell.exe"))
-            Para(T(L"O WacOS e os apps dele que estiverem abertos vão ser fechados durante a instalação.", L"WacOS and its apps will be closed during installation."), 11.5f, Fg2());
+        if (std::any_of(std::begin(OUR_PROCS), std::end(OUR_PROCS), [](const wchar_t* p) { return Running(p); }) || Running(L"LiquinixShell.exe"))
+            Para(T(L"O Liquinix e os apps dele que estiverem abertos vão ser fechados durante a instalação.", L"Liquinix and its apps will be closed during installation."), 11.5f, Fg2());
         back = T(L"Voltar", L"Go Back");
         break;
     }
@@ -1011,7 +1011,7 @@ static void Paint() {
             nextOn = false;
         } else if (!g_relErr.empty()) { Para(g_relErr); next = T(L"Tentar de novo", L"Try Again"); }
         else if (g_rel.tag == g_instVer) {
-            Para(wstring(T(L"O WacOS está atualizado (", L"WacOS is up to date (")) + g_instVer + L").");
+            Para(wstring(T(L"O Liquinix está atualizado (", L"Liquinix is up to date (")) + g_instVer + L").");
             next = T(L"Fechar", L"Close");
         } else {
             Para(wstring(T(L"Uma versão nova está disponível: ", L"A new version is available: ")) + g_rel.tag + (g_rel.date.empty() ? L"" : L" (" + g_rel.date + L")"), 14, Fg());
@@ -1024,11 +1024,11 @@ static void Paint() {
         break;
     }
     case P_UNINST:
-        Heading(T(L"Desinstalar o WacOS", L"Uninstall WacOS"));
-        Para(T(L"O WacOS vai ser fechado e removido: programas, atalhos, início automático, fontes e cursor que ele colocou. A barra de tarefas e as janelas voltam ao visual do Windows.",
-               L"WacOS will be closed and removed: programs, shortcuts, autostart, and the fonts and cursor it installed. The taskbar and windows go back to the Windows look."));
+        Heading(T(L"Desinstalar o Liquinix", L"Uninstall Liquinix"));
+        Para(T(L"O Liquinix vai ser fechado e removido: programas, atalhos, início automático, fontes e cursor que ele colocou. A barra de tarefas e as janelas voltam ao visual do Windows.",
+               L"Liquinix will be closed and removed: programs, shortcuts, autostart, and the fonts and cursor it installed. The taskbar and windows go back to the Windows look."));
         Y += 4;
-        CheckBox(L, Y, T(L"Apagar também os meus ajustes do WacOS", L"Also delete my WacOS settings"), g_ch.delSettings, B_CHK0 + 4); Y += 28;
+        CheckBox(L, Y, T(L"Apagar também os meus ajustes do Liquinix", L"Also delete my Liquinix settings"), g_ch.delSettings, B_CHK0 + 4); Y += 28;
         CheckBox(L, Y, T(L"Limpar o cache de ícones do Windows (a área de trabalho pisca)", L"Clear the Windows icon cache (the desktop flickers)"), g_ch.cleanCache, B_CHK0 + 5); Y += 28;
         next = T(L"Desinstalar", L"Uninstall");
         showBack = g_installed && g_flow == F_UNINSTALL && !g_forceUninstallOnly;
@@ -1054,19 +1054,19 @@ static void Paint() {
         else { Line(cx - 10, Y + 24, cx + 10, Y + 44, C(0xFFFFFF), 4.5f); Line(cx + 10, Y + 24, cx - 10, Y + 44, C(0xFFFFFF), 4.5f); }
         Y += 90;
         wstring h = !g_workOk ? T(L"Não deu certo", L"Something went wrong")
-                  : g_flow == F_UNINSTALL ? T(L"O WacOS foi desinstalado.", L"WacOS was uninstalled.")
-                  : g_flow == F_UPDATE ? T(L"O WacOS foi atualizado.", L"WacOS was updated.")
+                  : g_flow == F_UNINSTALL ? T(L"O Liquinix foi desinstalado.", L"Liquinix was uninstalled.")
+                  : g_flow == F_UPDATE ? T(L"O Liquinix foi atualizado.", L"Liquinix was updated.")
                   : T(L"A instalação foi concluída.", L"The installation was completed successfully.");
         Text(h, R(L, Y, Rr, Y + 30), 20, Fg(), DWRITE_FONT_WEIGHT_SEMI_BOLD, true, DWRITE_TEXT_ALIGNMENT_CENTER); Y += 40;
         wstring sub;
         if (!g_workOk) { std::lock_guard<std::mutex> k(g_mx); sub = g_error.empty() ? g_status : g_error; }
         else if (g_flow == F_UNINSTALL) { std::lock_guard<std::mutex> k(g_mx); sub = g_status; }
-        else if (g_ch.mode == M_FULL || g_flow == F_UPDATE) sub = T(L"Para sair do WacOS: Ctrl+Alt+Shift+F12\nEmergência (devolve o Explorador): Ctrl+Alt+Shift+F11", L"To quit WacOS: Ctrl+Alt+Shift+F12\nEmergency exit (brings Explorer back): Ctrl+Alt+Shift+F11");
-        else sub = T(L"Os apps estão no Menu Iniciar, na pasta WacOS.", L"The apps are in the Start menu, in the WacOS folder.");
+        else if (g_ch.mode == M_FULL || g_flow == F_UPDATE) sub = T(L"Para sair do Liquinix: Ctrl+Alt+Shift+F12\nEmergência (devolve o Explorador): Ctrl+Alt+Shift+F11", L"To quit Liquinix: Ctrl+Alt+Shift+F12\nEmergency exit (brings Explorer back): Ctrl+Alt+Shift+F11");
+        else sub = T(L"Os apps estão no Menu Iniciar, na pasta Liquinix.", L"The apps are in the Start menu, in the Liquinix folder.");
         float sh = TextH(sub, Rr - L, 13);
         Text(sub, R(L, Y, Rr, Y + sh + 4), 13, Fg2(), DWRITE_FONT_WEIGHT_REGULAR, false, DWRITE_TEXT_ALIGNMENT_CENTER); Y += sh + 16;
         if (g_workOk && g_flow != F_UNINSTALL && (g_ch.mode == M_FULL || g_ch.mode == M_BARS || g_ch.mode == M_APPSBARS)) {
-            CheckBox(cx - 110, Y, g_ch.mode == M_FULL ? T(L"Abrir o WacOS agora", L"Open WacOS now") : T(L"Ligar as barras de título agora", L"Turn on the title bars now"), g_ch.launch, B_CHK0 + 6, 260);
+            CheckBox(cx - 110, Y, g_ch.mode == M_FULL ? T(L"Abrir o Liquinix agora", L"Open Liquinix now") : T(L"Ligar as barras de título agora", L"Turn on the title bars now"), g_ch.launch, B_CHK0 + 6, 260);
         }
         next = T(L"Fechar", L"Close"); showBack = false;
         break;
@@ -1111,7 +1111,7 @@ static void Next() {
             auto l = Lines(ReadText(g_dest + L"\\modo.txt"));  // o que já estava
             if (!l.empty()) { wstring m = Trim(l[0]); for (int i = 0; i < 4; i++) if (m == MODE_ID[i]) g_ch.mode = (Mode)i; }
             if (l.size() > 1) for (auto& a : g_apps) a.on = std::any_of(l.begin() + 1, l.end(), [&](const wstring& x) { return Trim(x) == a.exe; });
-            g_ch.autostart = TaskExists(g_ch.mode == M_FULL ? L"WacOS" : L"WacOS Title Bars");
+            g_ch.autostart = TaskExists(g_ch.mode == M_FULL ? L"Liquinix" : L"Liquinix Title Bars");
         } else { g_flow = F_UNINSTALL; g_page = P_UNINST; }
         break;
     case P_TYPE:
@@ -1127,12 +1127,12 @@ static void Next() {
     case P_UNINST: StartWork([] { DoUninstall(); }); break;
     case P_DONE:
         if (g_workOk && g_flow != F_UNINSTALL && g_ch.launch) {
-            if (g_ch.mode == M_FULL || g_flow == F_UPDATE) { if (Exists(g_dest + L"\\bin\\WacOSShell.exe") && (g_flow != F_UPDATE || Lines(ReadText(g_dest + L"\\modo.txt")).empty() || Trim(Lines(ReadText(g_dest + L"\\modo.txt"))[0]) == L"completo")) Launch(g_dest + L"\\bin\\WacOSShell.exe"); }
-            else if (g_ch.mode == M_BARS || g_ch.mode == M_APPSBARS) Launch(g_dest + L"\\bin\\WacOSTitleBars.exe");
+            if (g_ch.mode == M_FULL || g_flow == F_UPDATE) { if (Exists(g_dest + L"\\bin\\LiquinixShell.exe") && (g_flow != F_UPDATE || Lines(ReadText(g_dest + L"\\modo.txt")).empty() || Trim(Lines(ReadText(g_dest + L"\\modo.txt"))[0]) == L"completo")) Launch(g_dest + L"\\bin\\LiquinixShell.exe"); }
+            else if (g_ch.mode == M_BARS || g_ch.mode == M_APPSBARS) Launch(g_dest + L"\\bin\\LiquinixTitleBars.exe");
         }
         PostMessageW(g_wnd, WM_CLOSE, 0, 0);
         return;
-    case P_ERROR: ShellExecuteW(nullptr, L"open", L"https://github.com/renzyxx/WacOS/releases/latest", nullptr, nullptr, SW_SHOWNORMAL); PostMessageW(g_wnd, WM_CLOSE, 0, 0); return;
+    case P_ERROR: ShellExecuteW(nullptr, L"open", L"https://github.com/takasurazeem/Liquinix/releases/latest", nullptr, nullptr, SW_SHOWNORMAL); PostMessageW(g_wnd, WM_CLOSE, 0, 0); return;
     default: break;
     }
     InvalidateRect(g_wnd, nullptr, FALSE);
@@ -1246,7 +1246,7 @@ static void Foto(const wstring& dir) {
     };
     for (int dark = 0; dark < 2; dark++) for (auto& s : shots) {
         g_dark = dark; g_page = s.page; g_flow = s.flow; g_ch.mode = s.mode; g_progress = s.prog; g_workOk = s.ok;
-        { std::lock_guard<std::mutex> k(g_mx); g_status = T(L"Copiando WacOSFinder.exe", L"Copying WacOSFinder.exe"); g_error = T(L"O WacOS não fechou. Feche-o com Ctrl+Alt+Shift+F12 e tente de novo.", L"WacOS didn't quit."); }
+        { std::lock_guard<std::mutex> k(g_mx); g_status = T(L"Copiando LiquinixFinder.exe", L"Copying LiquinixFinder.exe"); g_error = T(L"O Liquinix não fechou. Feche-o com Ctrl+Alt+Shift+F12 e tente de novo.", L"Liquinix didn't quit."); }
         IWICBitmap* bmp = nullptr; wic->CreateBitmap(pw, ph, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, &bmp);
         D2D1_RENDER_TARGET_PROPERTIES p = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_DEFAULT, D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED), 96, 96);
         g_rt = nullptr; g_d2->CreateWicBitmapRenderTarget(bmp, p, &g_rt);
@@ -1283,22 +1283,22 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, LPWSTR cmdLine, int) {
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     g_pt = PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_PORTUGUESE;
     wchar_t me[MAX_PATH]; GetModuleFileNameW(nullptr, me, MAX_PATH); g_self = me; g_selfDir = Parent(g_self);
-    g_dest = Env(L"LOCALAPPDATA") + L"\\Programs\\WacOS";
+    g_dest = Env(L"LOCALAPPDATA") + L"\\Programs\\Liquinix";
     g_log = g_dest + L"\\instalacao.log";
     wstring args = cmdLine ? cmdLine : L"";
     bool wantUninst = args.find(L"--desinstalar") != wstring::npos, wantUpdate = args.find(L"--atualizar") != wstring::npos;
 
     // desinstalar rodando de dentro da pasta que vai ser apagada: uma cópia no TEMP faz o trabalho
     if (wantUninst && Lower(g_self).rfind(Lower(g_dest + L"\\"), 0) == 0) {
-        wstring c = Env(L"TEMP") + L"\\WacOSSetup-desinstalar.exe";
+        wstring c = Env(L"TEMP") + L"\\LiquinixSetup-desinstalar.exe";
         if (CopyFileW(g_self.c_str(), c.c_str(), FALSE)) { ShellExecuteW(nullptr, L"open", c.c_str(), L"--desinstalar", nullptr, SW_SHOWNORMAL); return 0; }
     }
     if (Lower(g_self).find(Lower(Env(L"TEMP"))) == 0) MoveFileExW(g_self.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
 
     // de onde vêm os programas: o pacote ao lado deste exe, ou a própria instalação
-    g_fromPkg = Exists(g_selfDir + L"\\bin\\WacOSShell.exe") && _wcsicmp(g_selfDir.c_str(), g_dest.c_str());
+    g_fromPkg = Exists(g_selfDir + L"\\bin\\LiquinixShell.exe") && _wcsicmp(g_selfDir.c_str(), g_dest.c_str());
     g_src = g_fromPkg ? g_selfDir : g_dest;
-    g_installed = Exists(g_dest + L"\\bin\\WacOSShell.exe") || Exists(g_dest + L"\\bin\\WacOSFinder.exe");
+    g_installed = Exists(g_dest + L"\\bin\\LiquinixShell.exe") || Exists(g_dest + L"\\bin\\LiquinixFinder.exe");
     g_instVer = VersionOf(g_dest); g_pkgVer = g_fromPkg ? VersionOf(g_src) : L"";
 
     if (wantUninst) { g_flow = F_UNINSTALL; g_page = P_UNINST; g_forceUninstallOnly = true; }
@@ -1306,8 +1306,8 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, LPWSTR cmdLine, int) {
     else if (g_installed) g_page = P_HOME;
     else if (!g_fromPkg) {
         g_page = P_ERROR;
-        Fail(T(L"Esta pasta não tem os programas do WacOS. Baixe o pacote pronto (WacOS-<data>.zip) na página de downloads, extraia e abra o WacOSSetup.exe de dentro dele.",
-               L"This folder doesn't have the WacOS programs. Download the ready-made package (WacOS-<date>.zip) from the downloads page, extract it and open WacOSSetup.exe from inside it."));
+        Fail(T(L"Esta pasta não tem os programas do Liquinix. Baixe o pacote pronto (Liquinix-<data>.zip) na página de downloads, extraia e abra o LiquinixSetup.exe de dentro dele.",
+               L"This folder doesn't have the Liquinix programs. Download the ready-made package (Liquinix-<date>.zip) from the downloads page, extract it and open LiquinixSetup.exe from inside it."));
     }
 
     D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &g_d2);
@@ -1329,14 +1329,14 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, LPWSTR cmdLine, int) {
         r += L"tag=" + g_rel.tag + L"\r\ndata=" + g_rel.date + L"\r\nurl=" + g_rel.url + L"\r\nsha=" + g_rel.sha + L"\r\nmb=" + std::to_wstring(g_rel.size >> 20) + L"\r\nerro=" + g_relErr + L"\r\n";
         for (auto& n : g_rel.notes) r += L"nota=" + n + L"\r\n";
         if (g_relErr.empty()) {
-            wstring tmp = Env(L"TEMP") + L"\\wacos-diag"; MkDirs(tmp); wstring zip = tmp + L"\\p.zip";
+            wstring tmp = Env(L"TEMP") + L"\\liquinix-diag"; MkDirs(tmp); wstring zip = tmp + L"\\p.zip";
             size_t hs = g_rel.url.find(L"://") + 3, ps = g_rel.url.find(L'/', hs);
             bool ok = !HttpGet(g_rel.url.substr(hs, ps - hs), g_rel.url.substr(ps), L"application/octet-stream", zip).empty();
             wstring sha = ok ? Sha256File(zip) : L"";
             r += L"baixou=" + std::to_wstring(ok) + L"\r\nsha_confere=" + std::to_wstring(!sha.empty() && sha == g_rel.sha) + L"\r\n";
             wchar_t sys[MAX_PATH]; GetSystemDirectoryW(sys, MAX_PATH);
             DWORD ec = RunWait(wstring(sys) + L"\\tar.exe", L"-xf \"" + zip + L"\" -C \"" + tmp + L"\"", 600000);
-            r += L"tar=" + std::to_wstring(ec) + L"\r\nbin_shell=" + std::to_wstring(Exists(tmp + L"\\bin\\WacOSShell.exe")) + L"\r\nversao=" + VersionOf(tmp) + L"\r\n";
+            r += L"tar=" + std::to_wstring(ec) + L"\r\nbin_shell=" + std::to_wstring(Exists(tmp + L"\\bin\\LiquinixShell.exe")) + L"\r\nversao=" + VersionOf(tmp) + L"\r\n";
             wstring t2 = tmp; t2.push_back(0); SHFILEOPSTRUCTW o{}; o.wFunc = FO_DELETE; o.pFrom = t2.c_str(); o.fFlags = FOF_NO_UI; SHFileOperationW(&o);
         }
         WriteText(out, r); return 0;
@@ -1347,7 +1347,7 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, LPWSTR cmdLine, int) {
         wstring rest = Trim(args.substr(tp + 7)); size_t sp = rest.find(L' ');
         wstring acao = rest.substr(0, sp), out = sp == wstring::npos ? L"" : Trim(rest.substr(sp + 1));
         if (!out.empty() && out[0] == L'"') out = out.substr(1, out.find(L'"', 1) - 1);
-        g_ch.autostart = TaskExists(L"WacOS") || TaskExists(L"WacOS Title Bars") || !g_installed;
+        g_ch.autostart = TaskExists(L"Liquinix") || TaskExists(L"Liquinix Title Bars") || !g_installed;
         HKEY k; g_ch.assoc = !RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\SequoiaMusic.Audio", 0, KEY_READ, &k); if (g_ch.assoc) RegCloseKey(k);
         // cursor: só se o atual for o do Windows (um cursor do Mac já em uso fica como está)
         g_ch.cursor = Lower(RegGetStr(HKEY_CURRENT_USER, L"Control Panel\\Cursors", L"Arrow")).find(L"\\windows\\cursors\\") != wstring::npos ||
@@ -1368,7 +1368,7 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, LPWSTR cmdLine, int) {
     DWORD v = 1, n = 4; RegGetValueW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", L"AppsUseLightTheme", RRF_RT_REG_DWORD, nullptr, &v, &n);
     g_dark = v == 0;
 
-    WNDCLASSW wc{}; wc.lpfnWndProc = Proc; wc.hInstance = hi; wc.lpszClassName = L"WacOSSetup"; wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    WNDCLASSW wc{}; wc.lpfnWndProc = Proc; wc.hInstance = hi; wc.lpszClassName = L"LiquinixSetup"; wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     wc.hIcon = LoadIconW(hi, MAKEINTRESOURCEW(1));
     RegisterClassW(&wc);
     POINT c; GetCursorPos(&c); HMONITOR mon = MonitorFromPoint(c, MONITOR_DEFAULTTOPRIMARY);
@@ -1376,7 +1376,7 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, LPWSTR cmdLine, int) {
     MONITORINFO mi{ sizeof(mi) }; GetMonitorInfoW(mon, &mi);
     int ww = (int)(W * g_k), wh = (int)(H * g_k);
     int x = (mi.rcWork.left + mi.rcWork.right - ww) / 2, y = (mi.rcWork.top + mi.rcWork.bottom - wh) / 2;
-    g_wnd = CreateWindowExW(0, wc.lpszClassName, T(L"Instalar o WacOS", L"Install WacOS"), WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+    g_wnd = CreateWindowExW(0, wc.lpszClassName, T(L"Instalar o Liquinix", L"Install Liquinix"), WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
                             x, y, ww, wh, nullptr, nullptr, hi, nullptr);
     MARGINS mg{ 0, 0, 1, 0 }; DwmExtendFrameIntoClientArea(g_wnd, &mg);
     DWORD corner = 2; DwmSetWindowAttribute(g_wnd, 33, &corner, sizeof(corner));

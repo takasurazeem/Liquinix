@@ -132,7 +132,7 @@ bool g_finderEmbutido;
 static bool g_pickDone;  // embutido: o escolher terminou (o laço modal de FinderEscolher sai)
 static std::wstring g_dirNativo;  // pasta bin do Shell (modo nativo)
 void ExePath(wchar_t* out, DWORD n) {
-    if (g_finderNativo || g_finderEmbutido) { wcsncpy_s(out, n, (g_dirNativo + L"\\WacOSFinder.exe").c_str(), _TRUNCATE); return; }
+    if (g_finderNativo || g_finderEmbutido) { wcsncpy_s(out, n, (g_dirNativo + L"\\LiquinixFinder.exe").c_str(), _TRUNCATE); return; }
     GetModuleFileNameW(nullptr, out, n);
 }
 static bool g_reserva;  // Finder escondido de reserva (mantido pelo Shell), esperando um pedido
@@ -4792,7 +4792,7 @@ static void ShowMacMenu(POINT screen, const std::wstring& folder, const std::vec
             const wchar_t* verb = id == M_RUNADMIN ? L"runas" : L"open";
             if (ps) {  // no nosso Terminal (como administrador, o Terminal inteiro sobe elevado); sem ele, o PowerShell do Windows
                 wchar_t exe[MAX_PATH]; ExePath(exe, MAX_PATH); PathRemoveFileSpecW(exe);
-                std::wstring term = std::wstring(exe) + L"\\WacOSTerminal.exe";
+                std::wstring term = std::wstring(exe) + L"\\LiquinixTerminal.exe";
                 if (GetFileAttributesW(term.c_str()) != INVALID_FILE_ATTRIBUTES) {
                     std::wstring args = L"--pasta \"" + dir + L"\" --executar \"" + p + L"\"";
                     ShellExecuteW(g_hwnd, verb, term.c_str(), args.c_str(), dir.c_str(), SW_SHOWNORMAL);
@@ -4819,7 +4819,7 @@ static void ShowMacMenu(POINT screen, const std::wstring& folder, const std::vec
     case M_VIEWOPTS: g_viewOpts = true; break;
     case M_TERMINAL: {  // o nosso Terminal (PowerShell) nesta pasta; sem ele, o PowerShell do Windows
         wchar_t exe[MAX_PATH]; ExePath(exe, MAX_PATH); PathRemoveFileSpecW(exe);
-        std::wstring term = std::wstring(exe) + L"\\WacOSTerminal.exe";
+        std::wstring term = std::wstring(exe) + L"\\LiquinixTerminal.exe";
         if (GetFileAttributesW(term.c_str()) != INVALID_FILE_ATTRIBUTES) ShellExecuteW(nullptr, L"open", term.c_str(), (L"--pasta \"" + folder + L"\"").c_str(), nullptr, SW_SHOWNORMAL);
         else ShellExecuteW(nullptr, L"open", L"powershell.exe", L"-NoExit", folder.c_str(), SW_SHOWNORMAL);
         break;
@@ -7272,7 +7272,7 @@ int FinderNativo(HINSTANCE hi, const std::wstring& dirBin) {
 // ---- Abrir/Salvar embutido (barra-nativa\MacDialogo.dll): o Finder em modo escolher DENTRO do programa que
 // pediu, na thread dele, como a janela do Windows. A janela é criada no primeiro diálogo e só se esconde no fim
 // (os próximos diálogos do mesmo programa reaproveitam Direct2D, miniaturas e barra lateral). cmd = a mesma
-// linha de comando do WacOSFinder.exe --escolher (com --resultado). Volta 0 = escolheu, 1 = cancelou,
+// linha de comando do LiquinixFinder.exe --escolher (com --resultado). Volta 0 = escolheu, 1 = cancelou,
 // -1 = não deu (outra thread ou erro: quem chamou usa outro caminho).
 int FinderEscolher(HINSTANCE hi, const std::wstring& dirBin, const std::wstring& cmd) {
     static DWORD tid;
@@ -7336,7 +7336,7 @@ int FinderEscolher(HINSTANCE hi, const std::wstring& dirBin, const std::wstring&
     g_pickDone = false;
     if (g_pickView >= 0) g_view = (View)g_pickView;
 
-    std::wstring linha = L"\"WacOSFinder.exe\" " + cmd;
+    std::wstring linha = L"\"LiquinixFinder.exe\" " + cmd;
     int argc = 0; wchar_t** argv = CommandLineToArgvW(linha.c_str(), &argc);
     Launch L;
     ParseLaunch(argc, argv, L);

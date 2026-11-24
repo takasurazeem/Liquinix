@@ -1,7 +1,7 @@
-// Troca de nome Sequoia → WacOS (16/11/2026): os programas passaram de SequoiaX.exe para WacOSX.exe e a pasta de
-// instalação de %LOCALAPPDATA%\Programs\SequoiaShell para ...\Programs\WacOS. O que o Windows guardava com o nome
+// Troca de nome Sequoia → Liquinix (16/11/2026): os programas passaram de SequoiaX.exe para LiquinixX.exe e a pasta de
+// instalação de %LOCALAPPDATA%\Programs\SequoiaShell para ...\Programs\Liquinix. O que o Windows guardava com o nome
 // velho (o Shell do Windows no Winlogon, o Win+E e o .zip do Finder, os apps Música e QuickTime, os diálogos de
-// arquivo, a tarefa que abre o Shell no login) é corrigido aqui, na primeira vez que o WacOSShell abre: cada caminho
+// arquivo, a tarefa que abre o Shell no login) é corrigido aqui, na primeira vez que o LiquinixShell abre: cada caminho
 // só muda se o arquivo com o nome novo existir. Os nomes internos (ProgIDs SequoiaMusic.Audio, a chave
 // Software\SequoiaShell, classes de janela) ficam como estão, para não desfazer as associações de arquivo.
 #include "shell.h"
@@ -15,8 +15,8 @@ std::wstring Novo(const std::wstring& v) {
     static const std::wregex nome(L"\\\\Sequoia(Shell|Finder|Settings|ActivityMonitor|Terminal|Calculator|Notes|Screenshot|Preview|"
                                   L"Reminders|Calendar|TextEdit|Clock|Weather|Contacts|Photos|TimeMachine|Music|QuickTime|ForceQuit|"
                                   L"Window32Host|Window32|Window)\\.(exe|dll)", std::regex::icase);
-    std::wstring s = std::regex_replace(v, dir, L"\\Programs\\WacOS\\");
-    s = std::regex_replace(s, nome, L"\\WacOS$1.$2");
+    std::wstring s = std::regex_replace(v, dir, L"\\Programs\\Liquinix\\");
+    s = std::regex_replace(s, nome, L"\\Liquinix$1.$2");
     if (s == v) return v;
     // o arquivo novo tem que existir: o caminho vai até o .exe/.dll (entre aspas ou não)
     std::wstring low = s;
@@ -46,7 +46,7 @@ int Corrige(HKEY root, const std::wstring& key, const wchar_t* onlyValue, bool r
         std::wstring v = buf.data(), nv = Novo(v);
         if (nv == v) continue;
         if (RegSetValueExW(h, name, 0, type, (const BYTE*)nv.c_str(), (DWORD)((nv.size() + 1) * 2)) == ERROR_SUCCESS) {
-            Log(L"wacos: registro HKCU\\%ls [%ls]: %ls -> %ls", key.c_str(), *name ? name : L"(padrão)", v.c_str(), nv.c_str());
+            Log(L"liquinix: registro HKCU\\%ls [%ls]: %ls -> %ls", key.c_str(), *name ? name : L"(padrão)", v.c_str(), nv.c_str());
             n++;
         }
     }
@@ -75,13 +75,13 @@ DWORD RunHidden(std::wstring cmd, DWORD wait) {
 
 }  // namespace
 
-// Rodando com o nome velho (o reinício ou o login abriram SequoiaShell.exe) e o WacOSShell.exe ao lado: abre o novo
+// Rodando com o nome velho (o reinício ou o login abriram SequoiaShell.exe) e o LiquinixShell.exe ao lado: abre o novo
 // com os mesmos argumentos e sai. true = quem chamou deve sair já.
 bool migrar::TrocarPeloNovo() {
     wchar_t exe[MAX_PATH]; GetModuleFileNameW(nullptr, exe, MAX_PATH);
     std::wstring p = exe, base = p.substr(p.find_last_of(L'\\') + 1);
     if (_wcsicmp(base.c_str(), L"SequoiaShell.exe")) return false;
-    std::wstring novo = p.substr(0, p.find_last_of(L'\\')) + L"\\WacOSShell.exe";
+    std::wstring novo = p.substr(0, p.find_last_of(L'\\')) + L"\\LiquinixShell.exe";
     if (GetFileAttributesW(novo.c_str()) == INVALID_FILE_ATTRIBUTES) return false;
     // os argumentos (sem o caminho do programa)
     const wchar_t* cl = GetCommandLineW();
@@ -107,20 +107,20 @@ void migrar::Registro() {
                     L"Software\\Classes\\Applications\\SequoiaMusic.exe", L"Software\\Classes\\Applications\\SequoiaQuickTime.exe",
                     L"Software\\SequoiaShell" })
         n += Corrige(HKEY_CURRENT_USER, k, nullptr, true);
-    if (n) Log(L"wacos: %d caminho(s) do nome velho corrigido(s) no registro", n);
-    // a tarefa que abre o Shell no login: "SequoiaShell" vira "WacOS" (uma vez; em segundo plano)
-    if (shell::Setting(L"wacos_tarefa", L"0") == L"1") return;
-    shell::SetSetting(L"wacos_tarefa", L"1");
+    if (n) Log(L"liquinix: %d caminho(s) do nome velho corrigido(s) no registro", n);
+    // a tarefa que abre o Shell no login: "SequoiaShell" vira "Liquinix" (uma vez; em segundo plano)
+    if (shell::Setting(L"liquinix_tarefa", L"0") == L"1") return;
+    shell::SetSetting(L"liquinix_tarefa", L"1");
     std::thread([] {
         std::wstring ps =
             L"$t = Get-ScheduledTask -TaskName SequoiaShell -ErrorAction SilentlyContinue; if (-not $t) { exit 2 }; "
-            L"$x = $t.Actions[0].Execute -replace '\\\\Programs\\\\SequoiaShell\\\\', '\\Programs\\WacOS\\' -replace 'SequoiaShell\\.exe$', 'WacOSShell.exe'; "
+            L"$x = $t.Actions[0].Execute -replace '\\\\Programs\\\\SequoiaShell\\\\', '\\Programs\\Liquinix\\' -replace 'SequoiaShell\\.exe$', 'LiquinixShell.exe'; "
             L"if (-not (Test-Path $x)) { exit 3 }; "
             L"$a = if ($t.Actions[0].Arguments) { New-ScheduledTaskAction -Execute $x -Argument $t.Actions[0].Arguments } else { New-ScheduledTaskAction -Execute $x }; "
-            L"Register-ScheduledTask -TaskName WacOS -Action $a -Trigger $t.Triggers -Settings $t.Settings -Principal $t.Principal -Force | Out-Null; "
+            L"Register-ScheduledTask -TaskName Liquinix -Action $a -Trigger $t.Triggers -Settings $t.Settings -Principal $t.Principal -Force | Out-Null; "
             L"Unregister-ScheduledTask -TaskName SequoiaShell -Confirm:$false; exit 0";
         DWORD r = RunHidden(L"powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"" + ps + L"\"", 60000);
-        Log(L"wacos: tarefa do login %ls", r == 0 ? L"SequoiaShell trocada por WacOS" : r == 2 ? L"SequoiaShell não existe (nada a trocar)" : r == 3 ? L"não trocada: o WacOSShell.exe novo não está no lugar" : L"não trocada (erro)");
-        if (r == 3) shell::SetSetting(L"wacos_tarefa", L"0");  // tenta de novo quando a instalação nova existir
+        Log(L"liquinix: tarefa do login %ls", r == 0 ? L"SequoiaShell trocada por Liquinix" : r == 2 ? L"SequoiaShell não existe (nada a trocar)" : r == 3 ? L"não trocada: o LiquinixShell.exe novo não está no lugar" : L"não trocada (erro)");
+        if (r == 3) shell::SetSetting(L"liquinix_tarefa", L"0");  // tenta de novo quando a instalação nova existir
     }).detach();
 }

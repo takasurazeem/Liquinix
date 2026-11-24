@@ -240,10 +240,10 @@ void Identify(Proc& p) {
         struct M { const wchar_t* exe; const wchar_t* name; const wchar_t* png; };
         static const M ours[] = { { L"arquivos.exe", Tr(L"Finder"), L"Finder.png" }, { L"shell.exe", Tr(L"Dock"), L"Finder.png" },
                                   { L"ajustes.exe", Tr(L"Ajustes do Sistema"), L"Settings.png" }, { L"monitoratividade.exe", Tr(L"Monitor de Atividade"), L"Activity Monitor.png" },
-                                  { L"wacosfinder.exe", Tr(L"Finder"), L"Finder.png" }, { L"wacosshell.exe", Tr(L"Dock"), L"Launchpad.png" },
-                                  { L"wacossettings.exe", Tr(L"Ajustes do Sistema"), L"Settings.png" }, { L"wacosactivitymonitor.exe", Tr(L"Monitor de Atividade"), L"Activity Monitor.png" },
-                                  { L"wacosterminal.exe", Tr(L"Terminal"), L"Terminal.png" }, { L"wacoscalculator.exe", Tr(L"Calculadora"), L"Calculator.png" },
-                                  { L"wacosnotes.exe", Tr(L"Notas"), L"Notes.png" }, { L"wacoswindow32host.exe", Tr(L"Janelas do Mac (32 bits)"), L"Mission Control.png" } };
+                                  { L"liquinixfinder.exe", Tr(L"Finder"), L"Finder.png" }, { L"liquinixshell.exe", Tr(L"Dock"), L"Launchpad.png" },
+                                  { L"liquinixsettings.exe", Tr(L"Ajustes do Sistema"), L"Settings.png" }, { L"liquinixactivitymonitor.exe", Tr(L"Monitor de Atividade"), L"Activity Monitor.png" },
+                                  { L"liquinixterminal.exe", Tr(L"Terminal"), L"Terminal.png" }, { L"liquinixcalculator.exe", Tr(L"Calculadora"), L"Calculator.png" },
+                                  { L"liquinixnotes.exe", Tr(L"Notas"), L"Notes.png" }, { L"liquinixwindow32host.exe", Tr(L"Janelas do Mac (32 bits)"), L"Mission Control.png" } };
         for (auto& m : ours) if (!_wcsicmp(p.exe.c_str(), m.exe)) { p.name = m.name; p.pack = g_packDir + m.png; }
     }
     if (p.name.empty()) p.name = Tr(L"(pid ") + std::to_wstring(p.pid) + L")";
@@ -1347,7 +1347,7 @@ void ShowInFinder(const Proc& p) {
     if (p.path.empty()) return;
     wchar_t exe[MAX_PATH]; GetModuleFileNameW(nullptr, exe, MAX_PATH);
     PathRemoveFileSpecW(exe);
-    std::wstring finder = std::wstring(exe) + L"\\WacOSFinder.exe";
+    std::wstring finder = std::wstring(exe) + L"\\LiquinixFinder.exe";
     if (GetFileAttributesW(finder.c_str()) != INVALID_FILE_ATTRIBUTES) ShellExecuteW(nullptr, L"open", finder.c_str(), (L"\"" + p.path + L"\"").c_str(), nullptr, SW_SHOWNORMAL);
     else ShellExecuteW(nullptr, L"open", L"explorer.exe", (L"/select,\"" + p.path + L"\"").c_str(), nullptr, SW_SHOWNORMAL);
 }

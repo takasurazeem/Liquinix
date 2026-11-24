@@ -1,4 +1,4 @@
-﻿# Baixa, no próprio PC de quem instala, o que é da Apple e não pode ir no repositório do WacOS (o instalar.ps1 chama):
+﻿# Baixa, no próprio PC de quem instala, o que é da Apple e não pode ir no repositório do Liquinix (o instalar.ps1 chama):
 #  -Fontes <pasta>: SF Pro e SF Mono do site da Apple (developer.apple.com/fonts). Vêm em .dmg do Mac, com um .pkg
 #                   dentro e as fontes no fundo; o 7-Zip abre as três camadas (instalado pelo winget se faltar).
 #  -Sons <pasta>:   os 14 sons de alerta do macOS (Basso, Funk, Glass, Pop, Tink...) do repositório público
@@ -11,7 +11,7 @@ param([string]$Fontes = '', [string]$Sons = '', [string]$Cursor = '', [string]$P
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'  # a barra de progresso deixa o download muito lento
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$tmp = Join-Path $env:TEMP ('wacos-apple-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+$tmp = Join-Path $env:TEMP ('liquinix-apple-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
 New-Item -ItemType Directory -Force $tmp | Out-Null
 
 function SeteZip {

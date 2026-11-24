@@ -1,7 +1,7 @@
 # Ícones do tema Mac OS X Leopard (icones\leopard) a partir do pacote "Leopard Icons" (650 ícones no padrão do
 # Linux/GNOME, 128 px; itransform.freehostia.com), que o usuário baixou em Downloads\leopard-huge-iconpack-650.
 # Uso pessoal: a pasta icones\leopard fica fora do git (.gitignore), como as dos outros pacotes.
-# O pacote usa nomes do freedesktop (nautilus.png, user-trash.png...); aqui cada um ganha o nome que o WacOS
+# O pacote usa nomes do freedesktop (nautilus.png, user-trash.png...); aqui cada um ganha o nome que o Liquinix
 # procura (o nome do app do Mac, como em icones\goldengate, ou o .exe do programa do Windows). O que faltar segue
 # o pacote do Sequoia (apps.cpp / ui.cpp).
 #   python tools\icones-leopard.py [pasta do pacote] [destino]

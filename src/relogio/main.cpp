@@ -62,7 +62,7 @@ int g_nextId = 1;
 std::wstring g_file;
 
 void Save() {
-    std::vector<std::wstring> out{ L"# Relógio do WacOS: W = cidade do Relógio Mundial, C = cidade própria (nome, fuso do Windows), A = alarme (id, hora, minuto, ligado, nome, dias)" };
+    std::vector<std::wstring> out{ L"# Relógio do Liquinix: W = cidade do Relógio Mundial, C = cidade própria (nome, fuso do Windows), A = alarme (id, hora, minuto, ligado, nome, dias)" };
     for (auto& c : g_custom) out.push_back(L"C\t" + Esc(c.name) + L"\t" + c.tz);
     for (int i : g_world) out.push_back(L"W\t" + std::to_wstring(i));
     for (auto& a : g_alarms) out.push_back(L"A\t" + std::to_wstring(a.id) + L"\t" + std::to_wstring(a.hh) + L"\t" + std::to_wstring(a.mm) + L"\t" + (a.on ? L"1" : L"0") + L"\t" + Esc(a.label) + L"\t" + std::to_wstring(a.days));
@@ -504,7 +504,7 @@ void FindCity(const std::wstring& q) {
         for (unsigned char c : u) { if (isalnum(c) || c == '-' || c == '.') enc += (char)c; else { char b[4]; sprintf_s(b, "%%%02X", c); enc += b; } }
         std::wstring path = L"/v1/search?count=1&language=" + std::wstring(idioma::Code()) + L"&name=" + WideOf(enc);
         std::string body;
-        HINTERNET ses = WinHttpOpen(L"WacOS-Clock/1.0", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+        HINTERNET ses = WinHttpOpen(L"Liquinix-Clock/1.0", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
         if (ses) {
             WinHttpSetTimeouts(ses, 5000, 5000, 8000, 8000);
             HINTERNET con = WinHttpConnect(ses, L"geocoding-api.open-meteo.com", INTERNET_DEFAULT_HTTPS_PORT, 0);

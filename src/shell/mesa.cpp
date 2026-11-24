@@ -7,7 +7,7 @@
 //   explorer=0           o Shell pede ao Explorador para sair (a mesma mensagem do "Sair do Explorador" do
 //                        Ctrl+Shift+clique direito na barra de tarefas) e assume: janela de shell
 //                        (SetShellWindow), Taskman, minimizadas escondidas (ARW_HIDE), Win+E/R/D.
-// Ao sair do Shell o Explorador é aberto de novo; se o Shell cair, o vigia (outro WacOSShell.exe,
+// Ao sair do Shell o Explorador é aberto de novo; se o Shell cair, o vigia (outro LiquinixShell.exe,
 // --mesa-vigia) abre o Explorador. Ninguém fica sem mesa.
 //
 // A mesa: uma janela por monitor, sempre no fundo, com o papel de parede do Windows (registro, com o modo
@@ -203,7 +203,7 @@ double ProcessAgeSec(DWORD pid) {
     return age;
 }
 
-// Shell do Windows (HKCU\...\Winlogon, valor Shell) é o WacOSShell?
+// Shell do Windows (HKCU\...\Winlogon, valor Shell) é o LiquinixShell?
 const wchar_t* WINLOGON = L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon";
 bool ReadWinlogonShell(std::wstring& out) {
     wchar_t buf[1024]; DWORD cb = sizeof(buf);
@@ -213,7 +213,7 @@ bool ReadWinlogonShell(std::wstring& out) {
 }
 bool WinlogonIsOurs() {
     std::wstring s;
-    return ReadWinlogonShell(s) && (Lower(s).find(L"wacosshell.exe") != std::wstring::npos || Lower(s).find(L"sequoiashell.exe") != std::wstring::npos);  // o nome velho também
+    return ReadWinlogonShell(s) && (Lower(s).find(L"liquinixshell.exe") != std::wstring::npos || Lower(s).find(L"sequoiashell.exe") != std::wstring::npos);  // o nome velho também
 }
 
 // Explorador "fantasma": um explorer.exe que ficou com janelas de mesa (WorkerW) sem ser a mesa (não é o
@@ -250,10 +250,10 @@ void CloseGhostExplorers(double minAge, const wchar_t* why) {
 void StartExplorer(const wchar_t* why) {
     if (ExplorerProgman()) return;
     CloseGhostExplorers(0, L"antes de abrir o Explorador");  // senão o Explorador novo trava
-    // Com o WacOSShell como shell do Windows, o explorer.exe se abre só como janela de pasta. Por alguns
+    // Com o LiquinixShell como shell do Windows, o explorer.exe se abre só como janela de pasta. Por alguns
     // segundos o valor volta a ser explorer.exe (ele confere ao abrir) e depois é devolvido.
     std::wstring saved;
-    bool swap = ReadWinlogonShell(saved) && (Lower(saved).find(L"wacosshell.exe") != std::wstring::npos || Lower(saved).find(L"sequoiashell.exe") != std::wstring::npos);
+    bool swap = ReadWinlogonShell(saved) && (Lower(saved).find(L"liquinixshell.exe") != std::wstring::npos || Lower(saved).find(L"sequoiashell.exe") != std::wstring::npos);
     if (swap) {
         const wchar_t* ex = L"explorer.exe";
         RegSetKeyValueW(HKEY_CURRENT_USER, WINLOGON, L"Shell", REG_SZ, ex, (DWORD)(wcslen(ex) + 1) * 2);
@@ -1929,7 +1929,7 @@ void mesa::WinKey(UINT vk) {
 
 bool mesa::IsWindowsShell() { return WinlogonIsOurs(); }
 
-// Apps de inicialização: com o WacOSShell como shell do Windows, o Explorador não abre no login e quem
+// Apps de inicialização: com o LiquinixShell como shell do Windows, o Explorador não abre no login e quem
 // roda Run (HKCU, HKLM, HKLM 32 bits) e as pastas Inicializar é o Shell. Uma vez por sessão (átomo global,
 // some no logoff), respeitando o que foi desligado no Gerenciador de Tarefas (StartupApproved).
 void mesa::RunStartupApps() {
@@ -1988,7 +1988,7 @@ void mesa::RunStartupApps() {
     }).detach();
 }
 
-// WacOSShell.exe --mesa-vigia <pid>: se o Shell sumir sem sair direito, abre o Explorador
+// LiquinixShell.exe --mesa-vigia <pid>: se o Shell sumir sem sair direito, abre o Explorador
 bool mesa::Watchdog(const wchar_t* cmdLine) {
     const wchar_t* a = wcsstr(cmdLine, L"--mesa-vigia ");
     if (!a) return false;

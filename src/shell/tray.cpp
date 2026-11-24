@@ -123,7 +123,7 @@ bool tray::DoExplorer(COPYDATASTRUCT* cd, LRESULT* res) {
     return true;
 }
 
-// Outra Shell_TrayWnd de um WacOSShell (o Shell antigo, num reinício, ainda fechando): o aviso "TaskbarCreated"
+// Outra Shell_TrayWnd de um LiquinixShell (o Shell antigo, num reinício, ainda fechando): o aviso "TaskbarCreated"
 // espera ela sumir. Antes ele ia na hora, os apps mandavam os ícones para a bandeja do Shell antigo, que logo fechava
 // levando os ícones junto (a bandeja ficava vazia depois de reiniciar o Shell)
 static bool g_avisoPendente;
@@ -136,7 +136,7 @@ static bool OutroShellComBandeja() {
         if (!pid || pid == GetCurrentProcessId()) continue;
         if (HANDLE ph = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid)) {
             wchar_t p[MAX_PATH] = {}; DWORD n = MAX_PATH;
-            bool shell = QueryFullProcessImageNameW(ph, 0, p, &n) && StrStrIW(p, L"WacOSShell") != nullptr;
+            bool shell = QueryFullProcessImageNameW(ph, 0, p, &n) && StrStrIW(p, L"LiquinixShell") != nullptr;
             CloseHandle(ph);
             if (shell) return true;
         }

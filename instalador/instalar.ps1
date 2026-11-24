@@ -1,20 +1,20 @@
-﻿# Instala o WacOS neste PC (só para o seu usuário; não precisa de administrador).
-#  - Programas em %LOCALAPPDATA%\Programs\WacOS (bin, icones, sons)
+﻿# Instala o Liquinix neste PC (só para o seu usuário; não precisa de administrador).
+#  - Programas em %LOCALAPPDATA%\Programs\Liquinix (bin, icones, sons)
 #  - Fontes SF Pro só para o seu usuário (se vierem na pasta "fontes")
-#  - Atalho "WacOS" no Menu Iniciar e, se você quiser, início automático ao entrar no Windows
-# Tudo o que muda fica anotado em %LOCALAPPDATA%\Programs\WacOS\instalacao.log
+#  - Atalho "Liquinix" no Menu Iniciar e, se você quiser, início automático ao entrar no Windows
+# Tudo o que muda fica anotado em %LOCALAPPDATA%\Programs\Liquinix\instalacao.log
 # Para desfazer: desinstalar.cmd
 # -Atualizar (atualizar.cmd): só troca os programas, ícones e sons de uma instalação que já existe; não mexe em
 # ajustes, fontes, cursor, atalho nem início automático, e não faz perguntas além de fechar o que está aberto.
 # -Silencioso (o botão Atualizar Agora do Ajustes, tools\atualizar-github.ps1): sem perguntas; fecha o que estiver aberto
-# O que instalar (perguntado no começo; fica em modo.txt e a atualização mantém): o WacOS completo, só os apps
-# escolhidos (atalhos no Menu Iniciar, pasta "WacOS"), só as barras de título do Mac nos outros programas
-# (WacOSTitleBars.exe) ou apps + barras. Fora do completo: a barra de tarefas do Windows, o Explorador e as pastas
+# O que instalar (perguntado no começo; fica em modo.txt e a atualização mantém): o Liquinix completo, só os apps
+# escolhidos (atalhos no Menu Iniciar, pasta "Liquinix"), só as barras de título do Mac nos outros programas
+# (LiquinixTitleBars.exe) ou apps + barras. Fora do completo: a barra de tarefas do Windows, o Explorador e as pastas
 # ficam como estão e não há tarefa de login do Shell.
 param([switch]$Atualizar, [switch]$Silencioso)
 $ErrorActionPreference = 'Stop'
 $src  = $PSScriptRoot
-$dest = Join-Path $env:LOCALAPPDATA 'Programs\WacOS'
+$dest = Join-Path $env:LOCALAPPDATA 'Programs\Liquinix'
 $log  = Join-Path $dest 'instalacao.log'
 # o nome antigo (Sequoia Shell, até 16/11/2026): a instalação velha é trocada por esta
 $velho = Join-Path $env:LOCALAPPDATA 'Programs\SequoiaShell'
@@ -24,32 +24,32 @@ function Pergunta($texto) { if ($Silencioso) { return $true }; (Read-Host "$text
 function Sair { if (-not $Silencioso) { Read-Host 'Enter para sair' }; exit }
 function Anota($linha) { Add-Content -Encoding utf8 $log ("{0:yyyy-MM-dd HH:mm:ss} {1}" -f (Get-Date), $linha) }
 
-Write-Host ("WacOS - " + $(if ($Atualizar) { "atualizar`n" } else { "instalador`n" }))
+Write-Host ("Liquinix - " + $(if ($Atualizar) { "atualizar`n" } else { "instalador`n" }))
 # Rodado do código-fonte (o "Code > Download ZIP" do GitHub): não tem os programas compilados. O pacote certo é o
-# WacOS.zip da página de versões (17/11/2026: no outro PC deu "Start-Process ... cannot find the file specified")
-if (-not (Test-Path (Join-Path $src '..\bin\WacOSShell.exe')) -and -not (Test-Path (Join-Path $src 'bin\WacOSShell.exe'))) {
-    Write-Host "Esta pasta é o código-fonte do WacOS, sem os programas compilados." -ForegroundColor Yellow
-    Write-Host "This folder is the WacOS source code, without the compiled programs." -ForegroundColor Yellow
-    Write-Host "`nBaixe o WacOS.zip pronto em / Download the ready-made WacOS.zip from:"
-    Write-Host "  https://github.com/renzyxx/WacOS/releases/latest"
+# Liquinix.zip da página de versões (17/11/2026: no outro PC deu "Start-Process ... cannot find the file specified")
+if (-not (Test-Path (Join-Path $src '..\bin\LiquinixShell.exe')) -and -not (Test-Path (Join-Path $src 'bin\LiquinixShell.exe'))) {
+    Write-Host "Esta pasta é o código-fonte do Liquinix, sem os programas compilados." -ForegroundColor Yellow
+    Write-Host "This folder is the Liquinix source code, without the compiled programs." -ForegroundColor Yellow
+    Write-Host "`nBaixe o Liquinix.zip pronto em / Download the ready-made Liquinix.zip from:"
+    Write-Host "  https://github.com/takasurazeem/Liquinix/releases/latest"
     Write-Host "`nExtraia e rode o instalar.cmd de dentro dele. / Extract it and run instalar.cmd from inside it."
-    Start-Process 'https://github.com/renzyxx/WacOS/releases/latest' -ErrorAction SilentlyContinue
+    Start-Process 'https://github.com/takasurazeem/Liquinix/releases/latest' -ErrorAction SilentlyContinue
     Sair
 }
-if ($Atualizar -and -not (Test-Path (Join-Path $dest 'bin\WacOSShell.exe')) -and -not $temVelho) {
-    Write-Host "O WacOS ainda não está instalado neste PC ($dest). Use instalar.cmd."
+if ($Atualizar -and -not (Test-Path (Join-Path $dest 'bin\LiquinixShell.exe')) -and -not $temVelho) {
+    Write-Host "O Liquinix ainda não está instalado neste PC ($dest). Use instalar.cmd."
     Sair
 }
-$shellAberto = [bool](Get-Process WacOSShell, SequoiaShell -ErrorAction SilentlyContinue)
+$shellAberto = [bool](Get-Process LiquinixShell, SequoiaShell -ErrorAction SilentlyContinue)
 $build = [Environment]::OSVersion.Version.Build
 if ($build -lt 22621) {
     Write-Host "Aviso: este Windows (build $build) é mais antigo que o Windows 11 22H2. Partes do Shell (vidro, captura) podem não funcionar."
     if (-not (Pergunta 'Continuar mesmo assim?')) { exit }
 }
 
-# Shell aberto (atualização): fecha do jeito certo, devolvendo a barra do Windows. Quem fecha é o WacOSShell.exe do
+# Shell aberto (atualização): fecha do jeito certo, devolvendo a barra do Windows. Quem fecha é o LiquinixShell.exe do
 # pacote (--sair, src\shell\ajudante.cpp), sem C# embutido no script (o antivírus estranhava)
-# um WacOSShell.exe que já tem o modo ajudante (os antigos abririam o Shell em vez de ajudar)
+# um LiquinixShell.exe que já tem o modo ajudante (os antigos abririam o Shell em vez de ajudar)
 function Ajudante([string[]]$lista) {
     foreach ($e in $lista) {
         if (-not (Test-Path $e)) { continue }
@@ -58,26 +58,26 @@ function Ajudante([string[]]$lista) {
     }
     return $null
 }
-$ajudante = Ajudante @((Join-Path $src '..\bin\WacOSShell.exe'), (Join-Path $src 'bin\WacOSShell.exe'), (Join-Path $dest 'bin\WacOSShell.exe'))
-if (Get-Process WacOSShell, SequoiaShell -ErrorAction SilentlyContinue) {
-    if (-not $Atualizar -and -not (Pergunta 'O WacOS está aberto. Fechar para instalar a versão nova?')) { exit }
-    if ($Atualizar) { Write-Host 'Fechando o WacOS para atualizar (ele abre de novo no fim)...' }
+$ajudante = Ajudante @((Join-Path $src '..\bin\LiquinixShell.exe'), (Join-Path $src 'bin\LiquinixShell.exe'), (Join-Path $dest 'bin\LiquinixShell.exe'))
+if (Get-Process LiquinixShell, SequoiaShell -ErrorAction SilentlyContinue) {
+    if (-not $Atualizar -and -not (Pergunta 'O Liquinix está aberto. Fechar para instalar a versão nova?')) { exit }
+    if ($Atualizar) { Write-Host 'Fechando o Liquinix para atualizar (ele abre de novo no fim)...' }
     if ($ajudante) { Start-Process $ajudante -ArgumentList '--sair' -Wait }  # o mesmo do atalho "sair do Shell"
-    else { Write-Host 'Feche o WacOS com Ctrl+Alt+Shift+F12. / Quit WacOS with Ctrl+Alt+Shift+F12.' }
-    for ($i = 0; $i -lt 40 -and (Get-Process WacOSShell, SequoiaShell -ErrorAction SilentlyContinue); $i++) { Start-Sleep -Milliseconds 500 }
-    if (Get-Process WacOSShell, SequoiaShell -ErrorAction SilentlyContinue) { Write-Host 'O Shell não fechou. Feche-o (Ctrl+Alt+Shift+F12) e rode o instalador de novo.'; Sair }
+    else { Write-Host 'Feche o Liquinix com Ctrl+Alt+Shift+F12. / Quit Liquinix with Ctrl+Alt+Shift+F12.' }
+    for ($i = 0; $i -lt 40 -and (Get-Process LiquinixShell, SequoiaShell -ErrorAction SilentlyContinue); $i++) { Start-Sleep -Milliseconds 500 }
+    if (Get-Process LiquinixShell, SequoiaShell -ErrorAction SilentlyContinue) { Write-Host 'O Shell não fechou. Feche-o (Ctrl+Alt+Shift+F12) e rode o instalador de novo.'; Sair }
 }
 # os nossos apps abertos também seguram os arquivos
-# só as barras (WacOSTitleBars): ao sair devolve as janelas ao Windows; o --sair pede isso
-$barrasAbertas = [bool](Get-Process WacOSTitleBars -ErrorAction SilentlyContinue)
+# só as barras (LiquinixTitleBars): ao sair devolve as janelas ao Windows; o --sair pede isso
+$barrasAbertas = [bool](Get-Process LiquinixTitleBars -ErrorAction SilentlyContinue)
 if ($barrasAbertas) {
-    $tb = Join-Path $dest 'bin\WacOSTitleBars.exe'
+    $tb = Join-Path $dest 'bin\LiquinixTitleBars.exe'
     if (Test-Path $tb) { Start-Process $tb -ArgumentList '--sair' -Wait }
-    for ($i = 0; $i -lt 20 -and (Get-Process WacOSTitleBars -ErrorAction SilentlyContinue); $i++) { Start-Sleep -Milliseconds 250 }
+    for ($i = 0; $i -lt 20 -and (Get-Process LiquinixTitleBars -ErrorAction SilentlyContinue); $i++) { Start-Sleep -Milliseconds 250 }
 }
-$apps = 'WacOSFinder','WacOSSettings','WacOSActivityMonitor','WacOSTerminal','WacOSCalculator','WacOSNotes','WacOSScreenshot','WacOSWindow32Host',
-        'WacOSPreview','WacOSReminders','WacOSCalendar','WacOSTextEdit','WacOSClock','WacOSWeather','WacOSContacts','WacOSPhotos',
-        'WacOSTimeMachine','WacOSMusic','WacOSQuickTime','WacOSForceQuit','WacOSTitleBars',
+$apps = 'LiquinixFinder','LiquinixSettings','LiquinixActivityMonitor','LiquinixTerminal','LiquinixCalculator','LiquinixNotes','LiquinixScreenshot','LiquinixWindow32Host',
+        'LiquinixPreview','LiquinixReminders','LiquinixCalendar','LiquinixTextEdit','LiquinixClock','LiquinixWeather','LiquinixContacts','LiquinixPhotos',
+        'LiquinixTimeMachine','LiquinixMusic','LiquinixQuickTime','LiquinixForceQuit','LiquinixTitleBars',
         'SequoiaFinder','SequoiaSettings','SequoiaActivityMonitor','SequoiaTerminal','SequoiaCalculator','SequoiaNotes','SequoiaScreenshot','SequoiaWindow32Host'
 $abertos = Get-Process $apps -ErrorAction SilentlyContinue
 if ($abertos) {
@@ -103,37 +103,37 @@ foreach ($pasta in 'bin', 'icones', 'sons', 'tools') {
 }
 Get-ChildItem $dest -Recurse -File | Unblock-File  # veio da internet/zip: sem o aviso de "arquivo baixado"
 # o hospedeiro de 32 bits virou o rundll32 do Windows (build-12): o exe antigo sai
-Remove-Item "$dest\bin\WacOSWindow32Host.exe" -Force -ErrorAction SilentlyContinue
+Remove-Item "$dest\bin\LiquinixWindow32Host.exe" -Force -ErrorAction SilentlyContinue
 # o instalador novo (build-15) vai junto: o "Atualizar Agora" do Ajustes abre ele (sem ele, cai neste script)
-if (Test-Path "$src\WacOSSetup.exe") { Copy-Item "$src\WacOSSetup.exe" "$dest\WacOSSetup.exe" -Force -ErrorAction SilentlyContinue; Unblock-File "$dest\WacOSSetup.exe" -ErrorAction SilentlyContinue }
+if (Test-Path "$src\LiquinixSetup.exe") { Copy-Item "$src\LiquinixSetup.exe" "$dest\LiquinixSetup.exe" -Force -ErrorAction SilentlyContinue; Unblock-File "$dest\LiquinixSetup.exe" -ErrorAction SilentlyContinue }
 Write-Host "Programas copiados para $dest"
 
-# 1b. Instalação com o nome antigo (Sequoia Shell): a tarefa do login e o atalho passam para o WacOS e a pasta velha
-#     sai. Os caminhos que o Windows guardava (Win+E, Música, Shell do Windows) o WacOSShell corrige ao abrir.
+# 1b. Instalação com o nome antigo (Sequoia Shell): a tarefa do login e o atalho passam para o Liquinix e a pasta velha
+#     sai. Os caminhos que o Windows guardava (Win+E, Música, Shell do Windows) o LiquinixShell corrige ao abrir.
 if ($temVelho) {
-    $exeNovo = Join-Path $dest 'bin\WacOSShell.exe'
+    $exeNovo = Join-Path $dest 'bin\LiquinixShell.exe'
     $t = Get-ScheduledTask -TaskName 'SequoiaShell' -ErrorAction SilentlyContinue
     if ($t) {
         $a = New-ScheduledTaskAction -Execute $exeNovo -WorkingDirectory (Split-Path $exeNovo)
-        Register-ScheduledTask -TaskName 'WacOS' -Action $a -Trigger $t.Triggers -Settings $t.Settings -Principal $t.Principal `
-            -Description 'Inicia o WacOS ao entrar no Windows (desinstalar.cmd remove)' -Force | Out-Null
+        Register-ScheduledTask -TaskName 'Liquinix' -Action $a -Trigger $t.Triggers -Settings $t.Settings -Principal $t.Principal `
+            -Description 'Inicia o Liquinix ao entrar no Windows (desinstalar.cmd remove)' -Force | Out-Null
         Unregister-ScheduledTask -TaskName 'SequoiaShell' -Confirm:$false
-        Anota 'tarefa agendada: SequoiaShell trocada por WacOS'
+        Anota 'tarefa agendada: SequoiaShell trocada por Liquinix'
     }
     $lnkVelho = Join-Path ([Environment]::GetFolderPath('Programs')) 'Sequoia Shell.lnk'
     if (Test-Path $lnkVelho) {
         Remove-Item $lnkVelho
         $ws0 = New-Object -ComObject WScript.Shell
-        $l0 = $ws0.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Programs')) 'WacOS.lnk'))
+        $l0 = $ws0.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Programs')) 'Liquinix.lnk'))
         $l0.TargetPath = $exeNovo; $l0.WorkingDirectory = Split-Path $exeNovo; $l0.IconLocation = "$exeNovo,0"
-        $l0.Description = 'WacOS (barra de menus e Dock do Mac)'; $l0.Save()
-        Anota 'atalho: Sequoia Shell.lnk trocado por WacOS.lnk'
+        $l0.Description = 'Liquinix (barra de menus e Dock do Mac)'; $l0.Save()
+        Anota 'atalho: Sequoia Shell.lnk trocado por Liquinix.lnk'
     }
     # só os programas com o nome velho saem: o cursor do Mac e os ícones do sistema no registro apontam para
     # arquivos da pasta antiga (cursor\, bin\icones-sistema\), que ficam onde estão
     Get-ChildItem (Join-Path $velho 'bin') -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'Sequoia*' } | Remove-Item -Force -ErrorAction SilentlyContinue
     Anota "programas antigos (Sequoia*) removidos de $velho\bin; cursor e ícones do sistema continuam lá"
-    Write-Host 'A instalação antiga (Sequoia Shell) foi trocada pelo WacOS.'
+    Write-Host 'A instalação antiga (Sequoia Shell) foi trocada pelo Liquinix.'
 }
 
 # 1d. O que instalar. Atualização e -Silencioso: o que já estava (modo.txt; sem ele, o completo)
@@ -141,16 +141,16 @@ $modoArq = Join-Path $dest 'modo.txt'
 $modo = if (Test-Path $modoArq) { (Get-Content $modoArq -Encoding utf8 | Select-Object -First 1).Trim() } else { 'completo' }
 # os apps que dá para instalar avulsos: exe|nome no Menu Iniciar
 $catalogo = @(
-    'WacOSFinder|Finder', 'WacOSSettings|System Settings', 'WacOSActivityMonitor|Activity Monitor', 'WacOSTerminal|Terminal',
-    'WacOSCalculator|Calculator', 'WacOSNotes|Notes', 'WacOSScreenshot|Screenshot', 'WacOSPreview|Preview', 'WacOSReminders|Reminders',
-    'WacOSCalendar|Calendar', 'WacOSTextEdit|TextEdit', 'WacOSClock|Clock', 'WacOSWeather|Weather', 'WacOSContacts|Contacts',
-    'WacOSPhotos|Photos', 'WacOSTimeMachine|Time Machine', 'WacOSMusic|Music', 'WacOSQuickTime|QuickTime Player',
-    'WacOSForceQuit|Force Quit Applications'
+    'LiquinixFinder|Finder', 'LiquinixSettings|System Settings', 'LiquinixActivityMonitor|Activity Monitor', 'LiquinixTerminal|Terminal',
+    'LiquinixCalculator|Calculator', 'LiquinixNotes|Notes', 'LiquinixScreenshot|Screenshot', 'LiquinixPreview|Preview', 'LiquinixReminders|Reminders',
+    'LiquinixCalendar|Calendar', 'LiquinixTextEdit|TextEdit', 'LiquinixClock|Clock', 'LiquinixWeather|Weather', 'LiquinixContacts|Contacts',
+    'LiquinixPhotos|Photos', 'LiquinixTimeMachine|Time Machine', 'LiquinixMusic|Music', 'LiquinixQuickTime|QuickTime Player',
+    'LiquinixForceQuit|Force Quit Applications'
 ) | ForEach-Object { $p = $_ -split '\|'; [pscustomobject]@{ Exe = $p[0]; Nome = $p[1] } } | Where-Object { Test-Path (Join-Path $dest "bin\$($_.Exe).exe") }
 if (-not $Atualizar -and -not $Silencioso) {
     Write-Host ""
     Write-Host "O que instalar? / What to install?"
-    Write-Host "  1) WacOS completo (barra de menus, Dock, Finder...) / Full WacOS (menu bar, Dock, Finder...)"
+    Write-Host "  1) Liquinix completo (barra de menus, Dock, Finder...) / Full Liquinix (menu bar, Dock, Finder...)"
     Write-Host "  2) Só os apps que eu escolher / Only the apps I choose"
     Write-Host "  3) Só as barras de título do Mac nos outros programas / Only the Mac title bars on other apps"
     Write-Host "  4) Apps + barras de título / Apps + title bars"
@@ -175,17 +175,17 @@ Anota ("modo: $modo " + (($escolhidos | ForEach-Object { $_.Exe }) -join ','))
 
 if ($Atualizar) {  # só os arquivos; o resto (ajustes, fontes, cursor, atalho, início automático) fica como estava
     # Música/QuickTime já registrados por esta instalação: registra de novo (nomes em inglês desde a issue #2 do GitHub)
-    foreach ($r in @(@('SequoiaMusic.Audio', 'musica-registrar.ps1', 'WacOSMusic.exe'), @('SequoiaQuickTime.Video', 'quicktime-registrar.ps1', 'WacOSQuickTime.exe'))) {
+    foreach ($r in @(@('SequoiaMusic.Audio', 'musica-registrar.ps1', 'LiquinixMusic.exe'), @('SequoiaQuickTime.Video', 'quicktime-registrar.ps1', 'LiquinixQuickTime.exe'))) {
         $cmdAtual = (Get-ItemProperty "HKCU:\Software\Classes\$($r[0])\shell\open\command" -ErrorAction SilentlyContinue).'(default)'
         $scr = Join-Path $dest "tools\$($r[1])"
         if ($cmdAtual -and $cmdAtual -like "*$dest\bin\*" -and (Test-Path $scr)) { & $scr -Exe (Join-Path $dest "bin\$($r[2])") | Out-Null }
     }
     Anota 'atualização concluída'
-    if ($barrasAbertas) { Start-Process (Join-Path $dest 'bin\WacOSTitleBars.exe') -WorkingDirectory (Join-Path $dest 'bin') }
-    $exe = Join-Path $dest 'bin\WacOSShell.exe'
-    if ($shellAberto) { Start-Process $exe -WorkingDirectory (Split-Path $exe); Write-Host "`nAtualizado. O WacOS abriu de novo." }
+    if ($barrasAbertas) { Start-Process (Join-Path $dest 'bin\LiquinixTitleBars.exe') -WorkingDirectory (Join-Path $dest 'bin') }
+    $exe = Join-Path $dest 'bin\LiquinixShell.exe'
+    if ($shellAberto) { Start-Process $exe -WorkingDirectory (Split-Path $exe); Write-Host "`nAtualizado. O Liquinix abriu de novo." }
     elseif ($Silencioso) { Write-Host "`nAtualizado." }
-    else { Write-Host "`nAtualizado."; if (Pergunta 'Abrir o WacOS agora?') { Start-Process $exe -WorkingDirectory (Split-Path $exe) } }
+    else { Write-Host "`nAtualizado."; if (Pergunta 'Abrir o Liquinix agora?') { Start-Process $exe -WorkingDirectory (Split-Path $exe) } }
     exit
 }
 
@@ -193,7 +193,7 @@ if ($Atualizar) {  # só os arquivos; o resto (ajustes, fontes, cursor, atalho, 
 #     PC, de onde a Apple e os autores publicam (tools\baixar-apple.ps1). O pacote completo feito no PC do autor já traz.
 $baixar = Join-Path $src 'tools\baixar-apple.ps1'
 if (-not (Test-Path $baixar)) { $baixar = Join-Path $dest 'tools\baixar-apple.ps1' }
-$apple = Join-Path $env:TEMP 'wacos-apple'
+$apple = Join-Path $env:TEMP 'liquinix-apple'
 $temFontes = [bool](Get-ChildItem "$src\fontes" -File -Include *.otf, *.ttf -Recurse -ErrorAction SilentlyContinue)
 $temSons = [bool](Get-ChildItem "$dest\sons\mac" -Filter *.wav -ErrorAction SilentlyContinue)
 $temCursor = [bool](Get-ChildItem "$src\cursor" -Directory -ErrorAction SilentlyContinue)
@@ -255,17 +255,17 @@ if ($completo -and $cur -and ($curRaiz -like "$apple*" -or (Pergunta "Usar o cur
     Set-ItemProperty $creg -Name '(default)' -Value $cur.Name
     Set-ItemProperty $creg -Name 'Scheme Source' -Value 1 -Type DWord
     Anota "registro: $creg (cursor do Mac)"
-    if ($ajudante = Ajudante @((Join-Path $dest 'bin\WacOSShell.exe'))) { Start-Process $ajudante -ArgumentList '--aplicar-cursor' -Wait }  # SPI_SETCURSORS: aplica agora
+    if ($ajudante = Ajudante @((Join-Path $dest 'bin\LiquinixShell.exe'))) { Start-Process $ajudante -ArgumentList '--aplicar-cursor' -Wait }  # SPI_SETCURSORS: aplica agora
     Write-Host 'Cursor do Mac aplicado.'
 }
 
 Remove-Item $apple -Recurse -Force -ErrorAction SilentlyContinue  # o baixado já foi copiado
 
-# 2c. Só os apps e/ou só as barras de título: atalhos no Menu Iniciar (pasta "WacOS") e, para as barras, o início
-#     automático próprio (tarefa "WacOS Title Bars"). Nada do Shell: sem trocar a barra de tarefas, o Explorador
-#     ou as pastas, e sem a tarefa "WacOS". Os apps leem o tema em %APPDATA%\Shell\ajustes.txt (Ajustes do Sistema).
+# 2c. Só os apps e/ou só as barras de título: atalhos no Menu Iniciar (pasta "Liquinix") e, para as barras, o início
+#     automático próprio (tarefa "Liquinix Title Bars"). Nada do Shell: sem trocar a barra de tarefas, o Explorador
+#     ou as pastas, e sem a tarefa "Liquinix". Os apps leem o tema em %APPDATA%\Shell\ajustes.txt (Ajustes do Sistema).
 if (-not $completo) {
-    $menu = Join-Path ([Environment]::GetFolderPath('Programs')) 'WacOS'
+    $menu = Join-Path ([Environment]::GetFolderPath('Programs')) 'Liquinix'
     New-Item -ItemType Directory -Force $menu | Out-Null
     Get-ChildItem $menu -Filter *.lnk -ErrorAction SilentlyContinue | Remove-Item -Force  # refeitos pela escolha de agora
     Anota "menu iniciar: $menu"
@@ -274,39 +274,39 @@ if (-not $completo) {
         $l = $ws.CreateShortcut((Join-Path $menu "$nome.lnk"))
         $l.TargetPath = $exe; $l.WorkingDirectory = Split-Path $exe; $l.IconLocation = "$exe,0"; $l.Save()
     }
-    # quem vinha do WacOS completo: o Shell não abre mais sozinho
-    if (Get-ScheduledTask -TaskName 'WacOS' -ErrorAction SilentlyContinue) {
-        Unregister-ScheduledTask -TaskName 'WacOS' -Confirm:$false
-        Anota 'tarefa agendada WacOS removida (modo sem o Shell)'
+    # quem vinha do Liquinix completo: o Shell não abre mais sozinho
+    if (Get-ScheduledTask -TaskName 'Liquinix' -ErrorAction SilentlyContinue) {
+        Unregister-ScheduledTask -TaskName 'Liquinix' -Confirm:$false
+        Anota 'tarefa agendada Liquinix removida (modo sem o Shell)'
     }
-    Remove-Item (Join-Path ([Environment]::GetFolderPath('Programs')) 'WacOS.lnk') -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path ([Environment]::GetFolderPath('Programs')) 'Liquinix.lnk') -ErrorAction SilentlyContinue
     foreach ($a in $escolhidos) { Atalho $a.Nome (Join-Path $dest "bin\$($a.Exe).exe") }
-    if ($escolhidos) { Write-Host ("Apps no Menu Iniciar (pasta WacOS) / Apps in the Start menu (WacOS folder): " + (($escolhidos | ForEach-Object { $_.Nome }) -join ', ')) }
+    if ($escolhidos) { Write-Host ("Apps no Menu Iniciar (pasta Liquinix) / Apps in the Start menu (Liquinix folder): " + (($escolhidos | ForEach-Object { $_.Nome }) -join ', ')) }
     if ($modo -like '*barras') {
-        $tb = Join-Path $dest 'bin\WacOSTitleBars.exe'
-        Atalho 'WacOS Title Bars' $tb
+        $tb = Join-Path $dest 'bin\LiquinixTitleBars.exe'
+        Atalho 'Liquinix Title Bars' $tb
         if (Pergunta 'Ligar as barras de título sozinhas toda vez que você entrar no Windows? / Start the title bars at every sign-in?') {
             $user = "$env:USERDOMAIN\$env:USERNAME"
             $action = New-ScheduledTaskAction -Execute $tb -WorkingDirectory (Split-Path $tb)
             $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
             $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
             $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
-            Register-ScheduledTask -TaskName 'WacOS Title Bars' -Action $action -Trigger $trigger -Settings $settings -Principal $principal `
-                -Description 'Mac title bars on other apps, without the WacOS Shell (desinstalar.cmd removes it)' -Force | Out-Null
-            Anota 'tarefa agendada: WacOS Title Bars (ao entrar)'
+            Register-ScheduledTask -TaskName 'Liquinix Title Bars' -Action $action -Trigger $trigger -Settings $settings -Principal $principal `
+                -Description 'Mac title bars on other apps, without the Liquinix Shell (desinstalar.cmd removes it)' -Force | Out-Null
+            Anota 'tarefa agendada: Liquinix Title Bars (ao entrar)'
         }
         Start-Process $tb -WorkingDirectory (Split-Path $tb)
-        Write-Host 'Barras de título ligadas. Desligar: WacOSTitleBars.exe --sair (ou desinstalar.cmd).'
-        Write-Host 'Title bars are on. Turn off: WacOSTitleBars.exe --sair (or desinstalar.cmd).'
+        Write-Host 'Barras de título ligadas. Desligar: LiquinixTitleBars.exe --sair (ou desinstalar.cmd).'
+        Write-Host 'Title bars are on. Turn off: LiquinixTitleBars.exe --sair (or desinstalar.cmd).'
     }
-    if (($escolhidos | Where-Object { $_.Exe -eq 'WacOSMusic' }) -and (Test-Path "$dest\tools\musica-registrar.ps1") -and
+    if (($escolhidos | Where-Object { $_.Exe -eq 'LiquinixMusic' }) -and (Test-Path "$dest\tools\musica-registrar.ps1") -and
         (Pergunta 'Registrar o Música para abrir arquivos de áudio? / Register Music for audio files?')) {
-        & (Join-Path $dest 'tools\musica-registrar.ps1') -Exe (Join-Path $dest 'bin\WacOSMusic.exe') -AbrirAjustes
+        & (Join-Path $dest 'tools\musica-registrar.ps1') -Exe (Join-Path $dest 'bin\LiquinixMusic.exe') -AbrirAjustes
         Anota 'Música registrado como app de áudio (desinstalar.cmd remove)'
     }
-    if (($escolhidos | Where-Object { $_.Exe -eq 'WacOSQuickTime' }) -and (Test-Path "$dest\tools\quicktime-registrar.ps1") -and
+    if (($escolhidos | Where-Object { $_.Exe -eq 'LiquinixQuickTime' }) -and (Test-Path "$dest\tools\quicktime-registrar.ps1") -and
         (Pergunta 'Registrar o QuickTime Player para abrir vídeos? / Register QuickTime Player for videos?')) {
-        & (Join-Path $dest 'tools\quicktime-registrar.ps1') -Exe (Join-Path $dest 'bin\WacOSQuickTime.exe') -AbrirAjustes
+        & (Join-Path $dest 'tools\quicktime-registrar.ps1') -Exe (Join-Path $dest 'bin\LiquinixQuickTime.exe') -AbrirAjustes
         Anota 'QuickTime registrado como app de vídeo (desinstalar.cmd remove)'
     }
     Anota 'instalação concluída (sem o Shell)'
@@ -333,10 +333,10 @@ if (-not (Test-Path $ajustes)) {
     Anota "ajuste: $ajustes (padrões: explorer=fundo, finder_padrao=1)"
 }
 # pastas, discos e Win+E abrem no Finder (só HKCU; o desinstalar devolve)
-$finder = Join-Path $dest 'bin\WacOSFinder.exe'
+$finder = Join-Path $dest 'bin\LiquinixFinder.exe'
 if ((Get-Content $ajustes -ErrorAction SilentlyContinue) -notcontains 'finder_padrao=0') {
     Start-Process $finder -ArgumentList '--quieto', '--padrao', 'on' -Wait
-    Anota 'pastas no Finder: WacOSFinder.exe --padrao on'
+    Anota 'pastas no Finder: LiquinixFinder.exe --padrao on'
 }
 
 # 3c. Extras opcionais (cada um tem desfazer no desinstalar.cmd)
@@ -358,42 +358,42 @@ if ((Test-Path "$tools\icones-sistema.ps1") -and (Test-Path "$src\bin\icones-sis
 }
 
 # 4. Atalho no Menu Iniciar
-$exe = Join-Path $dest 'bin\WacOSShell.exe'
-$lnk = Join-Path ([Environment]::GetFolderPath('Programs')) 'WacOS.lnk'
+$exe = Join-Path $dest 'bin\LiquinixShell.exe'
+$lnk = Join-Path ([Environment]::GetFolderPath('Programs')) 'Liquinix.lnk'
 $ws = New-Object -ComObject WScript.Shell
 $l = $ws.CreateShortcut($lnk)
 $l.TargetPath = $exe; $l.WorkingDirectory = Split-Path $exe; $l.IconLocation = "$exe,0"
-$l.Description = 'WacOS (barra de menus e Dock do Mac)'
+$l.Description = 'Liquinix (barra de menus e Dock do Mac)'
 $l.Save()
 Anota "atalho: $lnk"
-Write-Host 'Atalho "WacOS" criado no Menu Iniciar (para fixar na barra: botão direito > Fixar na barra de tarefas)'
+Write-Host 'Atalho "Liquinix" criado no Menu Iniciar (para fixar na barra: botão direito > Fixar na barra de tarefas)'
 
 # 5. Iniciar com o Windows
-if (Pergunta 'Abrir o WacOS sozinho toda vez que você entrar no Windows?') {
+if (Pergunta 'Abrir o Liquinix sozinho toda vez que você entrar no Windows?') {
     $user = "$env:USERDOMAIN\$env:USERNAME"
     $action = New-ScheduledTaskAction -Execute $exe -WorkingDirectory (Split-Path $exe)
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
     $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -Priority 4 -MultipleInstances IgnoreNew
     $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
-    Register-ScheduledTask -TaskName 'WacOS' -Action $action -Trigger $trigger -Settings $settings -Principal $principal `
-        -Description 'Inicia o WacOS ao entrar no Windows (desinstalar.cmd remove)' -Force | Out-Null
-    Anota 'tarefa agendada: WacOS (ao entrar)'
+    Register-ScheduledTask -TaskName 'Liquinix' -Action $action -Trigger $trigger -Settings $settings -Principal $principal `
+        -Description 'Inicia o Liquinix ao entrar no Windows (desinstalar.cmd remove)' -Force | Out-Null
+    Anota 'tarefa agendada: Liquinix (ao entrar)'
     Write-Host 'Início automático ligado.'
 }
 
 # 6. Música como app de áudio (aparece em "Abrir com" e nos apps padrão do Windows; o padrão quem escolhe é você)
 $mr = Join-Path $dest 'tools\musica-registrar.ps1'
 if ((Test-Path $mr) -and (Pergunta 'Registrar o Música para abrir arquivos de áudio (você escolhe como padrão nos Ajustes do Windows)?')) {
-    & $mr -Exe (Join-Path $dest 'bin\WacOSMusic.exe') -AbrirAjustes
+    & $mr -Exe (Join-Path $dest 'bin\LiquinixMusic.exe') -AbrirAjustes
     Anota 'Música registrado como app de áudio (HKCU\Software\Classes\SequoiaMusic.Audio; desinstalar.cmd remove)'
 }
 
 $qr = Join-Path $dest 'tools\quicktime-registrar.ps1'
 if ((Test-Path $qr) -and (Pergunta 'Registrar o QuickTime Player para abrir vídeos (você escolhe como padrão nos Ajustes do Windows)?')) {
-    & $qr -Exe (Join-Path $dest 'bin\WacOSQuickTime.exe') -AbrirAjustes
+    & $qr -Exe (Join-Path $dest 'bin\LiquinixQuickTime.exe') -AbrirAjustes
     Anota 'QuickTime registrado como app de vídeo (HKCU\Software\Classes\SequoiaQuickTime.Video; desinstalar.cmd remove)'
 }
 
 Anota 'instalação concluída'
 Write-Host "`nPronto. Saída do Shell: Ctrl+Alt+Shift+F12. Emergência (devolve o Explorador): Ctrl+Alt+Shift+F11."
-if (Pergunta 'Abrir o WacOS agora?') { Start-Process $exe -WorkingDirectory (Split-Path $exe) }
+if (Pergunta 'Abrir o Liquinix agora?') { Start-Process $exe -WorkingDirectory (Split-Path $exe) }

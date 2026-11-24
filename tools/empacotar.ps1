@@ -1,4 +1,4 @@
-﻿# Monta o instalador do WacOS para levar a outro PC: dist\WacOS-AAAA-MM-DD.zip
+﻿# Monta o instalador do Liquinix para levar a outro PC: dist\Liquinix-AAAA-MM-DD.zip
 # Dentro: os programas (sem logs e sem as ferramentas de teste), ícones, sons, as fontes SF instaladas neste
 # PC, o cursor do Mac em uso e o instalar.cmd / desinstalar.cmd. No outro PC: extrair e abrir instalar.cmd.
 # Os ícones, sons, fontes e cursor do Mac são da Apple: o pacote é só para uso pessoal, nos seus PCs.
@@ -10,16 +10,16 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $bin  = Join-Path $root 'bin'
 $data = Get-Date -Format 'yyyy-MM-dd'
-$pkg  = Join-Path $root "dist\WacOS"
-$zip  = if ($Zip) { $Zip } else { Join-Path $root "dist\WacOS-$data.zip" }
+$pkg  = Join-Path $root "dist\Liquinix"
+$zip  = if ($Zip) { $Zip } else { Join-Path $root "dist\Liquinix-$data.zip" }
 if ($Atualizacao) { $SemAjustes = $true }
 
 if (Test-Path $pkg) { Remove-Item $pkg -Recurse -Force }
 New-Item -ItemType Directory -Force "$pkg\bin" | Out-Null
 
 # programas: só o que o Shell usa (bin\ferramentas, bin\obj, logs e cópias .run/.old ficam de fora)
-$progs = 'WacOSShell.exe', 'WacOSFinder.exe', 'WacOSSettings.exe', 'WacOSActivityMonitor.exe', 'WacOSTerminal.exe',
-         'WacOSCalculator.exe', 'WacOSNotes.exe', 'WacOSScreenshot.exe', 'WacOSPreview.exe', 'WacOSReminders.exe', 'WacOSCalendar.exe', 'WacOSTextEdit.exe', 'WacOSClock.exe', 'WacOSWeather.exe', 'WacOSContacts.exe', 'WacOSPhotos.exe', 'WacOSTimeMachine.exe', 'WacOSMusic.exe', 'WacOSQuickTime.exe', 'WacOSForceQuit.exe', 'WacOSTitleBars.exe', 'WacOSWindow.dll', 'WacOSWindow32.dll',
+$progs = 'LiquinixShell.exe', 'LiquinixFinder.exe', 'LiquinixSettings.exe', 'LiquinixActivityMonitor.exe', 'LiquinixTerminal.exe',
+         'LiquinixCalculator.exe', 'LiquinixNotes.exe', 'LiquinixScreenshot.exe', 'LiquinixPreview.exe', 'LiquinixReminders.exe', 'LiquinixCalendar.exe', 'LiquinixTextEdit.exe', 'LiquinixClock.exe', 'LiquinixWeather.exe', 'LiquinixContacts.exe', 'LiquinixPhotos.exe', 'LiquinixTimeMachine.exe', 'LiquinixMusic.exe', 'LiquinixQuickTime.exe', 'LiquinixForceQuit.exe', 'LiquinixTitleBars.exe', 'LiquinixWindow.dll', 'LiquinixWindow32.dll',
          'DialogoMac.dll', 'DialogoMac32.dll'
 if ($SemSistema) { $progs = $progs | Where-Object { $_ -notlike 'DialogoMac*' } }
 $progs += 'versao.txt'  # a versão (o GitHub Actions grava; o atualizador compara)
@@ -104,7 +104,7 @@ if (-not $SemAjustes) {
 
 Copy-Item "$root\instalador\*" $pkg
 # o instalador único (instalar, atualizar, desinstalar), na raiz do pacote: é o que a pessoa abre
-if (Test-Path "$bin\WacOSSetup.exe") { Copy-Item "$bin\WacOSSetup.exe" "$pkg\WacOSSetup.exe" } else { Write-Host 'faltando: bin\WacOSSetup.exe' }
+if (Test-Path "$bin\LiquinixSetup.exe") { Copy-Item "$bin\LiquinixSetup.exe" "$pkg\LiquinixSetup.exe" } else { Write-Host 'faltando: bin\LiquinixSetup.exe' }
 if (Test-Path $zip) { Remove-Item $zip }
 Compress-Archive -Path "$pkg\*" -DestinationPath $zip -CompressionLevel Optimal
 Remove-Item $pkg -Recurse -Force

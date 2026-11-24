@@ -173,7 +173,7 @@ WinSnap Read(IUIAutomation* uia, IUIAutomationCacheRequest* cache, IUIAutomation
                 else if (id == L"eltPauseButton") cur->pauseName = name;
                 else if (id.rfind(L"eltInterrupt", 0) == 0) cur->interrupted = true;
                 // qualquer outro botão é uma pergunta (substituir, pular, tentar de novo...): quem responde é a janela do Windows
-                // (menos os botões da barra de título da própria janela: Minimize/Maximize/Close/Restore. Sem a WacOSWindow.dll
+                // (menos os botões da barra de título da própria janela: Minimize/Maximize/Close/Restore. Sem a LiquinixWindow.dll
                 // — modo nativo — a barra de título existe, e eles faziam toda cópia parecer uma pergunta: a janela do Windows voltava)
                 else if (type == UIA_ButtonControlTypeId && id != L"eltCancelButton" && id != L"Minimize" && id != L"Maximize" && id != L"Close" && id != L"Restore" && id != L"SmallIcon" && !BotaoDaBarra(id, name)) {
                     cur->interrupted = true;

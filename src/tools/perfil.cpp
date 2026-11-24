@@ -91,7 +91,7 @@ int wmain(int argc, wchar_t** argv) {
     };
     printf("amostras: %d\n", samples);
     std::map<std::string, int> ours;
-    for (auto& [k, c] : incl) if (k.rfind("WacOSShell!", 0) == 0) ours[k] = c;
+    for (auto& [k, c] : incl) if (k.rfind("LiquinixShell!", 0) == 0) ours[k] = c;
     top(ours, 40, "funcoes do Shell (inclusivo):", samples);
     top(self, 15, "onde estava (proprio):", samples);
     std::vector<std::pair<int, std::string>> v;

@@ -45,7 +45,7 @@ const wchar_t* COLOR_NAMES[] = { L"Azul", L"Vermelho", L"Laranja", L"Amarelo", L
 
 void Save() {
     std::vector<std::wstring> out;
-    out.push_back(L"# Lembretes do WacOS (L = lista, R = lembrete)");
+    out.push_back(L"# Lembretes do Liquinix (L = lista, R = lembrete)");
     for (auto& l : g_lists) out.push_back(L"L\t" + std::to_wstring(l.id) + L"\t" + Esc(l.name) + L"\t" + std::to_wstring(l.color));
     for (auto& r : g_rems)
         out.push_back(L"R\t" + std::to_wstring(r.id) + L"\t" + std::to_wstring(r.list) + L"\t" + (r.done ? L"1" : L"0") + L"\t" + std::to_wstring(r.due) + L"\t" +

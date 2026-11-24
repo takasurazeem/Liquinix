@@ -85,7 +85,7 @@ bool Enable(FILE* log) {
             ok &= SetString(k, nullptr, L"arquivos");
             if (log) fwprintf(log, L"registro: HKCU\\%ls = arquivos; %ls\\command = %ls\n", k, verb.c_str(), cmd.c_str());
         }
-    } else {  // já ligado: o programa pode ter mudado de nome/lugar (Arquivos.exe → WacOSFinder.exe): atualiza o caminho
+    } else {  // já ligado: o programa pode ter mudado de nome/lugar (Arquivos.exe → LiquinixFinder.exe): atualiza o caminho
         for (auto* k : KEYS) {
             std::wstring verb = std::wstring(k) + L"\\arquivos\\command", cur;
             if (ReadDefault(verb.c_str(), cur) && cur == cmd) continue;

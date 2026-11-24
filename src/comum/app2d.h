@@ -1,7 +1,7 @@
 #pragma once
 // Base dos apps pequenos desenhados com Direct2D (Lembretes, Calendário): fábricas, fonte SF/Inter/Segoe,
 // tema claro/escuro, texto, campo de edição (EDIT do Windows por cima, sem borda) e o arquivo de dados em
-// %APPDATA%\Shell. A barra de título do Mac vem da WacOSWindow.dll (a janela é comum, com barra do Windows),
+// %APPDATA%\Shell. A barra de título do Mac vem da LiquinixWindow.dll (a janela é comum, com barra do Windows),
 // que o próprio app carrega no CreateMain (barra_mac.h), com ou sem o Shell.
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -22,7 +22,7 @@
 #include <vector>
 #include "idioma.h"
 #include "semaforo.h"  // semaforo::Aqua(): tema macOS Golden Gate
-#include "barra_mac.h"  // a WacOSWindow.dll carregada pelo próprio app (barra do Mac sem o Shell)
+#include "barra_mac.h"  // a LiquinixWindow.dll carregada pelo próprio app (barra do Mac sem o Shell)
 #include <commctrl.h>
 #include <shellapi.h>
 #pragma comment(lib, "comctl32.lib")
@@ -109,7 +109,7 @@ inline bool In(D2D1_RECT_F r, float x, float y) { return x >= r.left && x < r.ri
 
 // ---- macOS 27 (Golden Gate): barra de ferramentas unificada. Sem a barra de título do Windows: a área do app
 // começa no topo da janela e os primeiros BAR pt são a barra dele (botões redondos de vidro na mesma linha dos
-// três botões da janela, que a WacOSWindow.dll desenha por cima a 26 pt da borda). Arrasta pela barra, menos
+// três botões da janela, que a LiquinixWindow.dll desenha por cima a 26 pt da borda). Arrasta pela barra, menos
 // pelos botões que o app registra ao pintar (BarButton).
 inline float BAR = 0;          // 0: barra comum do Windows (Sequoia/Tahoe)
 inline float barWanted = 0;    // o app que já tem o layout do macOS 27 pede (52) antes do CreateMain
@@ -426,7 +426,7 @@ inline HWND CreateMain(HINSTANCE hi, const wchar_t* cls, const wchar_t* title, W
     GetMonitorInfoW(MonitorFromPoint(c, MONITOR_DEFAULTTOPRIMARY), &mi);
     float s = GetDpiForSystem() / 96.f;
     int W = (int)(w * s), H = (int)(h * s);
-    // os três botões do Mac vêm da WacOSWindow.dll, carregada aqui mesmo (barra_mac.h): sem ela (DLL faltando),
+    // os três botões do Mac vêm da LiquinixWindow.dll, carregada aqui mesmo (barra_mac.h): sem ela (DLL faltando),
     // fica a barra comum do Windows, nunca a barra unificada sem botão nenhum
     bool mac = barramac::Ligar();
     wnd = CreateWindowExW(0, cls, title, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN, mi.rcWork.left + (mi.rcWork.right - mi.rcWork.left - W) / 2,
@@ -434,7 +434,7 @@ inline HWND CreateMain(HINSTANCE hi, const wchar_t* cls, const wchar_t* title, W
     if (wnd) { BOOL dark = Dark(); DwmSetWindowAttribute(wnd, 20, &dark, sizeof(dark)); }
     if (wnd && mac && semaforo::Aqua() && barWanted > 0) {  // macOS 27: barra de ferramentas unificada
         BAR = barWanted;
-        SetPropW(wnd, L"WacOSBarraUnificada", (HANDLE)(INT_PTR)std::lround(BAR));
+        SetPropW(wnd, L"LiquinixBarraUnificada", (HANDLE)(INT_PTR)std::lround(BAR));
         SetWindowSubclass(wnd, UnifiedSub, 0x55A1, 0);
         SetWindowPos(wnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     }

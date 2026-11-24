@@ -15,8 +15,8 @@ $HK = [Microsoft.Win32.Registry]::CurrentUser
 $lines = New-Object System.Collections.Generic.List[string]
 function Say($s) { $lines.Add($s) }
 
-# avisar o Explorador: pelo WacOSShell.exe (modo ajudante), sem C# embutido no script
-$ajudante = Join-Path $PSScriptRoot '..\bin\WacOSShell.exe'
+# avisar o Explorador: pelo LiquinixShell.exe (modo ajudante), sem C# embutido no script
+$ajudante = Join-Path $PSScriptRoot '..\bin\LiquinixShell.exe'
 function AvisarIcones { if (Test-Path $ajudante) { Start-Process $ajudante -ArgumentList '--avisar-icones' -Wait } }
 
 function Refresh {

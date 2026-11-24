@@ -396,7 +396,7 @@ void LoadApps() {
         std::wstring exe = shell::dir + L"\\" + o.exe;
         if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) continue;
         std::wstring le = Lower(exe);
-        // o mesmo .exe pelo atalho do Menu Iniciar (o "WacOS" do instalador) não aparece duas vezes
+        // o mesmo .exe pelo atalho do Menu Iniciar (o "Liquinix" do instalador) não aparece duas vezes
         found.erase(std::remove_if(found.begin(), found.end(), [&](const LApp& a) { return Lower(a.parsing) == le; }), found.end());
         std::wstring nm = Tr(o.name);  // nome do app no idioma escolhido; o outro fica nos apelidos
         LApp a{ nm, exe, Fold(nm) };
@@ -405,7 +405,7 @@ void LoadApps() {
     }
     {   // o próprio Shell pelo atalho do Menu Iniciar não é um app para abrir pelo Spotlight
         std::wstring self = Lower(shell::dir + L"\\" EXE_SHELL);
-        found.erase(std::remove_if(found.begin(), found.end(), [&](const LApp& a) { return Lower(a.parsing) == self || a.name == L"WacOS"; }), found.end());
+        found.erase(std::remove_if(found.begin(), found.end(), [&](const LApp& a) { return Lower(a.parsing) == self || a.name == L"Liquinix"; }), found.end());
     }
     LoadLearned();
     auto ua = UserAssistCounts();

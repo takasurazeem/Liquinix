@@ -29,7 +29,7 @@
 #include <thread>
 #include <vector>
 #include "../comum/semaforo.h"  // semaforo::Aqua(): tema macOS Golden Gate
-#include "../comum/barra_mac.h"  // os três botões do Mac (WacOSWindow.dll), com ou sem o Shell
+#include "../comum/barra_mac.h"  // os três botões do Mac (LiquinixWindow.dll), com ou sem o Shell
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Data.Pdf.h>
 #include <winrt/Windows.Storage.h>
@@ -77,7 +77,7 @@ int g_rot = 0;                   // imagem: 0..3 (x90 graus)
 float g_sx = 0, g_sy = 0;        // rolagem (DIP)
 bool g_drag = false; POINT g_dragAt{}; float g_dragSx = 0, g_dragSy = 0;
 int g_hoverBtn = -1;
-// macOS 27 (captura Preview do 512 Pixels): barra unificada de 52 (sem a barra do Windows; a WacOSWindow.dll põe os
+// macOS 27 (captura Preview do 512 Pixels): barra unificada de 52 (sem a barra do Windows; a LiquinixWindow.dll põe os
 // três botões a 26/49/72), o nome em negrito e "Página 1 de 81" à esquerda depois deles, e os botões em grupos de
 // vidro redondos à direita (−/1:1/+ juntos numa cápsula)
 struct Btn { wchar_t glyph; const wchar_t* tip; int id; D2D1_RECT_F r; };
@@ -1068,7 +1068,7 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, PWSTR, int show) {
     BOOL dark = Dark(); DwmSetWindowAttribute(g_wnd, 20 /*DWMWA_USE_IMMERSIVE_DARK_MODE*/, &dark, sizeof(dark));
     if (mac && semaforo::Aqua()) {  // macOS 27: barra unificada (a DLL só desenha os três botões)
         g_unified = true;
-        SetPropW(g_wnd, L"WacOSBarraUnificada", (HANDLE)(INT_PTR)52);
+        SetPropW(g_wnd, L"LiquinixBarraUnificada", (HANDLE)(INT_PTR)52);
         SetWindowPos(g_wnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
     std::thread(PdfThread).detach();

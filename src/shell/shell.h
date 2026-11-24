@@ -298,8 +298,8 @@ namespace atualizacao {  // aviso de versão nova no GitHub (atualizacao.cpp)
 void Start(HWND msgWnd);  // thread: confere 90 s depois e a cada 6 h; avisa msgWnd
 bool Handle(UINT m);      // na MsgProc: mostra a notificação (uma vez por versão); true = era a mensagem
 }
-namespace migrar {  // troca de nome Sequoia → WacOS (migrar.cpp)
-bool TrocarPeloNovo();  // rodando como SequoiaShell.exe com o WacOSShell.exe ao lado: abre o novo (true = sair)
+namespace migrar {  // troca de nome Sequoia → Liquinix (migrar.cpp)
+bool TrocarPeloNovo();  // rodando como SequoiaShell.exe com o LiquinixShell.exe ao lado: abre o novo (true = sair)
 void Registro();        // caminhos do nome velho no registro e a tarefa do login
 }
 namespace alertas {  // confirmações de excluir do Explorer no alerta do Mac (alertas.cpp)
@@ -394,8 +394,8 @@ bool IsDeskClass(const wchar_t* cls);   // Progman, WorkerW ou a nossa SequoiaMe
 bool IsDeskWindow(HWND h);
 bool IconAt(POINT screen);              // há um ícone da nossa mesa embaixo do ponto
 void WinKey(UINT vk);                   // Win+E / Win+R / Win+D sem o Explorador
-bool Watchdog(const wchar_t* cmdLine);  // WacOSShell.exe --mesa-vigia <pid>
-bool IsWindowsShell();                  // HKCU Winlogon Shell aponta para o WacOSShell
+bool Watchdog(const wchar_t* cmdLine);  // LiquinixShell.exe --mesa-vigia <pid>
+bool IsWindowsShell();                  // HKCU Winlogon Shell aponta para o LiquinixShell
 void RunStartupApps();                  // shell do Windows: Run e pastas Inicializar (uma vez por sessão)
 }
 namespace notificacoes {  // Central de Notificações: clique na data/hora da barra de menus (notificacoes.cpp)
@@ -586,9 +586,9 @@ extern bool nativo;
 // nao e administrador); o pedido pelo menu de sistema dela (WM_SYSCOMMAND) passa.
 inline void Restaurar(HWND h) { ShowWindow(h, SW_RESTORE); if (IsIconic(h)) PostMessageW(h, WM_SYSCOMMAND, SC_RESTORE, 0); }
 int RodarNativo(HINSTANCE dll, const std::wstring& dirBin, const std::wstring& logPath);
-// abre o Finder com estes argumentos: no nativo, no Finder de dentro do explorer (MacFinder.dll); senão o WacOSFinder.exe
+// abre o Finder com estes argumentos: no nativo, no Finder de dentro do explorer (MacFinder.dll); senão o LiquinixFinder.exe
 void AbrirFinder(const std::wstring& args);
-// abre o Finder com estes argumentos: no nativo, no Finder de dentro do explorer (MacFinder.dll); senão o WacOSFinder.exe
+// abre o Finder com estes argumentos: no nativo, no Finder de dentro do explorer (MacFinder.dll); senão o LiquinixFinder.exe
 void AbrirFinder(const std::wstring& args);
 DWORD SemProprio();             // WINEVENT_SKIPOWNPROCESS fora do modo nativo (no nativo, o processo é o explorer)
 bool Nossa(HWND h);             // janela do próprio Shell (no nativo: só as criadas pelo Shell, não as do explorer)
@@ -614,7 +614,7 @@ void SecondPhoto(HWND h);  // a janela já mudou de tamanho (escondida): foto no
 void Shown(HWND h);        // a janela de verdade reapareceu: as fotos somem
 bool Fechar(HWND h, LPARAM bar = 0);  // a janela vai sumir: foto dela encolhendo e sumindo, como no Mac (bar: a nossa barra, da DLL)
 }
-namespace abrir {  // janela nova aparecendo como no Mac (abrir.cpp; pedida pela WacOSWindow.dll)
+namespace abrir {  // janela nova aparecendo como no Mac (abrir.cpp; pedida pela LiquinixWindow.dll)
 void Open(HWND h, HWND bar = nullptr);  // a janela (e a nossa barra, se tiver) escondida e já pintada: anima e manda mostrar
 }
 namespace foto {

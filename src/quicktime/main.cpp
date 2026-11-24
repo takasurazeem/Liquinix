@@ -42,7 +42,7 @@ const float GG_W = 458, GG_H = 98, GG_TOP = 32;
 HWND g_barBack;
 // macOS 27: a barra de título é vidro fosco por cima do vídeo (o vídeo ocupa a janela toda). g_topBack = acrílico
 // (desfoca), g_top = camada com a tinta escura, os cantos de 16 da janela, o ícone do documento e o nome. As duas ficam
-// logo acima da janela e abaixo dos três botões da WacOSWindow.dll; o mouse passa direto (arrasta pela janela).
+// logo acima da janela e abaixo dos três botões da LiquinixWindow.dll; o mouse passa direto (arrasta pela janela).
 HWND g_topBack, g_top;
 IDWriteTextFormat *g_tfTimeL, *g_tfTimeR, *g_tfTop;
 bool Unified() { return semaforo::Aqua() && !g_full; }  // macOS 27: barra de título de 32 desenhada pelo app
@@ -500,7 +500,7 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, PWSTR, int show) {
     RegisterClassExW(&bc);
     MONITORINFO mi{ sizeof(mi) }; POINT c; GetCursorPos(&c); GetMonitorInfoW(MonitorFromPoint(c, MONITOR_DEFAULTTOPRIMARY), &mi);
     float s = GetDpiForSystem() / 96.f; int W = (int)(800 * s), H = (int)(480 * s);
-    bool mac = barramac::Ligar();  // os três botões do Mac (WacOSWindow.dll), com ou sem o Shell
+    bool mac = barramac::Ligar();  // os três botões do Mac (LiquinixWindow.dll), com ou sem o Shell
     wnd = CreateWindowExW(WS_EX_ACCEPTFILES, wc.lpszClassName, L"QuickTime Player", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
                           mi.rcWork.left + (mi.rcWork.right - mi.rcWork.left - W) / 2, mi.rcWork.top + (mi.rcWork.bottom - mi.rcWork.top - H) / 2, W, H, nullptr, nullptr, hi, nullptr);
     if (!wnd) return 1;
@@ -509,7 +509,7 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, PWSTR, int show) {
     g_bar = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, bc.lpszClassName, L"", WS_POPUP, 0, 0, 10, 10, wnd, nullptr, hi, nullptr);
     if (mac && semaforo::Aqua()) {
         // a barra de título de 32 do app (a DLL só põe os três botões a 16)
-        SetPropW(wnd, L"WacOSBarraUnificada", (HANDLE)(INT_PTR)std::lround(GG_TOP));
+        SetPropW(wnd, L"LiquinixBarraUnificada", (HANDLE)(INT_PTR)std::lround(GG_TOP));
         BAR = GG_TOP;
         SetWindowSubclass(wnd, UnifiedSub, 0x55A1, 0);
         SetWindowPos(wnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);

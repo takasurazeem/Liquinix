@@ -1,4 +1,4 @@
-// Forçar Encerrar Aplicativos (WacOSForceQuit.exe), como o do Mac (Command+Option+Esc): a lista dos apps
+// Forçar Encerrar Aplicativos (LiquinixForceQuit.exe), como o do Mac (Command+Option+Esc): a lista dos apps
 // abertos, com "(Não Respondendo)" em vermelho nos travados; escolher um e clicar em Forçar Encerrar pede
 // confirmação ("Você perderá as alterações não salvas") e encerra o processo.
 // Ctrl+Alt+Esc e o menu da Apple > Forçar Encerrar… abrem esta janela. Com --memoria ela é a do Mac quando
@@ -53,15 +53,15 @@ std::wstring Lower(std::wstring s) { for (auto& c : s) c = (wchar_t)towlower(c);
 // os nossos apps com o nome do Mac em português (o FileDescription deles é em inglês, para o Gerenciador de Tarefas)
 std::wstring OurName(const std::wstring& exe) {
     static const struct { const wchar_t *exe, *pt, *en; } T[] = {
-        { L"wacosfinder.exe", L"Finder", L"Finder" }, { L"wacossettings.exe", L"Ajustes do Sistema", L"System Settings" },
-        { L"wacosactivitymonitor.exe", L"Monitor de Atividade", L"Activity Monitor" }, { L"wacosterminal.exe", L"Terminal", L"Terminal" },
-        { L"wacoscalculator.exe", L"Calculadora", L"Calculator" }, { L"wacosnotes.exe", L"Notas", L"Notes" },
-        { L"wacosscreenshot.exe", L"Captura de Tela", L"Screenshot" }, { L"wacospreview.exe", L"Pré-Visualização", L"Preview" },
-        { L"wacosreminders.exe", L"Lembretes", L"Reminders" }, { L"wacoscalendar.exe", L"Calendário", L"Calendar" },
-        { L"wacostextedit.exe", L"TextEdit", L"TextEdit" }, { L"wacosclock.exe", L"Relógio", L"Clock" },
-        { L"wacosweather.exe", L"Clima", L"Weather" }, { L"wacoscontacts.exe", L"Contatos", L"Contacts" },
-        { L"wacosphotos.exe", L"Fotos", L"Photos" }, { L"wacostimemachine.exe", L"Time Machine", L"Time Machine" },
-        { L"wacosmusic.exe", L"Música", L"Music" }, { L"wacosquicktime.exe", L"QuickTime Player", L"QuickTime Player" },
+        { L"liquinixfinder.exe", L"Finder", L"Finder" }, { L"liquinixsettings.exe", L"Ajustes do Sistema", L"System Settings" },
+        { L"liquinixactivitymonitor.exe", L"Monitor de Atividade", L"Activity Monitor" }, { L"liquinixterminal.exe", L"Terminal", L"Terminal" },
+        { L"liquinixcalculator.exe", L"Calculadora", L"Calculator" }, { L"liquinixnotes.exe", L"Notas", L"Notes" },
+        { L"liquinixscreenshot.exe", L"Captura de Tela", L"Screenshot" }, { L"liquinixpreview.exe", L"Pré-Visualização", L"Preview" },
+        { L"liquinixreminders.exe", L"Lembretes", L"Reminders" }, { L"liquinixcalendar.exe", L"Calendário", L"Calendar" },
+        { L"liquinixtextedit.exe", L"TextEdit", L"TextEdit" }, { L"liquinixclock.exe", L"Relógio", L"Clock" },
+        { L"liquinixweather.exe", L"Clima", L"Weather" }, { L"liquinixcontacts.exe", L"Contatos", L"Contacts" },
+        { L"liquinixphotos.exe", L"Fotos", L"Photos" }, { L"liquinixtimemachine.exe", L"Time Machine", L"Time Machine" },
+        { L"liquinixmusic.exe", L"Música", L"Music" }, { L"liquinixquicktime.exe", L"QuickTime Player", L"QuickTime Player" },
     };
     for (auto& t : T) if (exe == t.exe) return TrPick(t.pt, t.en);
     return L"";
@@ -126,7 +126,7 @@ BOOL CALLBACK OnWin(HWND h, LPARAM l) {
         if (!p.second) return TRUE;
         pid = p.second; path = PathOf(pid); exe = Lower(path.substr(path.find_last_of(L'\\') + 1));
     }
-    if (path.empty() || exe == L"explorer.exe" || exe == L"wacosshell.exe" || exe == L"wacoswindow32host.exe" || exe == L"wacosforcequit.exe") return TRUE;
+    if (path.empty() || exe == L"explorer.exe" || exe == L"liquinixshell.exe" || exe == L"liquinixwindow32host.exe" || exe == L"liquinixforcequit.exe") return TRUE;
     App& a = f.apps[pid];
     if (!a.pid) {
         a.pid = pid; a.path = path;

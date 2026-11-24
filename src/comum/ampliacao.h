@@ -87,7 +87,7 @@ inline void Alternar(HWND h) {
 }
 
 // ---- abrir e fechar como no Mac (o Shell anima: abrir.cpp e ampliar::Fechar), o mesmo que a
-// WacOSWindow.dll faz nos apps dos outros. Chamar Janela(h) logo depois de criar a janela, antes de mostrar.
+// LiquinixWindow.dll faz nos apps dos outros. Chamar Janela(h) logo depois de criar a janela, antes de mostrar.
 const UINT_PTR SUB_ABRIR = 0x41425249, T_ABRIR = 0x4D4D, T_ABRIR_SEG = 0x4D4E;
 
 inline void AbrirMostrar(HWND h) {

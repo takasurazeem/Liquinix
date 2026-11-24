@@ -75,7 +75,7 @@ std::wstring ExeOf(DWORD pid) {
 bool NapOn() { return shell::Setting(L"app_nap", L"1") != L"0"; }
 
 bool Excluded(const std::wstring& exe) {
-    static const wchar_t* always[] = { L"wacosshell.exe", L"wacoswindow32host.exe", L"explorer.exe", L"dwm.exe", L"searchhost.exe",
+    static const wchar_t* always[] = { L"liquinixshell.exe", L"liquinixwindow32host.exe", L"explorer.exe", L"dwm.exe", L"searchhost.exe",
                                        L"startmenuexperiencehost.exe", L"shellexperiencehost.exe", L"textinputhost.exe", L"applicationframehost.exe",
                                        L"lockapp.exe", L"taskmgr.exe", L"obs64.exe", L"obs32.exe" };
     for (auto* a : always) if (exe == a) return true;

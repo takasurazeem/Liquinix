@@ -1,4 +1,4 @@
-// Quem pode receber a WacOSWindow.dll (barra de título do Mac nos outros programas) e quem NUNCA pode.
+// Quem pode receber a LiquinixWindow.dll (barra de título do Mac nos outros programas) e quem NUNCA pode.
 // Regra dura (pedido de 20/11/2026): a DLL não entra em jogo nem em nada com anti-cheat (risco de banimento).
 // Usado nos dois lados:
 //   - pelo Shell (src\shell\janelas.cpp), ANTES de pôr o gancho: só olha o caminho do .exe e os arquivos da pasta

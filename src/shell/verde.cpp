@@ -1,6 +1,6 @@
 // Menu do botão verde (macOS Sequoia): parar o ponteiro sobre o botão verde de uma janela abre um menu para
 // encaixar a janela (metades, quartos, centralizar, preencher). Quem percebe o ponteiro parado é a
-// WacOSWindow.dll (janelas com a nossa barra) ou o próprio app nosso; eles mandam "ShellMenuVerde" com a
+// LiquinixWindow.dll (janelas com a nossa barra) ou o próprio app nosso; eles mandam "ShellMenuVerde" com a
 // janela e o ponto da tela. Os encaixes respeitam a área livre (sem passar da barra de menus nem do Dock).
 #include "shell.h"
 #include "../menu/context_menu.h"

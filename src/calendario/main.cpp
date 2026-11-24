@@ -60,7 +60,7 @@ int g_firstDow = 0;             // primeiro dia da semana (WeekStart, mais abaix
 bool g_firstDowSet = false;     // escolhido pelo usuário (senão vale a região do Windows)
 
 void Save() {
-    std::vector<std::wstring> out{ L"# Calendário do WacOS (E = evento: id, início, fim em minutos desde 1970, dia inteiro, título, cor, notas)" };
+    std::vector<std::wstring> out{ L"# Calendário do Liquinix (E = evento: id, início, fim em minutos desde 1970, dia inteiro, título, cor, notas)" };
     if (Cal* hc = FindCal(HOL_CAL)) g_holOn = hc->on;
     out.push_back(L"S\tsemana\t" + std::to_wstring(g_firstDowSet ? g_firstDow : -1));
     out.push_back(L"S\tferiados\t" + std::wstring(g_holOn ? L"1" : L"0"));
@@ -160,7 +160,7 @@ void RequestHolidays(int year) {
     std::wstring cc = g_holCC; HWND h = wnd;
     std::thread([year, cc, h] {
         std::string body;
-        HINTERNET ses = WinHttpOpen(L"WacOS-Calendar/1.0", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+        HINTERNET ses = WinHttpOpen(L"Liquinix-Calendar/1.0", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
         if (ses) {
             WinHttpSetTimeouts(ses, 5000, 5000, 8000, 8000);
             HINTERNET con = WinHttpConnect(ses, L"date.nager.at", INTERNET_DEFAULT_HTTPS_PORT, 0);
@@ -195,7 +195,7 @@ void RequestHolidays(int year) {
 void HolidaysArrived(int year, std::vector<HolDay>* list) {
     if (year < 0) { g_holYears.erase(-year); delete list; return; }  // sem rede: tenta de novo depois
     auto lines = ReadLines(HolFile());
-    if (lines.empty()) lines.push_back(L"# Feriados baixados pelo Calendário do WacOS (Nager.Date): H, país, ano, aaaammdd, nome");
+    if (lines.empty()) lines.push_back(L"# Feriados baixados pelo Calendário do Liquinix (Nager.Date): H, país, ano, aaaammdd, nome");
     lines.push_back(L"H\t" + g_holCC + L"\t" + std::to_wstring(year) + L"\t0\t");  // ano baixado (mesmo sem feriados)
     for (auto& hd : *list) {
         wchar_t v[16]; swprintf_s(v, L"%04d%02d%02d", hd.y, hd.m, hd.d);

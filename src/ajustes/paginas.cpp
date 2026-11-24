@@ -328,7 +328,7 @@ Page Energia() {
     // Modo Jogo do Mac (shell\jogo.cpp): jogo na frente → o Shell desliga o que mais pesa até o jogo fechar
     p.groups.push_back(G({ Toggle(L"Modo Jogo", [] { return Setting(L"modo_jogo", L"1") != L"0"; },
                                   [](bool v) { SetSetting(L"modo_jogo", v ? L"1" : L"0"); },
-                                  L"Quando um jogo vem para a frente, o WacOS desliga o vidro real, os efeitos que acompanham o mouse e os Cantos Ativos e passa a usar menos processador, até o jogo fechar. Jogos que não forem reconhecidos podem ser postos em jogos.txt, na pasta de ajustes.") }));
+                                  L"Quando um jogo vem para a frente, o Liquinix desliga o vidro real, os efeitos que acompanham o mouse e os Cantos Ativos e passa a usar menos processador, até o jogo fechar. Jogos que não forem reconhecidos podem ser postos em jogos.txt, na pasta de ajustes.") }));
     p.groups.push_back(Plain(Buttons({ { L"Opções de Energia…", [] { OpenUri(L"ms-settings:powersleep"); } } })));
     return p;
 }
@@ -401,7 +401,7 @@ Page Armazenamento() {
 
 namespace {
 
-// ---- Atualização do WacOS pelo GitHub (tools\atualizar-github.ps1). Ao abrir a página o Ajustes confere sozinho,
+// ---- Atualização do Liquinix pelo GitHub (tools\atualizar-github.ps1). Ao abrir a página o Ajustes confere sozinho,
 // numa thread, a versão instalada (bin\versao.txt), a mais nova publicada e os commits que faltam; o botão só
 // aparece quando há o que instalar e roda o mesmo script, que baixa e troca só o que mudou.
 static std::wstring BinDir();
@@ -457,11 +457,11 @@ Page Atualizacao() {
     rows.push_back(Value(L"Versão instalada", u.atual.empty() ? (u.state == 2 ? Tr(L"desconhecida") : Tr(L"Procurando…")) : u.atual));
     rows.push_back(Value(L"Versão mais nova", u.state == 1 ? Tr(L"Procurando…") : !u.erro.empty() ? u.erro : u.novo + (u.data.empty() ? L"" : L" (" + u.data + L")")));
     if (tem) {
-        std::wstring label = u.faltam.empty() ? Tr(L"Há uma versão nova do WacOS.")
+        std::wstring label = u.faltam.empty() ? Tr(L"Há uma versão nova do Liquinix.")
                            : std::to_wstring(u.faltam.size()) + (u.faltam.size() == 1 ? Tr(L" mudança para instalar.") : Tr(L" mudanças para instalar."));
         rows.push_back(Button(label, L"Atualizar Agora", [] {
-            // o instalador do WacOS (WacOSSetup.exe, na pasta da instalação): baixa, confere e instala, com janela própria
-            std::wstring setup = BinDir().substr(0, BinDir().find_last_of(L'\\')) + L"\\WacOSSetup.exe";
+            // o instalador do Liquinix (LiquinixSetup.exe, na pasta da instalação): baixa, confere e instala, com janela própria
+            std::wstring setup = BinDir().substr(0, BinDir().find_last_of(L'\\')) + L"\\LiquinixSetup.exe";
             if (GetFileAttributesW(setup.c_str()) != INVALID_FILE_ATTRIBUTES) {
                 ShellExecuteW(nullptr, L"open", setup.c_str(), L"--atualizar", nullptr, SW_SHOWNORMAL);
                 return;
@@ -470,12 +470,12 @@ Page Atualizacao() {
             STARTUPINFOW si{ sizeof(si) }; PROCESS_INFORMATION pi{};
             if (CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &pi)) { CloseHandle(pi.hThread); CloseHandle(pi.hProcess); }
         }));
-    } else if (u.state == 2 && u.erro.empty()) rows.push_back(Note(Tr(L"O WacOS está atualizado.")));
+    } else if (u.state == 2 && u.erro.empty()) rows.push_back(Note(Tr(L"O Liquinix está atualizado.")));
     rows.push_back(Button(L"Confere de novo no GitHub.", L"Procurar Atualizações", [] { { std::lock_guard<std::mutex> lk(g_updMu); g_upd.state = 0; } aj::Rebuild(); }));
-    p.groups.push_back(G(rows, L"WacOS"));
+    p.groups.push_back(G(rows, L"Liquinix"));
     p.groups.push_back(G({ Toggle(L"Avisar quando houver atualização", [] { return Setting(L"avisar_atualizacao", L"1") != L"0"; },
                                   [](bool v) { SetSetting(L"avisar_atualizacao", v ? L"1" : L"0"); },
-                                  L"O WacOS confere o GitHub ao entrar e a cada 6 horas e mostra uma notificação quando sai uma versão nova.") }));
+                                  L"O Liquinix confere o GitHub ao entrar e a cada 6 horas e mostra uma notificação quando sai uma versão nova.") }));
     if (tem && !u.faltam.empty()) {
         std::vector<Row> ch;
         for (size_t k = 0; k < u.faltam.size() && k < 15; k++) ch.push_back(Note(L"• " + u.faltam[k]));
@@ -520,8 +520,8 @@ Page DataHora() {
     return p;
 }
 
-// ================= O próprio WacOS (Geral): abrir ao entrar no Windows, pastas no Finder, desligar
-// A tarefa agendada "WacOS" (a mesma do instalador e do docs\iniciar-com-windows.ps1) abre o Shell no login.
+// ================= O próprio Liquinix (Geral): abrir ao entrar no Windows, pastas no Finder, desligar
+// A tarefa agendada "Liquinix" (a mesma do instalador e do docs\iniciar-com-windows.ps1) abre o Shell no login.
 static std::wstring BinDir() {
     wchar_t exe[MAX_PATH]; GetModuleFileNameW(nullptr, exe, MAX_PATH);
     std::wstring d = exe;
@@ -536,7 +536,7 @@ static DWORD RunHidden(std::wstring cmd, DWORD waitMs = 15000) {
     CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
     return code;
 }
-static bool ShellAutoStart() { return RunHidden(L"schtasks.exe /Query /TN WacOS", 5000) == 0; }
+static bool ShellAutoStart() { return RunHidden(L"schtasks.exe /Query /TN Liquinix", 5000) == 0; }
 // A chave "Abrir ao entrar no Windows" lia o estado rodando o schtasks.exe A CADA DESENHO da linha (13-33 ms por
 // processo, medido em 20/11/2026): rolar a página Geral até o fim, onde ela fica, travava a rolagem (cada quadro
 // esperava um processo). Agora o estado é lido uma vez, numa thread, e guardado; o clique muda o guardado na hora.
@@ -553,10 +553,10 @@ static void SetShellAutoStartAsync(bool on) {
     std::thread([on] { SetShellAutoStart(on); g_autoStart = ShellAutoStart() ? 1 : 0; aj::Rebuild(); }).detach();
 }
 static void SetShellAutoStart(bool on) {
-    if (!on) { RunHidden(L"schtasks.exe /Delete /TN WacOS /F"); return; }
-    std::wstring exe = BinDir() + L"\\WacOSShell.exe";
+    if (!on) { RunHidden(L"schtasks.exe /Delete /TN Liquinix /F"); return; }
+    std::wstring exe = BinDir() + L"\\LiquinixShell.exe";
     // ao fazer logon, só para este usuário, sem administrador (o schtasks /SC ONLOGON pediria administrador)
-    std::wstring ps = L"$u=\"$env:USERDOMAIN\\$env:USERNAME\"; Register-ScheduledTask -TaskName WacOS -Force "
+    std::wstring ps = L"$u=\"$env:USERDOMAIN\\$env:USERNAME\"; Register-ScheduledTask -TaskName Liquinix -Force "
                       L"-Action (New-ScheduledTaskAction -Execute '" + exe + L"' -WorkingDirectory '" + BinDir() + L"') "
                       L"-Trigger (New-ScheduledTaskTrigger -AtLogOn -User $u) "
                       L"-Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -Priority 4 -MultipleInstances IgnoreNew) "
@@ -565,14 +565,14 @@ static void SetShellAutoStart(bool on) {
 }
 static void TurnShellOff() {
     int r = MessageBoxW(GetActiveWindow(),
-        Tr(L"O WacOS vai fechar agora e não vai mais abrir ao entrar no Windows. A barra de tarefas e o "
+        Tr(L"O Liquinix vai fechar agora e não vai mais abrir ao entrar no Windows. A barra de tarefas e o "
            L"Explorador do Windows voltam como antes, e as pastas voltam a abrir no Explorador.\n\n"
-           L"Para usar de novo: abra \"WacOS\" no Menu Iniciar."),
-        Tr(L"Desligar o WacOS?"), MB_OKCANCEL | MB_ICONQUESTION | MB_DEFBUTTON2);
+           L"Para usar de novo: abra \"Liquinix\" no Menu Iniciar."),
+        Tr(L"Desligar o Liquinix?"), MB_OKCANCEL | MB_ICONQUESTION | MB_DEFBUTTON2);
     if (r != IDOK) return;
     SetShellAutoStart(false);
     g_autoStart = 0;
-    RunHidden(L"\"" + BinDir() + L"\\WacOSFinder.exe\" --padrao off --quieto");  // pastas voltam para o Explorador
+    RunHidden(L"\"" + BinDir() + L"\\LiquinixFinder.exe\" --padrao off --quieto");  // pastas voltam para o Explorador
     SetSetting(L"finder_padrao", L"0");
     SetSetting(L"finder_volta", L"1");  // o Shell, ao abrir de novo, religa o Finder (issue #1: o Win+E ficava no Explorador)
     if (HWND h = FindWindowW(L"ShellMensagens", nullptr)) PostMessageW(h, WM_HOTKEY, 1, 0);  // o mesmo do "sair do Shell"
@@ -605,7 +605,7 @@ Page Geral() {
     p.groups.push_back(G({ Link(L"Armazenamento", [] { Push(L"Armazenamento", Armazenamento); }, 0xEDA2, C_GRAY) }));
     p.groups.push_back(G({ Uri(L"Compartilhamento por Proximidade", L"ms-settings:crossdevice", 0xE72D, C_BLUE),
                            Link(L"Itens de Início", [] { Push(L"Itens de Início", Inicio); }, 0xE8FD, C_GRAY) }));
-    // Idioma do WacOS (idioma=<código> no ajustes.txt, idioma.h): o Shell troca na hora; este app também;
+    // Idioma do Liquinix (idioma=<código> no ajustes.txt, idioma.h): o Shell troca na hora; este app também;
     // os outros apps abertos leem o idioma ao abrir. Cada idioma aparece com o nome na própria língua.
     std::vector<std::wstring> langs;
     for (int l : idioma::kMenuOrder) langs.push_back(idioma::kInfo[l].native);
@@ -623,7 +623,7 @@ Page Geral() {
                      });
     lang.icon = 0xE774; lang.iconColor = C_BLUE;
     p.groups.push_back(G({ lang, Note(L"O Shell muda na hora. Os apps abertos (Finder, Notas, Terminal…) mudam ao serem reabertos.") },
-                         L"Idioma do WacOS"));
+                         L"Idioma do Liquinix"));
     p.groups.push_back(G({ Uri(L"Idioma e Região", L"ms-settings:regionlanguage", 0xE774, C_BLUE),
                            Link(L"Data e Hora", [] { Push(L"Data e Hora", DataHora); }, 0xE787, C_BLUE) }));
     p.groups.push_back(G({ Uri(L"Compartilhamento", L"ms-settings:sharedexperiences", 0xE72D, C_GRAY),
@@ -633,18 +633,18 @@ Page Geral() {
                            Toggle(L"Abrir pastas no Finder", [] { return Setting(L"finder_padrao", L"1") == L"1"; },
                                   [](bool on) {
                                       SetSetting(L"finder_padrao", on ? L"1" : L"0");
-                                      RunHidden(L"\"" + BinDir() + L"\\WacOSFinder.exe\" --quieto --padrao " + (on ? L"on" : L"off"));
+                                      RunHidden(L"\"" + BinDir() + L"\\LiquinixFinder.exe\" --quieto --padrao " + (on ? L"on" : L"off"));
                                   }, L"Downloads do navegador, \"Mostrar na pasta\" e o Win+E também"),
                            // reinicia só o Shell (barra, Dock, mesa, vidro): o mesmo do "ShellReiniciar" que a atualização usa
-                           Button(L"Reiniciar o WacOS", L"Reiniciar", [] {
+                           Button(L"Reiniciar o Liquinix", L"Reiniciar", [] {
                                static UINT msg = RegisterWindowMessageW(L"ShellReiniciar");
                                HWND sh = FindWindowExW(HWND_MESSAGE, nullptr, L"ShellMensagens", nullptr);
                                if (!sh) sh = FindWindowW(L"ShellMensagens", nullptr);
                                if (sh) PostMessageW(sh, msg, 0, 0);
-                               else ShellExecuteW(nullptr, L"open", (BinDir() + L"\\WacOSShell.exe").c_str(), nullptr, nullptr, SW_SHOWNORMAL);  // o Shell não está rodando: abre
+                               else ShellExecuteW(nullptr, L"open", (BinDir() + L"\\LiquinixShell.exe").c_str(), nullptr, nullptr, SW_SHOWNORMAL);  // o Shell não está rodando: abre
                            }, L"Fecha e abre de novo a barra de menus, o Dock, a mesa e o vidro, sem sair do Windows. Os seus apps continuam abertos."),
-                           Button(L"Parar de usar o WacOS", L"Desligar…", [] { TurnShellOff(); },
-                                  L"Fecha o Shell e devolve a barra de tarefas e o Explorador do Windows") }, L"WacOS"));
+                           Button(L"Parar de usar o Liquinix", L"Desligar…", [] { TurnShellOff(); },
+                                  L"Fecha o Shell e devolve a barra de tarefas e o Explorador do Windows") }, L"Liquinix"));
     return p;
 }
 
@@ -1205,7 +1205,7 @@ Page AparenciaGolden() {
     folder.dot = [](int i) { return i <= 0 ? Accent() : GGRgb(GG_PASTAS[std::clamp(i - 1, 0, 8)]); };
     p.groups.push_back(G({ icons, folder }));
 
-    // ---- Janelas (barras de rolagem), Transparência e Efeitos e o tema do WacOS
+    // ---- Janelas (barras de rolagem), Transparência e Efeitos e o tema do Liquinix
     p.groups.push_back(G({ Popup(L"Mostrar barras de rolagem", { L"Ao rolar", L"Sempre" },
                                  [] { DWORD v = 1, cb = sizeof(v); RegGetValueW(HKEY_CURRENT_USER, L"Control Panel\\Accessibility", L"DynamicScrollbars", RRF_RT_REG_DWORD, nullptr, &v, &cb); return v ? 0 : 1; },
                                  [](int i) {
@@ -1215,7 +1215,7 @@ Page AparenciaGolden() {
                                  }) }, L"Janelas"));
     p.groups.push_back(G({ Link(L"Transparência e Efeitos", [] { Push(L"Transparência e Efeitos", TransparenciaEfeitos); }, 0xE790, C_BLUE) }));
     Row tema = TemaRow();
-    tema.label = L"Estilo do WacOS";
+    tema.label = L"Estilo do Liquinix";
     if (Setting(L"leopard", L"0") == L"1" && Setting(L"liquid_glass", L"0") != L"1") {
         // Leopard: o Aurora (o papel de parede padrão do 10.5) só como sugestão; trocar de tema nunca muda o papel de
         // parede do usuário (pedido dele), quem troca é este botão
@@ -1233,7 +1233,7 @@ Page AparenciaGolden() {
 
 // ================= Aparência no Mac OS X Leopard
 // O painel "Aparência" das Preferências do Sistema do 10.5: Aparência (Azul / Grafite: botões, menus e janelas), Cor
-// de realce (a seleção do texto), barras de rolagem, a barra de menus translúcida (10.5.2) e o tema do WacOS.
+// de realce (a seleção do texto), barras de rolagem, a barra de menus translúcida (10.5.2) e o tema do Liquinix.
 Page AparenciaLeopard() {
     Page p;
     p.groups.push_back(G({
@@ -1255,7 +1255,7 @@ Page AparenciaLeopard() {
                [](bool v) { SetSetting(L"barra_translucida", v ? L"1" : L"0"); Rebuild(); }),
     }));
     Row tema = TemaRow();
-    tema.label = L"Estilo do WacOS";
+    tema.label = L"Estilo do Liquinix";
     Row aurora = Button(L"Papel de parede do Leopard", L"Usar o Aurora", [] {
         wchar_t prof[MAX_PATH] = {};
         if (!GetEnvironmentVariableW(L"USERPROFILE", prof, MAX_PATH)) return;
@@ -1983,7 +1983,7 @@ Page Notificacoes() {
                                   [key](bool on) { DWORD v = on; RegSetKeyValueW(HKEY_CURRENT_USER, key, L"ToastEnabled", REG_DWORD, &v, sizeof(v)); },
                                   L"Desligado, os aplicativos não mostram avisos (pode ser preciso reiniciar a sessão).") }));
     p.groups.push_back(G({ Uri(L"Notificações por Aplicativo", L"ms-settings:notifications", 0xEA8F, C_RED) }, L"Notificações dos Aplicativos"));
-    // banners e Central de Notificações do WacOS (notificacoes.cpp)
+    // banners e Central de Notificações do Liquinix (notificacoes.cpp)
     Row dur = Slider(L"Tempo do banner na tela", 2, 30, [] { return NumSetting(L"notif_duracao", 5); }, SetNum(L"notif_duracao"), L"2 s", L"30 s");
     dur.hasDef = true; dur.def = 5;
     p.groups.push_back(G({ Flag(L"Banners do Mac", L"banners_mac", L"1", L"Os avisos dos aplicativos aparecem no canto de cima, no visual do Mac."), dur,

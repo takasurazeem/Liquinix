@@ -68,7 +68,7 @@ Objetivo de qualidade: **ficar idêntico ao Mac** (medidas, curvas, tempos, text
 
 ### 4.1 Build
 `build.cmd [alvo]` na raiz. Alvos: (vazio = tudo), `shell`, `finder`, `ajustes`, `monitor`, `terminal`,
-`calculadora`, `notas`, `captura`, `menu` (bancada MenuTeste), `titulos` (WacOSTitleBars.exe; também sai no `janelas`), `janelas` (SequoiaWindow.dll 64/32 +
+`calculadora`, `notas`, `captura`, `menu` (bancada MenuTeste), `titulos` (LiquinixTitleBars.exe; também sai no `janelas`), `janelas` (SequoiaWindow.dll 64/32 +
 host 32), `dialogo` (DialogoMac.dll), `bandeja`. O build "tudo" **não** inclui `janelas` nem `dialogo`.
 Ícone e descrição de cada exe: `tools/recursos.ps1` (gerado no build).
 Flags: `/O2 /W3 /std:c++20 /utf-8 /DUNICODE`. Sem MSBuild, sem projeto .vcxproj.
@@ -111,8 +111,8 @@ início automático (tarefa agendada `SequoiaShell`), abrir agora. `desinstalar.
 | `SequoiaCalculator.exe` | `src/calculadora` | Calculadora (Básica/Científica/Programador) |
 | `SequoiaNotes.exe` | `src/notas` | Notas (texto rico, `%APPDATA%\Shell\Notas`) |
 | `SequoiaScreenshot.exe` | `src/captura` | Captura de Tela (Win+Shift+3/4/5) |
-| `WacOSWindow.dll` / `WacOSWindow32.dll` | `src/janelas` | barra de título do Mac e controles nas janelas dos outros programas (gancho em 64 bits pelo Shell; 32 bits pela própria DLL dentro do rundll32 de 32 bits do Windows, entrada WacOSHost) |
-| `WacOSTitleBars.exe` | `src/titulos` + `src/shell/janelas.cpp` | só as barras de título do Mac, sem o Shell (`--sair` desliga; o Shell fecha e assume). Os apps sem botões próprios (app2d.h, Pré-Visualização) carregam a `WacOSWindow.dll` sozinhos (`src/comum/barra_mac.h`, entrada `WacOSPropria`); o Shell não põe gancho em exe com "wacos" no nome |
+| `LiquinixWindow.dll` / `LiquinixWindow32.dll` | `src/janelas` | barra de título do Mac e controles nas janelas dos outros programas (gancho em 64 bits pelo Shell; 32 bits pela própria DLL dentro do rundll32 de 32 bits do Windows, entrada LiquinixHost) |
+| `LiquinixTitleBars.exe` | `src/titulos` + `src/shell/janelas.cpp` | só as barras de título do Mac, sem o Shell (`--sair` desliga; o Shell fecha e assume). Os apps sem botões próprios (app2d.h, Pré-Visualização) carregam a `LiquinixWindow.dll` sozinhos (`src/comum/barra_mac.h`, entrada `LiquinixPropria`); o Shell não põe gancho em exe com "liquinix" no nome |
 | `DialogoMac.dll` / `DialogoMac32.dll` | `src/dialogo` | troca IFileOpenDialog/IFileSaveDialog pelo Finder (HKCU CLSID, `tools/dialogo-ligar.ps1`) |
 | `ferramentas\MenuTeste.exe` | `src/tools/menu_teste.cpp` | bancada do menu de contexto (`--dump`, `--demo`, `--demo <pasta> --quente`) |
 

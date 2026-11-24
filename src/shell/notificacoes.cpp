@@ -1222,7 +1222,7 @@ void Frame() {
 }
 
 void OpenApp(const Note& n) {
-    if (n.aumid == L"WacOS.Atualizacao") { shell::OpenSettings(L"atualizacao"); return; }  // atualizacao.cpp
+    if (n.aumid == L"Liquinix.Atualizacao") { shell::OpenSettings(L"atualizacao"); return; }  // atualizacao.cpp
     for (auto& a : apps::list)
         if (!a.wins.empty() && (!_wcsicmp(a.id.c_str(), (L"aumid:" + n.aumid).c_str()) || !_wcsicmp(a.name.c_str(), n.app.c_str()))) { apps::Activate(a); return; }
     for (auto& a : apps::list)

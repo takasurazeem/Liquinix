@@ -1,4 +1,4 @@
-// Modo ajudante do WacOSShell.exe: chamadas do Windows que os scripts do instalador faziam com Add-Type/DllImport
+// Modo ajudante do LiquinixShell.exe: chamadas do Windows que os scripts do instalador faziam com Add-Type/DllImport
 // (C# compilado na memória do PowerShell). Esse padrão, junto com o resto do instalador, fazia a análise por IA do
 // Microsoft Defender acusar o pacote ("Trojan:Script/Wacatac.H!ml", Reddit 20/11/2026). Agora os scripts chamam o
 // nosso exe, que faz a mesma coisa às claras e sai:

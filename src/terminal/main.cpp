@@ -710,7 +710,7 @@ void ContextMenu(POINT screen) {
     else if (id == 6) NewWindow(true);
     else if (id == 7) {
         wchar_t exe[MAX_PATH]; GetModuleFileNameW(nullptr, exe, MAX_PATH); PathRemoveFileSpecW(exe);
-        std::wstring finder = std::wstring(exe) + L"\\WacOSFinder.exe";
+        std::wstring finder = std::wstring(exe) + L"\\LiquinixFinder.exe";
         ShellExecuteW(nullptr, L"open", GetFileAttributesW(finder.c_str()) != INVALID_FILE_ATTRIBUTES ? finder.c_str() : L"explorer.exe", (L"\"" + g_scr.cwd + L"\"").c_str(), nullptr, SW_SHOWNORMAL);
     }
     Invalidate();

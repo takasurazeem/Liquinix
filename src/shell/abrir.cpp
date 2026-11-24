@@ -1,5 +1,5 @@
 ﻿// Janelas abrindo como no Mac: a janela nova aparece crescendo de ~94% para 100% enquanto surge (~0,18 s).
-// A WacOSWindow.dll (dentro do app) esconde a janela (cloak) no WM_SHOWWINDOW, antes de ela aparecer, e
+// A LiquinixWindow.dll (dentro do app) esconde a janela (cloak) no WM_SHOWWINDOW, antes de ela aparecer, e
 // avisa aqui ("ShellJanelaAbrir") depois de uns quadros, com o app já pintado. O Shell anima uma miniatura
 // viva do DWM (o mesmo recurso do gênio) numa camada nossa, logo abaixo do Dock, e no fim manda a DLL
 // mostrar a janela de verdade ("MacJanelaAbriu"); a miniatura sai dois quadros depois (sem buraco).

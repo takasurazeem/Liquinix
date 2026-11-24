@@ -147,7 +147,7 @@ bool WantTop() {
     DWORD pid = 0; GetWindowThreadProcessId(f, &pid);
     if (pid == GetCurrentProcessId()) return true;
     // pela classe da janela do Finder (ArquivosJanela...), não pelo nome do .exe: ao instalar uma versão nova, o
-    // .exe em uso é renomeado (inst-...-WacOSFinder.exe) e o nome deixava de bater
+    // .exe em uso é renomeado (inst-...-LiquinixFinder.exe) e o nome deixava de bater
     wchar_t cls[64] = {}; GetClassNameW(GetAncestor(f, GA_ROOT), cls, 64);
     return !wcsncmp(cls, L"Arquivos", 8);
 }

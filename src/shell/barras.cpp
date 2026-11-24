@@ -22,7 +22,7 @@
 //  - Outros (Bloco de Notas novo, WinUI, apps da Loja, Terminal): não aceitam cliques repassados, então ficam com
 //    dois remendos: os botões do Mac à esquerda (cobrem o canto) e um por cima dos botões do Windows.
 // `barras_proprias=0` desliga este modo.
-// Fora do modo nativo quem faz a barra é a WacOSWindow.dll (src\janelas). Desligar: janelas_mac=0 no
+// Fora do modo nativo quem faz a barra é a LiquinixWindow.dll (src\janelas). Desligar: janelas_mac=0 no
 // ajustes.txt ou C:\Users\Public\MacTitulo-desligado.txt. Roda numa thread própria (um programa travado
 // não segura o Dock nem a barra de menus).
 #include "shell.h"

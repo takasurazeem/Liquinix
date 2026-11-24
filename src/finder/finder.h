@@ -16,7 +16,7 @@
 #include "../comum/idioma.h"
 
 void Log(const wchar_t* fmt, ...);
-// Caminho do WacOSFinder.exe (no modo nativo, dentro do explorer.exe, GetModuleFileName(nullptr) seria o explorer)
+// Caminho do LiquinixFinder.exe (no modo nativo, dentro do explorer.exe, GetModuleFileName(nullptr) seria o explorer)
 void ExePath(wchar_t* out, DWORD n);
 extern bool g_finderNativo;
 extern bool g_finderEmbutido;  // Abrir/Salvar dentro do programa que pediu (MacDialogo.dll): a janela só se esconde no fim  // Finder dentro do explorer.exe (MacFinder.dll): uma janela só, com abas

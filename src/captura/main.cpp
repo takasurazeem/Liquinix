@@ -1,4 +1,4 @@
-// Captura de Tela do macOS (Cmd+Shift+3/4/5) no lugar da Ferramenta de Captura: WacOSScreenshot.exe.
+// Captura de Tela do macOS (Cmd+Shift+3/4/5) no lugar da Ferramenta de Captura: LiquinixScreenshot.exe.
 // Fica residente (o Shell abre com /residente, sem janela visível) para a mira aparecer na hora: o Shell
 // manda a mensagem registrada "SequoiaCaptura" para a janela "SequoiaCapturaMsg" (wParam 3 = tela inteira,
 // 4 = região/janela, 5 = barra de ferramentas; lParam 1 = Ctrl seguro: só para a área de transferência).
@@ -123,7 +123,7 @@ static void SaveCfg() {
     CreateDirectoryW(d.c_str(), nullptr);
     FILE* fp = nullptr;
     if (_wfopen_s(&fp, (d + L"\\captura.txt").c_str(), L"w, ccs=UTF-8") || !fp) return;
-    fwprintf(fp, L"# Captura de Tela (WacOSScreenshot.exe): opções do menu Opções da barra (Win+Shift+5)\n");
+    fwprintf(fp, L"# Captura de Tela (LiquinixScreenshot.exe): opções do menu Opções da barra (Win+Shift+5)\n");
     fwprintf(fp, L"destino=%d\ntemporizador=%d\nmodo=%d\nminiatura=%d\nlembrar=%d\nponteiro=%d\n", g_cfg.dest, g_cfg.timer, g_cfg.mode, g_cfg.thumb, g_cfg.remember, g_cfg.pointer);
     if (g_cfg.hasSel) fwprintf(fp, L"selecao=%ld,%ld,%ld,%ld\n", g_cfg.sel.left, g_cfg.sel.top, g_cfg.sel.right, g_cfg.sel.bottom);
     fclose(fp);

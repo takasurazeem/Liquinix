@@ -1267,7 +1267,7 @@ bool ShellInFront() {
     bool r = false;
     if (ph) {
         wchar_t path[MAX_PATH]; DWORD n = MAX_PATH;
-        if (QueryFullProcessImageNameW(ph, 0, path, &n)) { const wchar_t* b = wcsrchr(path, L'\\'); r = b && (!_wcsicmp(b + 1, L"WacOSShell.exe") || !_wcsicmp(b + 1, L"Shell.exe")); }
+        if (QueryFullProcessImageNameW(ph, 0, path, &n)) { const wchar_t* b = wcsrchr(path, L'\\'); r = b && (!_wcsicmp(b + 1, L"LiquinixShell.exe") || !_wcsicmp(b + 1, L"Shell.exe")); }
         CloseHandle(ph);
     }
     return r;

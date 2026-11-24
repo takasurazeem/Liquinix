@@ -1,6 +1,6 @@
 # Monta icones\goldengate com os ícones do macOS 27 Golden Gate (repositório zagnut531/macOS-27-Icons,
 # exportados do Mac em 1024 px). Vale a versão mais recente de cada um: Beta 1 < 2 < 3 < 4 < 5 < 6 < 27.2.
-# Os nomes viram os que o WacOS procura (ex.: "System Settings" -> "Settings", "Apps" -> "Launchpad").
+# Os nomes viram os que o Liquinix procura (ex.: "System Settings" -> "Settings", "Apps" -> "Launchpad").
 # Uso pessoal, como os outros pacotes de icones\ (ver icones\LEIA-ME.txt): não vai para o GitHub.
 # python -I tools\icones-goldengate.py <pasta do repositório clonado>
 import os, re, sys

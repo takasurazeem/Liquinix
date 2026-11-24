@@ -29,7 +29,7 @@
 #pragma comment(lib, "dwrite.lib")
 #if defined(_M_IX86)
 #pragma comment(linker, "/EXPORT:GetMsgProc=_GetMsgProc@12")
-#pragma comment(linker, "/EXPORT:WacOSHostW=_WacOSHostW@16")
+#pragma comment(linker, "/EXPORT:LiquinixHostW=_LiquinixHostW@16")
 #endif
 
 void StopShowHook();
@@ -48,7 +48,7 @@ const wchar_t* PROP = L"MacJanela";          // janela já tratada
 const wchar_t* PROP_MENU = L"MacJanelaMenu";  // a barra de menus guardada (a barra do Shell lê daqui)
 const UINT_PTR SUBCLASS_ID = 0x4D41434A;
 UINT g_msgTile;  // "MacJanelaEncaixar": reaplica o encaixe logo depois do fim do arrasto
-// carregada pelo próprio app do WacOS (WacOSPropria, barra_mac.h), não pelo gancho do Shell: a barra é do app e
+// carregada pelo próprio app do Liquinix (LiquinixPropria, barra_mac.h), não pelo gancho do Shell: a barra é do app e
 // o "desfazer" do Shell (ao sair) não vale aqui
 bool g_proprio = false;
 UINT g_msgUndo, g_msgZoom;  // Zoom: "MacJanelaAmpliar" (o Shell manda no Win+↑/↓; a DLL usa para converter o maximizar)
@@ -114,10 +114,10 @@ RECT CaptionRect(HWND h) {
     return { c.x, top, c.x + cr.right, c.y };
 }
 
-// Barra unificada (macOS 27, apps do WacOS feitos com o app2d.h): o app tira a barra do Windows e desenha a
-// barra de ferramentas dele nos primeiros N pt da área do app (prop "WacOSBarraUnificada" = N). A DLL continua
+// Barra unificada (macOS 27, apps do Liquinix feitos com o app2d.h): o app tira a barra do Windows e desenha a
+// barra de ferramentas dele nos primeiros N pt da área do app (prop "LiquinixBarraUnificada" = N). A DLL continua
 // com os cantos, a sombra, o ampliar e os três botões, desenhados por cima no meio dessa faixa, a 26 pt da borda.
-int UnifiedBar(HWND h) { return (int)(INT_PTR)GetPropW(h, L"WacOSBarraUnificada"); }
+int UnifiedBar(HWND h) { return (int)(INT_PTR)GetPropW(h, L"LiquinixBarraUnificada"); }
 
 // 0: não mexe; 1: barra padrão do Windows; 2: barra desenhada pelo próprio app (Chromium/Electron e afins)
 int Mode(HWND h, bool showing = false) {  // showing: chamada no WM_SHOWWINDOW, antes de ficar visível
@@ -189,11 +189,11 @@ HRGN RoundRgn(int x0, int y0, int x1, int y1, int r) {
     memcpy(rd->Buffer, rows.data(), rows.size() * sizeof(RECT));
     return ExtCreateRegion(nullptr, (DWORD)buf.size(), rd);
 }
-bool OwnApp();     // mais abaixo: um dos apps do WacOS
+bool OwnApp();     // mais abaixo: um dos apps do Liquinix
 const float PATCH_L = 80, PATCH_R = 3 * 46 + 6;  // pt: botões do Mac / os três botões do app (46 pt cada no Windows)
 
 // Apps do Windows (barra de título padrão, mais alta que a do Mac): os botões 4 pt mais para dentro; na medida do
-// Mac eles pareciam colados na borda (Reddit, 20/11/2026). Os apps do WacOS, barras próprias e o Leopard ficam como estão.
+// Mac eles pareciam colados na borda (Reddit, 20/11/2026). Os apps do Liquinix, barras próprias e o Leopard ficam como estão.
 float WinAppInset(Info* in) {
     return in->custom || in->tool || OwnApp() || UnifiedBar(in->owner) || leopard::On() ? 0.f : 4.f;
 }
@@ -474,10 +474,10 @@ bool Fullscreen(HWND h) {
 
 // Tema macOS Tahoe (liquid_glass=1 no ajustes.txt do Shell): as janelas são mais redondas (16 pt; Sequoia: 12 pt).
 // Lido do arquivo no máximo a cada 3 s (a DLL roda dentro dos outros programas, sem acesso aos ajustes do Shell).
-// um dos apps do próprio WacOS (WacOS*.exe): no macOS 27 a barra deles não tem título (Lembretes, Calendário…)
+// um dos apps do próprio Liquinix (Liquinix*.exe): no macOS 27 a barra deles não tem título (Lembretes, Calendário…)
 bool OwnApp() {
     static int own = -1;
-    if (own < 0) { wchar_t p[MAX_PATH] = {}; GetModuleFileNameW(nullptr, p, MAX_PATH); const wchar_t* n = wcsrchr(p, L'\\'); own = n && !_wcsnicmp(n + 1, L"WacOS", 5) ? 1 : 0; }
+    if (own < 0) { wchar_t p[MAX_PATH] = {}; GetModuleFileNameW(nullptr, p, MAX_PATH); const wchar_t* n = wcsrchr(p, L'\\'); own = n && !_wcsnicmp(n + 1, L"Liquinix", 5) ? 1 : 0; }
     return own == 1;
 }
 bool TemaTahoe(bool force) {
@@ -1124,7 +1124,7 @@ LRESULT CALLBACK OwnerProc(HWND h, UINT m, WPARAM w, LPARAM l, UINT_PTR, DWORD_P
         SetPropW(h, L"MacJanelaPintando", (HANDLE)2);
         SetTimer(h, 0x4D50, 34, UncloakShown);
     }
-    if (m == g_msgUndo && g_proprio) return 1;  // app do WacOS: a barra fica (o Shell saindo não a tira)
+    if (m == g_msgUndo && g_proprio) return 1;  // app do Liquinix: a barra fica (o Shell saindo não a tira)
     if (m == g_msgUndo) { StopShowHook(); Detach(h, in); return 1; }
     static UINT msgSettings = RegisterWindowMessageW(L"ShellAjustesMudaram");  // tema trocado (Leopard, Tahoe…): redesenha já
     if (m == msgSettings && msgSettings) {
@@ -1812,11 +1812,11 @@ extern "C" __declspec(dllexport) LRESULT CALLBACK GetMsgProc(int code, WPARAM w,
     return CallNextHookEx(nullptr, code, w, l);
 }
 
-// Os apps do WacOS que não desenham os próprios botões (app2d.h, Pré-Visualização) carregam esta DLL eles mesmos
+// Os apps do Liquinix que não desenham os próprios botões (app2d.h, Pré-Visualização) carregam esta DLL eles mesmos
 // (src\comumarra_mac.h) e chamam esta entrada na thread da interface, antes de criar a janela: o mesmo gancho
 // do Shell, mas posto pelo próprio app só na thread dele e sem módulo (não ocupa lugar na lista de DLLs de gancho
 // do Windows). Assim a barra é igual com e sem o Shell aberto.
-extern "C" __declspec(dllexport) BOOL WINAPI WacOSPropria() {
+extern "C" __declspec(dllexport) BOOL WINAPI LiquinixPropria() {
     if (g_proprio) return TRUE;
     g_proprio = true;
     if (!g_msgUndo) g_msgUndo = RegisterWindowMessageW(L"MacJanelaDesfazer");
@@ -1831,7 +1831,7 @@ extern "C" __declspec(dllexport) BOOL WINAPI WacOSPropria() {
 }
 
 // Programas de 32 bits: o Shell é de 64 bits e um gancho só carrega DLL da mesma arquitetura. Então o Shell
-// abre o rundll32.exe de 32 bits do próprio Windows (SysWOW64) com esta DLL, entrada WacOSHost: ela fica lá
+// abre o rundll32.exe de 32 bits do próprio Windows (SysWOW64) com esta DLL, entrada LiquinixHost: ela fica lá
 // esperando os pedidos do Shell ("ponha a barra de título do Mac na thread X") e sai quando o Shell manda.
 namespace {
 std::map<DWORD, HHOOK> g_hostHooks;
@@ -1856,7 +1856,7 @@ LRESULT CALLBACK HostProc(HWND h, UINT m, WPARAM w, LPARAM l) {
 }
 }  // namespace
 
-extern "C" __declspec(dllexport) void CALLBACK WacOSHostW(HWND, HINSTANCE, LPWSTR, int) {
+extern "C" __declspec(dllexport) void CALLBACK LiquinixHostW(HWND, HINSTANCE, LPWSTR, int) {
     if (FindWindowExW(HWND_MESSAGE, nullptr, L"MacJanela32Host", nullptr)) return;  // já tem um
     WNDCLASSW wc{}; wc.lpfnWndProc = HostProc; wc.hInstance = g_mod; wc.lpszClassName = L"MacJanela32Host";
     RegisterClassW(&wc);
@@ -1872,8 +1872,8 @@ bool DentroDeJogo() {
     wchar_t p[MAX_PATH] = {};
     GetModuleFileNameW(nullptr, p, MAX_PATH);
     std::wstring c = jogos::Minusculo(p);
-    // os apps do próprio WacOS (WacOSPropria) e o hospedeiro de 32 bits (rundll32) sempre podem
-    if (c.find(L"wacos") != std::wstring::npos || c.find(L"\\rundll32.exe") != std::wstring::npos) return false;
+    // os apps do próprio Liquinix (LiquinixPropria) e o hospedeiro de 32 bits (rundll32) sempre podem
+    if (c.find(L"liquinix") != std::wstring::npos || c.find(L"\\rundll32.exe") != std::wstring::npos) return false;
     if (jogos::ProgramaDeJogo(p)) return true;
     for (auto m : { L"GameOverlayRenderer64.dll", L"GameOverlayRenderer.dll", L"UnityPlayer.dll", L"GameAssembly.dll",
                     L"steam_api64.dll", L"steam_api.dll", L"EOSSDK-Win64-Shipping.dll", L"EOSSDK-Win32-Shipping.dll",

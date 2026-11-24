@@ -20,10 +20,10 @@
 static HMODULE g_self;
 #ifdef DIALOGO_NATIVO
 // MacDialogo.dll (barra-nativa): troca as classes no HKLM e traz o Finder dentro dela (FinderEscolher, src\finder):
-// o escolher roda no próprio programa, sem WacOSFinder.exe. Vale para todos os programas (sem dialogo.txt);
+// o escolher roda no próprio programa, sem LiquinixFinder.exe. Vale para todos os programas (sem dialogo.txt);
 // C:\Users\Public\MacDialogo-desligado.txt devolve o diálogo do Windows.
 int FinderEscolher(HINSTANCE hi, const std::wstring& dirBin, const std::wstring& cmd);
-static const wchar_t* PASTA_SHELL = L"C:\\WacOS\\bin";
+static const wchar_t* PASTA_SHELL = L"C:\\Liquinix\\bin";
 #endif
 static const CLSID CLSID_Open = { 0xDC1C5A9C, 0xE88A, 0x4DDE, { 0xA5, 0xA1, 0x60, 0xF8, 0x2A, 0x20, 0xAE, 0xF7 } };
 static const CLSID CLSID_Save = { 0xC0B4E2F3, 0xBA21, 0x4773, { 0x8D, 0xBA, 0x33, 0x5E, 0xC9, 0x46, 0xEB, 0x8B } };
@@ -59,7 +59,7 @@ static bool Allowed() {
     wchar_t exe[MAX_PATH]; GetModuleFileNameW(nullptr, exe, MAX_PATH);
     std::wstring name = PathFindFileNameW(exe);
     for (auto& c : name) c = towlower(c);
-    if (name == L"arquivos.exe" || name == L"wacosfinder.exe") return false;
+    if (name == L"arquivos.exe" || name == L"liquinixfinder.exe") return false;
 #ifdef DIALOGO_NATIVO
     return GetFileAttributesW(L"C:\\Users\\Public\\MacDialogo-desligado.txt") == INVALID_FILE_ATTRIBUTES;
 #endif
@@ -143,10 +143,10 @@ public:
     // IModalWindow
     STDMETHODIMP Show(HWND owner) override {
 #ifdef DIALOGO_NATIVO
-        std::wstring finder = std::wstring(PASTA_SHELL) + L"\\WacOSFinder.exe";
+        std::wstring finder = std::wstring(PASTA_SHELL) + L"\\LiquinixFinder.exe";
         if (GetKeyState(VK_SHIFT) & 0x8000) return inner->Show(owner);  // escape: o original
 #else
-        std::wstring finder = SelfDir() + L"\\WacOSFinder.exe";
+        std::wstring finder = SelfDir() + L"\\LiquinixFinder.exe";
         if ((GetKeyState(VK_SHIFT) & 0x8000) || GetFileAttributesW(finder.c_str()) == INVALID_FILE_ATTRIBUTES)
             return inner->Show(owner);  // escape: o original
 #endif

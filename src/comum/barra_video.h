@@ -224,11 +224,11 @@ inline HWND Acrilico(HINSTANCE hi, HWND owner, DWORD tintAABBGGRR = 0x18403C38, 
     static bool reg = false;
     if (!reg) {
         WNDCLASSEXW gc{ sizeof(gc) };
-        gc.lpfnWndProc = AcrilicoProc; gc.hInstance = hi; gc.lpszClassName = L"WacOSVidroAcrilico"; gc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+        gc.lpfnWndProc = AcrilicoProc; gc.hInstance = hi; gc.lpszClassName = L"LiquinixVidroAcrilico"; gc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
         RegisterClassExW(&gc);
         reg = true;
     }
-    HWND g = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT, L"WacOSVidroAcrilico", L"", WS_POPUP, 0, 0, 10, 10, owner, nullptr, hi, nullptr);
+    HWND g = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT, L"LiquinixVidroAcrilico", L"", WS_POPUP, 0, 0, 10, 10, owner, nullptr, hi, nullptr);
     if (!g) return nullptr;
     COLORREF none = 0xFFFFFFFE;
     DwmSetWindowAttribute(g, 33, &corner, sizeof(corner)); DwmSetWindowAttribute(g, 34, &none, sizeof(none));

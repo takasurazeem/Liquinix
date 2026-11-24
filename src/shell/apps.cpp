@@ -32,7 +32,7 @@ static std::wstring DataDir() {
 }
 
 // Um app nosso aberto antes de uma compilação continua rodando do .exe antigo, que foi renomeado/movido
-// (WacOSFinder-000312.exe na pasta de antigos, WacOSFinder.run-..., .old, .bak): para o Dock ele é o
+// (LiquinixFinder-000312.exe na pasta de antigos, LiquinixFinder.run-..., .old, .bak): para o Dock ele é o
 // mesmo app do bin (antes aparecia um segundo Finder no fim do Dock).
 static std::wstring OurCanonical(const std::wstring& path) {
     size_t sl = path.find_last_of(L'\\');
@@ -86,13 +86,13 @@ static std::wstring OurName(const std::wstring& exe) {
     std::wstring f = Lower(exe.substr(exe.find_last_of(L'\\') + 1));
     struct N { const wchar_t* exe; const wchar_t* pt; const wchar_t* en; };
     static const N names[] = {
-        { L"wacosfinder.exe", L"Finder", L"Finder" },
-        { L"wacossettings.exe", L"Ajustes do Sistema", L"System Settings" },
-        { L"wacosactivitymonitor.exe", L"Monitor de Atividade", L"Activity Monitor" },
-        { L"wacosterminal.exe", L"Terminal", L"Terminal" },
-        { L"wacoscalculator.exe", L"Calculadora", L"Calculator" },
-        { L"wacosnotes.exe", L"Notas", L"Notes" },
-        { L"wacosscreenshot.exe", L"Captura de Tela", L"Screenshot" },
+        { L"liquinixfinder.exe", L"Finder", L"Finder" },
+        { L"liquinixsettings.exe", L"Ajustes do Sistema", L"System Settings" },
+        { L"liquinixactivitymonitor.exe", L"Monitor de Atividade", L"Activity Monitor" },
+        { L"liquinixterminal.exe", L"Terminal", L"Terminal" },
+        { L"liquinixcalculator.exe", L"Calculadora", L"Calculator" },
+        { L"liquinixnotes.exe", L"Notas", L"Notes" },
+        { L"liquinixscreenshot.exe", L"Captura de Tela", L"Screenshot" },
     };
     for (auto& n : names) if (f == n.exe) return TrPick(n.pt, n.en);
     return L"";
@@ -713,13 +713,13 @@ static std::wstring NewestVersion(const std::wstring& path) {
 
 // troca o caminho velho pelo da versão nova (no exe, no jeito de abrir e no id, se o id era o caminho)
 // Os nossos apps fixados (Ajustes, Notas...) apontam para o programa da pasta de onde o Shell roda, com o nome de
-// agora: o nome velho (SequoiaSettings.exe) não existe mais depois da troca para WacOS, e outra pasta (a de
+// agora: o nome velho (SequoiaSettings.exe) não existe mais depois da troca para Liquinix, e outra pasta (a de
 // desenvolvimento) não recebe as atualizações do GitHub (17/11/2026: o Ajustes fixado não abria pelo Dock)
 static std::wstring OurApp(const std::wstring& path) {
     std::wstring base = Lower(path.substr(path.find_last_of(L'\\') + 1));
-    size_t n = base.rfind(L"sequoia", 0) == 0 ? 7 : base.rfind(L"wacos", 0) == 0 ? 5 : 0;
+    size_t n = base.rfind(L"sequoia", 0) == 0 ? 7 : base.rfind(L"liquinix", 0) == 0 ? 5 : 0;
     if (!n || base.size() < 5 || base.compare(base.size() - 4, 4, L".exe")) return path;
-    std::wstring mine = shell::dir + L"\\WacOS" + base.substr(n);
+    std::wstring mine = shell::dir + L"\\Liquinix" + base.substr(n);
     if (GetFileAttributesW(mine.c_str()) == INVALID_FILE_ATTRIBUTES) return path;
     return Lower(mine) == Lower(path) ? path : mine;
 }

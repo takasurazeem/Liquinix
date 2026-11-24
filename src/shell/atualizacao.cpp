@@ -5,7 +5,7 @@
 // Clicar nela abre o Ajustes na página de Atualização de Software (notificacoes.cpp, OpenApp).
 //
 // A notificação é do Windows (vira o banner do Mac pela Central de Notificações): o remetente é o AUMID
-// WacOS.Atualizacao, registrado em HKCU\Software\Classes\AppUserModelId\WacOS.Atualizacao (nome e ícone que o
+// Liquinix.Atualizacao, registrado em HKCU\Software\Classes\AppUserModelId\Liquinix.Atualizacao (nome e ícone que o
 // Windows mostra). O desinstalador apaga essa chave.
 #include "shell.h"
 #include "../comum/idioma.h"
@@ -18,7 +18,7 @@
 
 namespace {
 
-const wchar_t* AUMID = L"WacOS.Atualizacao";
+const wchar_t* AUMID = L"Liquinix.Atualizacao";
 HWND g_to = nullptr;
 UINT g_msg = 0;
 std::mutex g_mx;
@@ -114,8 +114,8 @@ bool atualizacao::Handle(UINT m) {
     shell::SetSetting(L"atualizacao_avisada", novo);
     Log(L"atualização: %ls disponível (instalada %ls, %d mudanças)", novo.c_str(), atual.c_str(), n);
     Registrar();
-    std::wstring corpo = n > 0 ? (L"WacOS " + novo + L" " + Tr(L"está pronto para instalar") + L" (" + std::to_wstring(n) + (n == 1 ? Tr(L" mudança") : Tr(L" mudanças")) + L").")
-                               : (L"WacOS " + novo + L" " + Tr(L"está pronto para instalar") + L".");
+    std::wstring corpo = n > 0 ? (L"Liquinix " + novo + L" " + Tr(L"está pronto para instalar") + L" (" + std::to_wstring(n) + (n == 1 ? Tr(L" mudança") : Tr(L" mudanças")) + L").")
+                               : (L"Liquinix " + novo + L" " + Tr(L"está pronto para instalar") + L".");
     std::wstring xml = L"<toast launch=\"atualizacao\"><visual><binding template=\"ToastGeneric\"><text>" + Xml(Tr(L"Atualizações Disponíveis")) +
                        L"</text><text>" + Xml(corpo) + L"</text></binding></visual></toast>";
     try {

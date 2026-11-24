@@ -79,7 +79,7 @@ bool IsGame(HWND fg, DWORD pid, std::wstring& exe, const wchar_t*& why) {
     if (mesa::IsDeskClass(cls)) return false;
     std::wstring path = ExePath(pid);
     exe = path.substr(path.find_last_of(L'\\') + 1);
-    if (exe.empty() || exe.find(L"wacos") != std::wstring::npos) return false;
+    if (exe.empty() || exe.find(L"liquinix") != std::wstring::npos) return false;
     for (auto n : NOT_GAMES) if (exe == n) return false;
     for (auto& e : g_extra) if (exe == e || path.find(e) != std::wstring::npos) { why = L"jogos.txt"; return true; }
     for (auto c : CLASSES) if (!wcscmp(cls, c)) { why = L"motor de jogo"; return true; }

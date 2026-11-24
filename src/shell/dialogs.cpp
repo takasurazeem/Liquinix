@@ -111,7 +111,7 @@ bool IsFileDialog(HWND dlg) {
 
 HWND FolderEdit(HWND dlg) { return GetDlgItem(dlg, 0x3744); }
 
-// marca para a barra do Mac (WacOSWindow.dll, dentro do programa) esconder o que ela desenha em volta
+// marca para a barra do Mac (LiquinixWindow.dll, dentro do programa) esconder o que ela desenha em volta
 // da janela; o reposicionamento sem mudar nada faz ela reavaliar na hora
 void Mark(HWND h, bool on) {
     if (on) SetPropW(h, L"ShellDialogoPorFora", (HANDLE)1); else RemovePropW(h, L"ShellDialogoPorFora");
@@ -273,7 +273,7 @@ bool AllowsMultiple(HWND dlg) {
 }
 
 // Nativo (Shell dentro do explorer): o Finder em modo escolher roda numa thread do próprio explorer, pela
-// MacDialogo.dll (a mesma que troca o Abrir/Salvar dentro dos programas), sem WacOSFinder.exe. Uma thread
+// MacDialogo.dll (a mesma que troca o Abrir/Salvar dentro dos programas), sem LiquinixFinder.exe. Uma thread
 // só, sempre a mesma (a janela do escolher mora nela); um pedido de cada vez. -1 = indisponível.
 struct PedidoEmbutido { std::wstring args; int code = -1; HANDLE done = nullptr; };
 PedidoEmbutido* g_pedido;

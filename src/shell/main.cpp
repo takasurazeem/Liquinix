@@ -56,7 +56,7 @@ static void Inject(DWORD vk, bool up) {
 }
 
 const UINT WM_APP_LOCK = WM_APP + 39, WM_APP_WINKEY = WM_APP + 40, WM_APP_CAPTURA = WM_APP + 41;
-static bool g_capturaExe;   // WacOSScreenshot.exe existe: Win+Shift+3/4/5/S são dela
+static bool g_capturaExe;   // LiquinixScreenshot.exe existe: Win+Shift+3/4/5/S são dela
 // Win+Q / Win+H / Win+W = Cmd+Q / Cmd+H / Cmd+W do Mac (encerrar o app, ocultar, fechar a janela).
 // Ajustes > Teclado > "Atalhos do Mac para apps" (atalhos_mac); desligado, os atalhos voltam ao Windows
 const UINT WM_APP_MACKEY = WM_APP + 43;
@@ -224,7 +224,7 @@ static LRESULT CALLBACK KeyHook(int code, WPARAM w, LPARAM l) {
             } else if (g_winDown && down && GetAsyncKeyState(VK_SHIFT) < 0 && GetAsyncKeyState(VK_MENU) >= 0 &&
                        (k->vkCode == '3' || k->vkCode == '4' || k->vkCode == '5' || k->vkCode == 'S') && g_capturaExe) {
                 // Win+Shift+3/4/5 (Cmd+Shift+3/4/5 do Mac) e Win+Shift+S: a nossa Captura de Tela
-                // (WacOSScreenshot.exe) no lugar da Ferramenta de Captura; com Ctrl, só área de transferência.
+                // (LiquinixScreenshot.exe) no lugar da Ferramenta de Captura; com Ctrl, só área de transferência.
                 // A tecla segurada (repetição) não abre de novo; a tecla muda (0xE8) faz o Windows não ver
                 // um Win sozinho ao soltar (o Win e o Shift já foram devolvidos a ele: combinação)
                 if (g_capKey != k->vkCode) {
@@ -314,7 +314,7 @@ bool shell::OpenCalculator(const std::wstring& target) {
     for (auto& c : t) c = towlower(c);
     auto ends = [&](const wchar_t* s) { size_t n = wcslen(s); return t.size() >= n && t.compare(t.size() - n, n, s) == 0; };
     bool calc = t.find(L"microsoft.windowscalculator") != std::wstring::npos || t == L"calc.exe" || t == L"calc" ||
-                ends(L"\\calc.exe") || ends(L"calculatorapp.exe") || ends(L"\\calculadora.exe") || ends(L"\\wacoscalculator.exe");
+                ends(L"\\calc.exe") || ends(L"calculatorapp.exe") || ends(L"\\calculadora.exe") || ends(L"\\liquinixcalculator.exe");
     if (!calc) return false;
     std::wstring exe = shell::dir + L"\\" EXE_CALCULATOR;
     if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) return false;
@@ -329,7 +329,7 @@ void shell::OpenMonitor() {
     ShellExecuteW(nullptr, L"open", exe.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 }
 
-// Forçar Encerrar Aplicativos (WacOSForceQuit.exe); sem ele, o Monitor de Atividade
+// Forçar Encerrar Aplicativos (LiquinixForceQuit.exe); sem ele, o Monitor de Atividade
 void shell::OpenForceQuit(bool memory) {
     std::wstring exe = shell::dir + L"\\" EXE_FORCEQUIT;
     if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) { shell::OpenMonitor(); return; }
@@ -529,7 +529,7 @@ static LONG WINAPI OnCrash(EXCEPTION_POINTERS* ep) {
 
 // Finder reserva: um Arquivos.exe já inicializado e escondido. Abrir uma pasta, o Win+E ou a janela
 // de Abrir/Salvar entregam o pedido a ele (aparece na hora); quando é usado, preparamos outro.
-// Captura de Tela (WacOSScreenshot.exe) sempre aberta e escondida: a mira do Win+Shift+4 aparece na hora
+// Captura de Tela (LiquinixScreenshot.exe) sempre aberta e escondida: a mira do Win+Shift+4 aparece na hora
 static void EnsureScreenshot() {
     static DWORD lastSpawn;
     if (!g_capturaExe || FindWindowW(L"SequoiaCapturaMsg", nullptr)) return;
@@ -796,9 +796,9 @@ static LRESULT CALLBACK MsgProc(HWND h, UINT m, WPARAM w, LPARAM l) {
     if (m == ampPronto && ampPronto) { ampliar::Shown((HWND)w); return 0; }
     static UINT menuVerde = RegisterWindowMessageW(L"ShellMenuVerde");  // ponteiro parado no botão verde (DLL ou app nosso)
     if (m == menuVerde && menuVerde) { verde::Show((HWND)w, POINT{ (short)LOWORD(l), (short)HIWORD(l) }); return 0; }
-    static UINT jAbrir = RegisterWindowMessageW(L"ShellJanelaAbrir");    // WacOSWindow.dll: janela nova, escondida e pintada
+    static UINT jAbrir = RegisterWindowMessageW(L"ShellJanelaAbrir");    // LiquinixWindow.dll: janela nova, escondida e pintada
     if (m == jAbrir && jAbrir) { abrir::Open((HWND)w, (HWND)l); return 0; }
-    static UINT jFechar = RegisterWindowMessageW(L"ShellJanelaFechar");  // WacOSWindow.dll: a janela vai sumir agora
+    static UINT jFechar = RegisterWindowMessageW(L"ShellJanelaFechar");  // LiquinixWindow.dll: a janela vai sumir agora
     if (m == jFechar && jFechar) return ampliar::Fechar((HWND)w, l) ? 1 : 0;
     if (m == WM_COPYDATA && l) {  // o Ajustes do Sistema manda "chave=valor": o Shell grava no arquivo que ele mesmo lê
         // (o Ajustes pode estar num contêiner que desvia o %APPDATA% dele para outra cópia do ajustes.txt)
@@ -840,7 +840,7 @@ static LRESULT CALLBACK MsgProc(HWND h, UINT m, WPARAM w, LPARAM l) {
             Log(L"tema mudou: ícones do Dock e do seletor recarregados");
         }
         if (themeNow() != lastTheme) {
-            // tema trocado: as janelas com a barra do Mac (WacOSWindow.dll) redesenham já (barra metálica e botões de gel
+            // tema trocado: as janelas com a barra do Mac (LiquinixWindow.dll) redesenham já (barra metálica e botões de gel
             // do Leopard, ou de volta) em vez de esperar a próxima ativação
             lastTheme = themeNow();
             EnumWindows([](HWND w, LPARAM msg) -> BOOL {
@@ -1006,7 +1006,7 @@ int AjudanteRodar(const wchar_t* cmd);  // ajudante.cpp: --sair, --aplicar-curso
 
 int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, PWSTR, int) {
     if (int r = AjudanteRodar(GetCommandLineW()); r >= 0) return r;
-    if (migrar::TrocarPeloNovo()) return 0;  // nome velho (SequoiaShell.exe): o WacOSShell.exe ao lado assume
+    if (migrar::TrocarPeloNovo()) return 0;  // nome velho (SequoiaShell.exe): o LiquinixShell.exe ao lado assume
     if (const wchar_t* a = wcsstr(GetCommandLineW(), L"--depois-de ")) {  // reinício: espera o Shell antigo sair (até 20 s)
         if (HANDLE old = OpenProcess(SYNCHRONIZE, FALSE, wcstoul(a + 12, nullptr, 10))) { WaitForSingleObject(old, 20000); CloseHandle(old); }
     }
@@ -1049,8 +1049,8 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, PWSTR, int) {
     if (!ui::Init()) { Log(L"erro: Direct2D/DirectWrite"); return 1; }
     LoadSettings();
     migrar::Registro();  // caminhos com o nome velho (Sequoia) no registro do Windows (depois dos ajustes: grava um)
-    // Voltando depois de "Desligar o WacOS" (Ajustes > Geral): o desligar mandou as pastas e o Win+E de volta para o
-    // Explorador (finder_padrao=0). Abrir o WacOS de novo devolve ao Finder; antes o 0 ficava e o Win+E abria o
+    // Voltando depois de "Desligar o Liquinix" (Ajustes > Geral): o desligar mandou as pastas e o Win+E de volta para o
+    // Explorador (finder_padrao=0). Abrir o Liquinix de novo devolve ao Finder; antes o 0 ficava e o Win+E abria o
     // Explorador até apagar os ajustes (issue #1). Quem desligar "Abrir pastas no Finder" à mão continua com o 0.
     if (shell::Setting(L"finder_volta", L"") == L"1") {
         shell::SetSetting(L"finder_volta", L"");
@@ -1142,7 +1142,7 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, PWSTR, int) {
 
 // ---- modo nativo: o Shell como a barra de tarefas do Windows (barra-nativa\MacBarra.dll, dentro do explorer.exe).
 // A MacBarra chama numa thread própria quando o explorer cria a barra (ITrayUI::OnCreate) e esta função só
-// volta quando a barra é destruída. Mesmas peças do WacOSShell.exe, menos as que são de processo:
+// volta quando a barra é destruída. Mesmas peças do LiquinixShell.exe, menos as que são de processo:
 // mutex de instância única, DPI do processo, tela de inicialização, filtro de falhas, TerminateProcess,
 // mesa própria (a mesa é do explorer), tela de bloqueio própria (é o AuthUX), ganchos com DLL nos outros
 // programas (janelas.cpp) e esconder a barra do Windows (ela somos nós).
@@ -1192,7 +1192,7 @@ int shell::RodarNativo(HINSTANCE hi, const std::wstring& dirBin, const std::wstr
     limites::Start();
     sombras::Start();
     // Cantos do Mac (maiores que os 8 px do Windows), sombra e animações nas janelas com a barra padrão: só a
-    // WacOSWindow.dll DENTRO dos programas consegue (autorizado pelo usuário em 12/11/2026, "pode injetar").
+    // LiquinixWindow.dll DENTRO dos programas consegue (autorizado pelo usuário em 12/11/2026, "pode injetar").
     // Ela cuida das janelas de barra padrão; as de barra própria (Chrome, Bloco de Notas...) continuam com barras.cpp.
     // C:\Users\Public\MacInjecao-desligada.txt volta a não carregar nada nos outros programas.
     if (GetFileAttributesW(L"C:\\Users\\Public\\MacInjecao-desligada.txt") == INVALID_FILE_ATTRIBUTES) janelas::Start();

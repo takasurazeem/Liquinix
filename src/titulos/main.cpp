@@ -1,9 +1,9 @@
-// WacOSTitleBars.exe: só a barra de título do Mac nas janelas dos outros programas, sem o resto do WacOS (sem
+// LiquinixTitleBars.exe: só a barra de título do Mac nas janelas dos outros programas, sem o resto do Liquinix (sem
 // barra de menus, Dock, mesa; a barra de tarefas do Windows fica). Para quem tem o próprio visual e quer só as
 // barras (Reddit, 20/11/2026). O trabalho é o mesmo do Shell: src\shell\janelas.cpp (gancho por thread com a
-// WacOSWindow.dll, os de 32 bits pelo rundll32 do Windows), compilado junto com este arquivo.
-//   WacOSTitleBars.exe          liga (uma instância só; com o Shell aberto não faz nada: ele já põe as barras)
-//   WacOSTitleBars.exe --sair   desliga a que estiver rodando (as janelas voltam ao visual do Windows)
+// LiquinixWindow.dll, os de 32 bits pelo rundll32 do Windows), compilado junto com este arquivo.
+//   LiquinixTitleBars.exe          liga (uma instância só; com o Shell aberto não faz nada: ele já põe as barras)
+//   LiquinixTitleBars.exe --sair   desliga a que estiver rodando (as janelas voltam ao visual do Windows)
 // O Shell, ao abrir, fecha esta (janelas.cpp) e assume. Exclusões: %APPDATA%\Shell\janelas-excluidas.txt.
 // Ajustes lidos: janelas_mac (0 desliga) e o tema (a DLL lê o ajustes.txt sozinha).
 #include "../shell/shell.h"
@@ -61,21 +61,21 @@ LRESULT CALLBACK Proc(HWND h, UINT m, WPARAM w, LPARAM l) {
 
 int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, PWSTR cmd, int) {
     if (cmd && wcsstr(cmd, L"--sair")) {
-        if (HWND h = FindWindowW(L"WacOSBarrasDeTitulo", nullptr)) PostMessageW(h, WM_CLOSE, 0, 0);
+        if (HWND h = FindWindowW(L"LiquinixBarrasDeTitulo", nullptr)) PostMessageW(h, WM_CLOSE, 0, 0);
         return 0;
     }
-    HANDLE one = CreateMutexW(nullptr, TRUE, L"WacOSBarrasDeTituloUmaInstancia");
+    HANDLE one = CreateMutexW(nullptr, TRUE, L"LiquinixBarrasDeTituloUmaInstancia");
     if (GetLastError() == ERROR_ALREADY_EXISTS) return 0;
     if (FindWindowW(L"ShellMensagens", nullptr)) return 0;  // o Shell aberto já põe as barras
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     wchar_t exe[MAX_PATH]; GetModuleFileNameW(nullptr, exe, MAX_PATH);
     shell::dir = exe; shell::dir = shell::dir.substr(0, shell::dir.find_last_of(L'\\'));
     g_log = _wfsopen((shell::dir + L"\\barras-titulo.log").c_str(), L"w, ccs=UTF-8", _SH_DENYNO);
-    Log(L"WacOSTitleBars iniciando (só as barras de título, sem o Shell)");
-    WNDCLASSW wc{}; wc.lpfnWndProc = Proc; wc.hInstance = hi; wc.lpszClassName = L"WacOSBarrasDeTitulo";
+    Log(L"LiquinixTitleBars iniciando (só as barras de título, sem o Shell)");
+    WNDCLASSW wc{}; wc.lpfnWndProc = Proc; wc.hInstance = hi; wc.lpszClassName = L"LiquinixBarrasDeTitulo";
     RegisterClassW(&wc);
     // janela comum escondida (não "message-only"): o Shell e o --sair a acham pelo FindWindow
-    g_wnd = CreateWindowExW(WS_EX_TOOLWINDOW, wc.lpszClassName, L"WacOS Title Bars", WS_POPUP, 0, 0, 0, 0, nullptr, nullptr, hi, nullptr);
+    g_wnd = CreateWindowExW(WS_EX_TOOLWINDOW, wc.lpszClassName, L"Liquinix Title Bars", WS_POPUP, 0, 0, 0, 0, nullptr, nullptr, hi, nullptr);
     if (!g_wnd) return 1;
     if (shell::Setting(L"janelas_mac", L"1") != L"1") Log(L"janelas_mac=0 no ajustes.txt: nada a fazer");
     janelas::Start();
@@ -83,7 +83,7 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE, PWSTR cmd, int) {
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) { TranslateMessage(&msg); DispatchMessageW(&msg); }
     janelas::Stop();  // as janelas voltam ao visual do Windows
-    Log(L"WacOSTitleBars saiu");
+    Log(L"LiquinixTitleBars saiu");
     if (g_log) fclose(g_log);
     ReleaseMutex(one);
     return 0;

@@ -2,12 +2,12 @@
 // até um canto = um quarto; até a barra de menus = preencher. Enquanto arrasta aparece a prévia do Mac (um
 // retângulo arredondado translúcido atrás da janela) onde ela vai ficar; ao soltar ela vai para lá. Arrastar uma
 // janela encaixada a devolve ao tamanho de antes.
-// É o Shell quem faz, para todas as janelas (antes cada app com a WacOSWindow.dll fazia o seu, e o encaixe do
+// É o Shell quem faz, para todas as janelas (antes cada app com a LiquinixWindow.dll fazia o seu, e o encaixe do
 // próprio Windows brigava com ele: a janela não ficava na metade e a prévia não aparecia). O encaixe do Windows
 // fica desligado só enquanto o Shell roda (SPI_SETWINARRANGING sem gravar no registro: ao sair, ou ao reiniciar o
 // PC, volta como estava). O interruptor do Windows ("Ajustar janelas", HKCU\Control Panel\Desktop\
 // WindowArrangementActive) liga e desliga o nosso; Ajustes > Mesa e Dock mexe nele.
-// Janela com a nossa barra (WacOSWindow.dll): o Shell manda "MacJanelaEncaixar" e a DLL encaixa (ela sabe as
+// Janela com a nossa barra (LiquinixWindow.dll): o Shell manda "MacJanelaEncaixar" e a DLL encaixa (ela sabe as
 // bordas invisíveis e guarda o tamanho de antes); as outras o Shell move direto.
 #include "shell.h"
 #include <dwmapi.h>

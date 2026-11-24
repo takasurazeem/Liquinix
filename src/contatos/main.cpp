@@ -24,7 +24,7 @@ IDWriteTextFormat *g_tfInitBig, *g_tfNameG, *g_tfSmallL, *g_tfWrap, *g_tfRowB, *
 float g_detailH;
 
 void Save() {
-    std::vector<std::wstring> out{ L"# Contatos do WacOS: P id nome empresa celular e-mail endereço aniversário notas" };
+    std::vector<std::wstring> out{ L"# Contatos do Liquinix: P id nome empresa celular e-mail endereço aniversário notas" };
     for (auto& c : g_c) { std::wstring l = L"P\t" + std::to_wstring(c.id); for (auto& x : c.f) l += L"\t" + Esc(x); out.push_back(l); }
     WriteLines(g_file, out);
 }

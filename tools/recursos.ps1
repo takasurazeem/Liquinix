@@ -9,30 +9,30 @@ New-Item -ItemType Directory -Force $Out | Out-Null
 
 # nome do arquivo | descrição (Gerenciador de Tarefas) | PNG do pacote
 $itens = @(
-    'WacOSShell|WacOS (Menu Bar, Dock and Spotlight)|Launchpad.png',
-    'WacOSFinder|Finder|Finder.png',
-    'WacOSSettings|System Settings|Settings.png',
-    'WacOSActivityMonitor|Activity Monitor|Activity Monitor.png',
-    'WacOSTerminal|Terminal|Terminal.png',
-    'WacOSCalculator|Calculator|Calculator.png',
-    'WacOSNotes|Notes|Notes.png',
-    'WacOSScreenshot|Screenshot|Screenshot.png',
-    'WacOSPreview|Preview|Preview.png',
-    'WacOSReminders|Reminders|Reminders.png',
-    'WacOSCalendar|Calendar|Calendar.png',
-    'WacOSTextEdit|TextEdit|Textedit.png',
-    'WacOSClock|Clock|Clock.png',
-    'WacOSWeather|Weather|Weather.png',
-    'WacOSMusic|Music|Music.png',
-    'WacOSQuickTime|QuickTime Player|QuickTime Player.png',
-    'WacOSForceQuit|Force Quit Applications|Activity Monitor.png',
-    'WacOSContacts|Contacts|Contacts.png',
-    'WacOSPhotos|Photos|Photos.png',
-    'WacOSTimeMachine|Time Machine|Time Machine.png',
-    'WacOSTitleBars|WacOS Title Bars|',
-    'WacOSSetup|WacOS Setup|repo:docs\logo-256.png',
-    'WacOSWindow|WacOS Window Frames|',
-    'WacOSWindow32|WacOS Window Frames (32-bit)|'
+    'LiquinixShell|Liquinix (Menu Bar, Dock and Spotlight)|Launchpad.png',
+    'LiquinixFinder|Finder|Finder.png',
+    'LiquinixSettings|System Settings|Settings.png',
+    'LiquinixActivityMonitor|Activity Monitor|Activity Monitor.png',
+    'LiquinixTerminal|Terminal|Terminal.png',
+    'LiquinixCalculator|Calculator|Calculator.png',
+    'LiquinixNotes|Notes|Notes.png',
+    'LiquinixScreenshot|Screenshot|Screenshot.png',
+    'LiquinixPreview|Preview|Preview.png',
+    'LiquinixReminders|Reminders|Reminders.png',
+    'LiquinixCalendar|Calendar|Calendar.png',
+    'LiquinixTextEdit|TextEdit|Textedit.png',
+    'LiquinixClock|Clock|Clock.png',
+    'LiquinixWeather|Weather|Weather.png',
+    'LiquinixMusic|Music|Music.png',
+    'LiquinixQuickTime|QuickTime Player|QuickTime Player.png',
+    'LiquinixForceQuit|Force Quit Applications|Activity Monitor.png',
+    'LiquinixContacts|Contacts|Contacts.png',
+    'LiquinixPhotos|Photos|Photos.png',
+    'LiquinixTimeMachine|Time Machine|Time Machine.png',
+    'LiquinixTitleBars|Liquinix Title Bars|',
+    'LiquinixSetup|Liquinix Setup|repo:docs\logo-256.png',
+    'LiquinixWindow|Liquinix Window Frames|',
+    'LiquinixWindow32|Liquinix Window Frames (32-bit)|'
 )
 
 # .ico com várias resoluções, cada uma guardada como PNG (aceito desde o Vista)
@@ -65,16 +65,16 @@ function Make-Ico([string]$png, [string]$ico) {
 
 foreach ($linha in $itens) {
     $nome, $desc, $png = $linha.Split('|')
-    $ext = if ($nome -like 'WacOSWindow' -or $nome -like 'WacOSWindow32') { 'dll' } else { 'exe' }
+    $ext = if ($nome -like 'LiquinixWindow' -or $nome -like 'LiquinixWindow32') { 'dll' } else { 'exe' }
     $iconLine = ''
-    # "repo:<caminho>": um PNG do próprio repositório (o logo do WacOS, docs\logo-256.png) em vez do pacote de ícones
+    # "repo:<caminho>": um PNG do próprio repositório (o logo do Liquinix, docs\logo-256.png) em vez do pacote de ícones
     $pngPath = if ($png -like 'repo:*') { Join-Path (Split-Path $PSScriptRoot -Parent) $png.Substring(5) } elseif ($png) { Join-Path $pack $png } else { '' }
     if ($pngPath -and (Test-Path $pngPath)) {
         $ico = Join-Path $Out "$nome.ico"
         if (!(Test-Path $ico) -or (Get-Item $ico).LastWriteTime -lt (Get-Item $pngPath).LastWriteTime) { Make-Ico $pngPath $ico }
         $iconLine = "1 ICON `"$nome.ico`""
         # o instalador desenha o logo na barra lateral: o PNG vai embutido (recurso 2, RCDATA)
-        if ($nome -eq 'WacOSSetup') { $iconLine += "`r`n2 RCDATA `"" + ($pngPath -replace '\\', '\\') + "`"" }
+        if ($nome -eq 'LiquinixSetup') { $iconLine += "`r`n2 RCDATA `"" + ($pngPath -replace '\\', '\\') + "`"" }
     }
     $rc = @"
 #include <winver.h>
@@ -89,14 +89,14 @@ BEGIN
   BEGIN
     BLOCK "040904B0"
     BEGIN
-      VALUE "CompanyName", "WacOS (open source)"
-      VALUE "Comments", "https://github.com/renzyxx/WacOS"
-      VALUE "LegalCopyright", "WacOS contributors"
+      VALUE "CompanyName", "Liquinix (open source)"
+      VALUE "Comments", "https://github.com/takasurazeem/Liquinix"
+      VALUE "LegalCopyright", "Liquinix contributors"
       VALUE "FileDescription", "$desc"
       VALUE "FileVersion", "1.0.0.0"
       VALUE "InternalName", "$nome"
       VALUE "OriginalFilename", "$nome.$ext"
-      VALUE "ProductName", "WacOS"
+      VALUE "ProductName", "Liquinix"
       VALUE "ProductVersion", "1.0.0.0"
     END
   END

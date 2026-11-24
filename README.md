@@ -1,25 +1,24 @@
 <div align="center">
 
-<img src="docs/logo-256.png" alt="WacOS logo" width="128" height="128">
+<img src="docs/logo-256.png" alt="Liquinix logo" width="128" height="128">
 
-# WacOS
+# Liquinix
 
 **macOS on top of Windows 11: menu bar, Dock, Finder, Spotlight, Control Center and Liquid Glass, in native C++.**
 
-[![Stars](https://img.shields.io/github/stars/renzyxx/WacOS?style=flat&logo=github&label=Stars)](https://github.com/renzyxx/WacOS/stargazers)
-[![Forks](https://img.shields.io/github/forks/renzyxx/WacOS?style=flat&logo=github&label=Forks)](https://github.com/renzyxx/WacOS/network/members)
-[![Downloads](https://img.shields.io/github/downloads/renzyxx/WacOS/total?style=flat&label=Downloads&color=brightgreen)](https://github.com/renzyxx/WacOS/releases)
-[![Latest release](https://img.shields.io/github/v/release/renzyxx/WacOS?style=flat&label=Release)](https://github.com/renzyxx/WacOS/releases/latest)
-[![Build](https://img.shields.io/github/actions/workflow/status/renzyxx/WacOS/build.yml?branch=main&style=flat&label=Build)](https://github.com/renzyxx/WacOS/actions/workflows/build.yml)
+[![Stars](https://img.shields.io/github/stars/takasurazeem/Liquinix?style=flat&logo=github&label=Stars)](https://github.com/takasurazeem/Liquinix/stargazers)
+[![Forks](https://img.shields.io/github/forks/takasurazeem/Liquinix?style=flat&logo=github&label=Forks)](https://github.com/takasurazeem/Liquinix/network/members)
+[![Downloads](https://img.shields.io/github/downloads/takasurazeem/Liquinix/total?style=flat&label=Downloads&color=brightgreen)](https://github.com/takasurazeem/Liquinix/releases)
+[![Latest release](https://img.shields.io/github/v/release/takasurazeem/Liquinix?style=flat&label=Release)](https://github.com/takasurazeem/Liquinix/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/takasurazeem/Liquinix/build.yml?branch=main&style=flat&label=Build)](https://github.com/takasurazeem/Liquinix/actions/workflows/build.yml)
 ![Windows 11](https://img.shields.io/badge/Windows-11-0078D4?style=flat&logo=windows11&logoColor=white)
 ![C++](https://img.shields.io/badge/C%2B%2B-native-00599C?style=flat&logo=cplusplus&logoColor=white)
 
-[![Download WacOS](https://img.shields.io/badge/DOWNLOAD-WacOS_for_Windows_11-0A84FF?style=for-the-badge&logo=windows11&logoColor=white)](https://github.com/renzyxx/WacOS/releases/latest)
-[![Buy me a coffee](https://img.shields.io/badge/BUY_ME_A_COFFEE-renzyx-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/renzyx)
+[![Download Liquinix](https://img.shields.io/badge/DOWNLOAD-Liquinix_for_Windows_11-0A84FF?style=for-the-badge&logo=windows11&logoColor=white)](https://github.com/takasurazeem/Liquinix/releases/latest)
 
 </div>
 
-WacOS runs on top of Windows (same kernel, drivers and apps) and replaces what you see and touch: the menu bar,
+Liquinix runs on top of Windows (same kernel, drivers and apps) and replaces what you see and touch: the menu bar,
 the Dock, Finder, Spotlight, Control Center, Notification Center, Mission Control, Launchpad, window title bars and a
 set of built-in apps. Pick the new macOS 27 **Golden Gate** look, the macOS Tahoe look with Liquid Glass, the
 macOS Sequoia look, or the classic **Mac OS X Leopard** (2007) Aqua look.
@@ -27,7 +26,7 @@ macOS Sequoia look, or the classic **Mac OS X Leopard** (2007) Aqua look.
 Everything is native C++ (Win32, Direct2D, DirectComposition). No Electron, no web views. It uses about 750 MB of RAM
 and under 1% CPU on a 3440×1440 desktop.
 
-![WacOS desktop in the macOS 27 Golden Gate theme](docs/screenshots/golden-gate-desktop.png)
+![Liquinix desktop in the macOS 27 Golden Gate theme](docs/screenshots/golden-gate-desktop.png)
 
 **Contents:** [Screenshots](#screenshots) · [Features](#features) · [Install](#install) · [Is it safe?](#is-it-safe) ·
 [Roadmap](#roadmap) · [Support the project](#support-the-project) · [Build](#build) · [License](#license)
@@ -61,7 +60,7 @@ the shell, grouped notifications that open on click, and smoother glass over ani
 
 The macOS 26 look: clear Liquid Glass with real refraction and chromatic aberration.
 
-![WacOS desktop in the Tahoe theme](docs/screenshots/desktop.png)
+![Liquinix desktop in the Tahoe theme](docs/screenshots/desktop.png)
 
 | | |
 |---|---|
@@ -75,7 +74,7 @@ The macOS 26 look: clear Liquid Glass with real refraction and chromatic aberrat
 
 The same shell with the macOS 15 look (System Settings > Appearance > Theme).
 
-![WacOS desktop in the Sequoia theme](docs/screenshots/sequoia-desktop.png)
+![Liquinix desktop in the Sequoia theme](docs/screenshots/sequoia-desktop.png)
 
 | | |
 |---|---|
@@ -113,7 +112,7 @@ themes).
 - **Themes**: macOS 27 Golden Gate, macOS Tahoe, macOS Sequoia and Mac OS X Leopard.
 - **Dynamic Island** (optional, System Settings > Control Center): music, timers, notifications and volume in a pill
   or a notch at the top of the screen.
-- **Game Mode** like macOS: when a game comes to the front, WacOS turns off what costs the most (real glass, mouse
+- **Game Mode** like macOS: when a game comes to the front, Liquinix turns off what costs the most (real glass, mouse
   effects, Hot Corners, file indexing) until the game quits. System Settings > Energy.
 - **Launchpad**: hide any app (right-click > Hide from Launchpad), or all of Windows' system tools at once.
 - **Icon styles** (Default, Dark, Clear, Tinted), accent colors, light and dark appearance.
@@ -121,8 +120,8 @@ themes).
 
 ## Install
 
-1. Download the `WacOS-<date>.zip` from the [latest release](https://github.com/renzyxx/WacOS/releases/latest).
-2. Extract it anywhere and open **`WacOSSetup.exe`**: one app that installs, updates, changes and uninstalls WacOS,
+1. Download the `Liquinix-<date>.zip` from the [latest release](https://github.com/takasurazeem/Liquinix/releases/latest).
+2. Extract it anywhere and open **`LiquinixSetup.exe`**: one app that installs, updates, changes and uninstalls Liquinix,
    in the style of the macOS Installer.
 
 Apple's fonts, sounds and cursors can't be shipped in this repository, so the installer offers to fetch them on
@@ -134,22 +133,22 @@ your own PC, from where their owners publish them:
 - **macOS Tahoe cursor** by [jimmyxd2 on DeviantArt](https://www.deviantart.com/jimmyxd2/art/1208233550): the installer opens
   the page, you download it, and it picks the file up from your Downloads folder.
 
-WacOS installs for your user only (no administrator rights) in `%LOCALAPPDATA%\Programs\WacOS`.
+Liquinix installs for your user only (no administrator rights) in `%LOCALAPPDATA%\Programs\Liquinix`.
 Everything it changes is logged in `instalacao.log` there. To uninstall, use **Settings > Apps > Installed apps >
-WacOS > Uninstall** (or open `WacOSSetup.exe` again). The old `instalar.cmd` / `desinstalar.cmd` scripts are still in
+Liquinix > Uninstall** (or open `LiquinixSetup.exe` again). The old `instalar.cmd` / `desinstalar.cmd` scripts are still in
 the package for advanced use.
 
-- Quit WacOS: `Ctrl+Alt+Shift+F12`. Emergency exit (brings Explorer back): `Ctrl+Alt+Shift+F11`.
+- Quit Liquinix: `Ctrl+Alt+Shift+F12`. Emergency exit (brings Explorer back): `Ctrl+Alt+Shift+F11`.
 
 ### Use only the apps, or only the title bars
 
-Have your own setup? `WacOSSetup.exe` asks what to install:
+Have your own setup? `LiquinixSetup.exe` asks what to install:
 
-1. **Full WacOS** (menu bar, Dock, Finder...).
-2. **Only the apps you pick** (Finder, Notes, Calculator, Music, Preview...): shortcuts go to a **WacOS** folder in
+1. **Full Liquinix** (menu bar, Dock, Finder...).
+2. **Only the apps you pick** (Finder, Notes, Calculator, Music, Preview...): shortcuts go to a **Liquinix** folder in
    the Start menu. Each app draws its own Mac title bar, with or without the shell running.
-3. **Only the Mac title bars** on your other apps: `WacOSTitleBars.exe`, with an optional start at sign-in.
-   Turn it off with `WacOSTitleBars.exe --sair` (it also stops when the full shell starts, which takes over).
+3. **Only the Mac title bars** on your other apps: `LiquinixTitleBars.exe`, with an optional start at sign-in.
+   Turn it off with `LiquinixTitleBars.exe --sair` (it also stops when the full shell starts, which takes over).
 4. **Apps + title bars**.
 
 Options 2 to 4 keep the Windows taskbar, Explorer and your folders as they are, and don't add the shell's sign-in
@@ -161,8 +160,8 @@ rounded corners) should no longer leave a square frame around them.
 ## Updates
 
 New versions are published as numbered releases (`build-N`). In **System Settings > General > Software Update**,
-WacOS checks GitHub on its own, shows the installed version, the latest one and the commits you don't have yet, and
-**Update Now** opens `WacOSSetup.exe`, which downloads the new package, checks its SHA-256 against the one GitHub
+Liquinix checks GitHub on its own, shows the installed version, the latest one and the commits you don't have yet, and
+**Update Now** opens `LiquinixSetup.exe`, which downloads the new package, checks its SHA-256 against the one GitHub
 publishes and installs it (only programs, icons and sounds are replaced; your settings stay).
 GitHub Actions checks that every commit to `main` builds.
 
@@ -171,31 +170,23 @@ GitHub Actions checks that every commit to `main` builds.
 Fair question for anything that replaces your taskbar. You don't have to trust the author:
 
 - **Open code.** Every file is in this repository, and you can build it yourself (see [Build](#build)).
-- **Network.** WacOS only talks to the weather service (`api.open-meteo.com`, for the weather widget), Google search
+- **Network.** Liquinix only talks to the weather service (`api.open-meteo.com`, for the weather widget), Google search
   suggestions (only while you type in Spotlight) and GitHub (to check for updates). No telemetry, no accounts.
   Run it behind a firewall like simplewall or GlassWire and watch for yourself.
 - **What it installs.** One scheduled task to start at sign-in, with normal user rights. No services, no drivers,
-  no administrator rights. Uninstalling (Installed apps > WacOS) removes everything.
+  no administrator rights. Uninstalling (Installed apps > Liquinix) removes everything.
 - **Antivirus.** A shell has to do things that look suspicious to heuristics: start at sign-in, use keyboard and
   mouse hooks for shortcuts like the Win key and hot corners, and load its title bar DLL into other apps. The
   build-12 package shows [1/66 on VirusTotal](https://www.virustotal.com/gui/file/310ab4f16824500a8d77225fef66a62e499c32d6d5484a8752b119b7f24e67f3),
   a single AI-based heuristic. The install scripts are plain PowerShell you can read: no inline C#, no hidden
   windows, and the updater checks the package's SHA-256 against the one GitHub publishes. If Microsoft Defender flags it on your PC, it's a false positive that has been
-  reported to Microsoft; please [open an issue](https://github.com/renzyxx/WacOS/issues) with the threat name.
+  reported to Microsoft; please [open an issue](https://github.com/takasurazeem/Liquinix/issues) with the threat name.
 
 ## Roadmap
 
 - **Dynamic Island**: more activities (inspired by [Atoll](https://github.com/Ebullioscopic/Atoll); no code copied).
 - **Signed releases**, so antivirus heuristics stop flagging the installer scripts.
-- Your idea? [Open an issue](https://github.com/renzyxx/WacOS/issues).
-
-## Support the project
-
-WacOS is free and made in my spare time. If you like it, a coffee helps a lot and keeps the updates coming ☕
-
-<a href="https://buymeacoffee.com/renzyx"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="50"></a>
-
-Starring the repository and sharing it also helps.
+- Your idea? [Open an issue](https://github.com/takasurazeem/Liquinix/issues).
 
 ## Build
 
@@ -203,11 +194,11 @@ Requires Visual Studio 2022 (or Build Tools 2022) with the C++ workload.
 
 ```
 build.cmd            everything
-build.cmd shell      the shell only (WacOSShell.exe: menu bar, Dock, Spotlight...)
+build.cmd shell      the shell only (LiquinixShell.exe: menu bar, Dock, Spotlight...)
 build.cmd finder     Finder only
-build.cmd janelas    Mac title bars for other apps (WacOSWindow.dll, 32 and 64 bit, and WacOSTitleBars.exe)
-build.cmd titulos    WacOSTitleBars.exe only (the title bars without the shell)
-tools\empacotar.ps1  the installer package (dist\WacOS-<date>.zip)
+build.cmd janelas    Mac title bars for other apps (LiquinixWindow.dll, 32 and 64 bit, and LiquinixTitleBars.exe)
+build.cmd titulos    LiquinixTitleBars.exe only (the title bars without the shell)
+tools\empacotar.ps1  the installer package (dist\Liquinix-<date>.zip)
 ```
 
 ## Layout
@@ -230,7 +221,11 @@ idle.
 
 ## License
 
-The WacOS source code is released under the [GNU General Public License v3.0](LICENSE): you can use, study, change
+Liquinix is a fork of [WacOS](https://github.com/renzyxx/WacOS) by renzyxx, based on commit
+`0afb96a69ae2fd130621de41a74f1880aa1a9271`, the last version of WacOS published under the GNU General Public
+License v3.0. Liquinix is an independent project and is not affiliated with or endorsed by the WacOS author.
+
+The Liquinix source code is released under the [GNU General Public License v3.0](LICENSE): you can use, study, change
 and share it, and if you distribute a modified version, its source code has to be released under the GPL too.
 Apple's icons, fonts, sounds and wallpapers, and the third-party icon and cursor packs bundled in the release package,
 are not covered by it: they belong to their owners and are included for personal use only.
