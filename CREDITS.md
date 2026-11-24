@@ -30,6 +30,8 @@ If you see your work here credited wrongly, or missing, please
   - built-in Settings themes from the
     [Windows 11 Settings styling guide](https://github.com/ramensoftware/windows-11-settings-styling-guide), by
     eugenesvk, milestprower92, Nimai-HK, FireBlade211, linkvegas12, Nathaniel4JC, wasixgamer and ArvindSaini978.
+- **Natural Earth** 1:50m land polygons, version 5.1.2: <https://www.naturalearthdata.com/> (public domain).
+  The World Clock map in `src/relogio/mapa_mundi.inc` is generated from them by `tools/mapa-mundi.py`.
 
 ## Downloaded on your PC by the installer (not redistributed by Liquinix)
 
