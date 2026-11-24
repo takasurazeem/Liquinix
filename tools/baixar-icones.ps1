@@ -1,19 +1,22 @@
-# Baixa icones do macOS Tahoe do macOSicons.com (API de busca) para icones\tahoe.
+# Baixa icones do macOS Tahoe do macOSicons.com (API de busca) para icones\tahoe-macosicons.
+# SO PARA USO PESSOAL: os icones do macOSicons.com nao tem licenca para redistribuir. A pasta fica fora do git
+# (.gitignore) e o tools\empacotar.ps1 nao a leva. Nunca grave em icones\tahoe (MacTahoe, GPL-3.0, vai nas releases).
 # A chave da API NAO fica no projeto: passe em -Chave ou na variavel de ambiente MACOSICONS_API_KEY.
-# Plano gratis: 50 buscas por mes -> uma busca por icone; as respostas ficam em icones\tahoe\api-cache
+# Plano gratis: 50 buscas por mes -> uma busca por icone; as respostas ficam em icones\tahoe-macosicons\api-cache
 # e nao sao pedidas de novo; icones que ja existem na pasta sao pulados (use -Substituir para trocar).
 # Cada item e "arquivo=busca": o arquivo tem o nome que o Shell procura (o mesmo do pacote Sequoia).
 #   powershell -File tools\baixar-icones.ps1 -Itens "Finder=Finder Tahoe","trashempty@2x=Trash Tahoe"
 #   powershell -File tools\baixar-icones.ps1 -Itens "Finder=Finder Tahoe" -SoMostrar
 param(
     [Parameter(Mandatory = $true)][string[]]$Itens,
-    [string]$Pasta = (Join-Path (Split-Path $PSScriptRoot -Parent) "icones\tahoe"),
+    [string]$Pasta = (Join-Path (Split-Path $PSScriptRoot -Parent) "icones\tahoe-macosicons"),
     [string]$Chave = $env:MACOSICONS_API_KEY,
     [switch]$SoMostrar,
     [switch]$Substituir,
     [switch]$Escuro      # prefere a variante escura (isDarkMode)
 )
 $ErrorActionPreference = "Stop"
+if ((Split-Path $Pasta -Leaf) -eq "tahoe") { throw "icones\tahoe e so do MacTahoe (GPL-3.0); use outra pasta, ex.: icones\tahoe-macosicons" }
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $cache = Join-Path $Pasta "api-cache"
 New-Item -ItemType Directory -Force $Pasta, $cache | Out-Null

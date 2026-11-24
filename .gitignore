@@ -25,6 +25,8 @@ icones/goldengate/
 
 # Mac OS X Leopard icons ("Leopard Icons" pack, downloaded by the user): personal use, rebuilt by tools/icones-leopard.py
 icones/leopard/
+# macOSicons.com downloads (no redistribution license): personal use, fetched by tools/baixar-icones.ps1
+icones/tahoe-macosicons/
 # Mac OS X cursor pack (RaZcaLinSIDe), downloaded by the user: personal use, rebuilt by tools/cursor-leopard.py
 cursor/Leopard/
 
