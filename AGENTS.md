@@ -86,6 +86,24 @@ Linux support is planned, not started. When working on it, put platform-specific
 hotkeys, file icons, the shell integration) behind a platform layer with separate Windows and Linux backends
 instead of adding `#ifdef`s through app code, and keep the Windows build passing.
 
+## Skills
+
+Detailed procedures live in project skills under `.claude/skills/` (Claude Code loads them when a task matches;
+other agents can read the `SKILL.md` files directly):
+
+| Skill | Use it for |
+|---|---|
+| `liquinix-legal-guard` | assets, code from elsewhere, upstream features, packaging, before commits and PRs |
+| `liquinix-performance` | animations, timers, threads, idle CPU, stutter |
+| `liquinix-build-verify` | which `build.cmd` target to build, how to verify, honest reporting |
+| `liquinix-translations` | user-visible text, the `Tr()` system, dates |
+| `liquinix-win32-ui` | Direct2D, Composition, glass, title bars, themes |
+| `liquinix-hooks-injection` | the injected DLL, input hooks, DLL loading, `WM_COPYDATA` |
+| `liquinix-powershell` | installer, packaging and tool scripts |
+| `liquinix-platform-layer` | the Linux port and any cross-platform work |
+
+`CLAUDE.md` only imports this file, so Claude Code and other agents read the same rules.
+
 ## Git
 
 - Commit only when asked. Work on a branch for anything non-trivial.
