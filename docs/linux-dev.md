@@ -1,8 +1,8 @@
 # Developing Liquinix on Linux
 
 How to build and test Liquinix's Linux side on the same computer you use every day, without risking your own
-desktop session. The Linux port hasn't started yet (see `.claude/skills/liquinix-platform-layer/SKILL.md` for the
-architecture); this is the environment to do it in.
+desktop session. The Linux side is just starting: `liquinix-dock` is a placeholder surface for now (see
+`docs/linux-roadmap.md` for the plan and `.claude/skills/liquinix-platform-layer/SKILL.md` for the architecture).
 
 The approach has four layers, from the one you use all day to the one you rarely need:
 
@@ -44,6 +44,19 @@ sudo dnf install gcc-c++ cmake ninja-build git wayland-devel wayland-protocols-d
 
 `sudo` inside the toolbox only changes the container. If an install goes wrong, start over with
 `toolbox rm -f liquinix`.
+
+Then build from the repository root, inside the toolbox (`CMakeLists.txt` builds only the Linux programs; Windows
+keeps using `build.cmd`):
+
+```sh
+cmake -B build -G Ninja
+ninja -C build                 # build/liquinix-dock
+```
+
+The programs run on the host too (outside the toolbox), as long as the host has the same Qt 6 and layer-shell-qt
+versions, which a Plasma 6 desktop on the same Fedora release does. Shared code lives in `src/nucleo` (no platform
+code at all) and `src/plataforma` (one interface, a `win/` and a `linux/` backend); Linux-only programs are in
+`src/linux`.
 
 ## 2. Run in a nested KWin
 
