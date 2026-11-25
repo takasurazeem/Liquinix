@@ -64,7 +64,7 @@ code at all) and `src/platform` (one interface, a `win/` and a `linux/` backend)
 it, passing only if the Dock got its layer-shell surface and drew a frame.
 
 `liquinix-dock` reads the same `ajustes.txt` keys as the Windows Dock (`tamanho`, `ampliacao`,
-`ampliacao_tamanho`) from `$XDG_CONFIG_HOME/liquinix/`, plus `tema_icones` (an icon theme name such as
+`ampliacao_tamanho`, `animar_abertura`, `ocultar`) from `$XDG_CONFIG_HOME/liquinix/`, plus `tema_icones` (an icon theme name such as
 `MacTahoe`; by default KDE's theme). Its pinned apps are in `dock.txt` there, one `.desktop` id per line, created
 on first run. `LIQUINIX_DOCK_PNG=dock.png` draws the Dock into an image and exits, without a window
 (`LIQUINIX_DOCK_PNG_MOUSE=<x>` puts the pointer over it); the CI uploads those images with each run. Point
@@ -73,7 +73,7 @@ on first run. `LIQUINIX_DOCK_PNG=dock.png` draws the Dock into an image and exit
 `LIQUINIX_DOCK_SCRIPT="move 501 140; press; move 580 140; release"` (with `QT_QPA_PLATFORM=offscreen`) sends
 those mouse events to the Dock, prints the pinned order and exits: a way to test dragging without a screen. A press and
 release without moving is a real click and launches the app. `rclick x y` opens the right-click menu, `menu <label>`
-picks an item, `wait <ms>` lets animations run, and `png <file>` / `menupng <file> <y>` save pictures. `tools/linux/ci-dock-tests.sh ./build/liquinix-dock` runs
+picks an item, `leave` moves the pointer out of the window, `wait <ms>` lets animations run, and `png <file>` / `menupng <file> <y>` save pictures. `tools/linux/ci-dock-tests.sh ./build/liquinix-dock` runs
 the CI's behaviour tests that way (dragging to reorder and unpin, saving `dock.txt`, the launch bounce), with fake apps
 that launch nothing.
 

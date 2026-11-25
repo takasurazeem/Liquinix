@@ -5,7 +5,8 @@
 #   tools/linux/ci-dock-tests.sh [./build/liquinix-dock]
 #
 # Checks: dragging a pinned app reorders the Dock and saves dock.txt; dragging it out unpins it; the right-click menu
-# unpins and opens; a click makes the icon bounce, and the bounce stops after 8 s. Exits 0 when all pass.
+# unpins and opens; a click makes the icon bounce, and the bounce stops after 8 s; automatic hiding comes and goes.
+# Exits 0 when all pass.
 set -uo pipefail
 
 DOCK="${1:-./build/liquinix-dock}"
@@ -48,4 +49,11 @@ check "right-click > Open launches the app" "$launched" "1"
 reset; run "move 552 140; wait 400; png $DIR/rest.png; press; release; wait 200; png $DIR/hop.png; wait 8200; png $DIR/after.png" >/dev/null
 if [[ -s "$DIR/rest.png" && -s "$DIR/hop.png" ]] && ! cmp -s "$DIR/rest.png" "$DIR/hop.png"; then echo "ok   a click makes the icon bounce"; else echo "FAIL a click makes the icon bounce"; fail=1; fi
 if cmp -s "$DIR/rest.png" "$DIR/after.png"; then echo "ok   the bounce stops after 8 s"; else echo "FAIL the bounce stops after 8 s"; fail=1; fi
+# automatic hiding (ocultar=1): hidden, shown once the pointer touches the bottom edge, hidden again when it leaves
+printf 'tamanho=48\nampliacao=0\nocultar=1\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+reset; run "wait 300; png $DIR/hidden.png; move 640 199; wait 600; png $DIR/shown.png; leave; wait 600; png $DIR/hidden2.png" >/dev/null
+if [[ -s "$DIR/shown.png" ]] && ! cmp -s "$DIR/hidden.png" "$DIR/shown.png"; then echo "ok   autohide: the Dock comes back at the bottom edge"; else echo "FAIL autohide: the Dock comes back at the bottom edge"; fail=1; fi
+if cmp -s "$DIR/hidden.png" "$DIR/hidden2.png"; then echo "ok   autohide: it hides again when the pointer leaves"; else echo "FAIL autohide: it hides again when the pointer leaves"; fail=1; fi
+printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+
 exit $fail
