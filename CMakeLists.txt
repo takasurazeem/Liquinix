@@ -24,9 +24,14 @@ find_package(LayerShellQt REQUIRED)
 # código que o Windows usa pelo build.cmd, com o outro backend
 add_library(liquinix-nucleo STATIC
     src/nucleo/curvas.cpp
+    src/nucleo/dock_desenho.cpp
     src/plataforma/linux/plataforma_linux.cpp)
 target_include_directories(liquinix-nucleo PUBLIC src)
 
+# o pintor sobre QPainter (desenho::Pintor no Linux)
+add_library(liquinix-pintor-qt STATIC src/plataforma/linux/pintor_qt.cpp)
+target_link_libraries(liquinix-pintor-qt PUBLIC liquinix-nucleo Qt6::Gui)
+
 # o Dock (#20). Por enquanto, a janela de layer-shell na borda de baixo, sem ícones (#18).
 add_executable(liquinix-dock src/linux/dock/main.cpp)
-target_link_libraries(liquinix-dock PRIVATE liquinix-nucleo Qt6::Core Qt6::Gui LayerShellQt::Interface)
+target_link_libraries(liquinix-dock PRIVATE liquinix-nucleo liquinix-pintor-qt Qt6::Core Qt6::Gui LayerShellQt::Interface)
