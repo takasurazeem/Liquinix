@@ -84,8 +84,11 @@ or run (for example, Windows code edited from Linux).
 ## Conventions
 
 - Much of the code, comments, file names and settings keys are in **Portuguese** (`ajustes` = settings,
-  `janelas` = windows, `icones` = icons, `sons` = sounds, `bandeja` = tray). Keep existing names; new comments may
-  be in English or Portuguese, matching the file.
+  `janelas` = windows, `icones` = icons, `sons` = sounds, `bandeja` = tray). Keep existing names for now (renaming
+  them is #50).
+- **New code is written in English:** every new file, class, function and variable name, every new comment and log
+  message, even inside a Portuguese file. Exceptions: settings file names and keys (`ajustes.txt`, `tamanho=`...),
+  which existing installs depend on, and the Portuguese source strings inside `Tr()` (see below).
 - Native C++20 with Win32 and Direct2D; no new frameworks, Electron or web views. Keep the UI thread free of disk,
   registry and process waits, and keep idle CPU near zero.
 - Settings live in `%APPDATA%\Shell\ajustes.txt` as `key=value` lines.
