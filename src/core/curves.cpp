@@ -46,3 +46,8 @@ float curves::DockMagnify(float dist, float reach, float maxScale, float amount)
     float k = std::cos(dist / reach * 3.14159f / 2);
     return 1 + (maxScale - 1) * k * k * amount;
 }
+
+float curves::DockHop(double ms, float periodMs) {
+    float u = (float)std::fmod(ms / periodMs, 1.0);
+    return 4 * u * (1 - u);
+}
