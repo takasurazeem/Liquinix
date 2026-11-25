@@ -790,7 +790,7 @@ void GoPage(int i) {
 void OpenDialog() {
     IFileOpenDialog* d = nullptr;
     if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&d)))) return;
-    COMDLG_FILTERSPEC f[] = { { L"Imagens e PDF", L"*.pdf;*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tif;*.tiff;*.webp;*.heic;*.ico" }, { L"Todos", L"*.*" } };
+    COMDLG_FILTERSPEC f[] = { { Tr(L"Imagens e PDF"), L"*.pdf;*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tif;*.tiff;*.webp;*.heic;*.ico" }, { Tr(L"Todos os arquivos"), L"*.*" } };
     d->SetFileTypes(2, f);
     if (SUCCEEDED(d->Show(g_wnd))) {
         IShellItem* it = nullptr;

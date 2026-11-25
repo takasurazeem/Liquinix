@@ -118,8 +118,8 @@ bool Save() { return g_path.empty() ? SaveAs() : SaveTo(g_path); }
 bool SaveAs() {
     IFileSaveDialog* d = nullptr;
     if (FAILED(CoCreateInstance(CLSID_FileSaveDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&d)))) return false;
-    COMDLG_FILTERSPEC rtf[] = { { L"Texto Formatado (RTF)", L"*.rtf" }, { L"Texto Simples", L"*.txt" } };
-    COMDLG_FILTERSPEC txt[] = { { L"Texto Simples", L"*.txt" }, { L"Texto Formatado (RTF)", L"*.rtf" } };
+    COMDLG_FILTERSPEC rtf[] = { { Tr(L"Texto Formatado (RTF)"), L"*.rtf" }, { Tr(L"Texto Simples"), L"*.txt" } };
+    COMDLG_FILTERSPEC txt[] = { { Tr(L"Texto Simples"), L"*.txt" }, { Tr(L"Texto Formatado (RTF)"), L"*.rtf" } };
     d->SetFileTypes(2, g_plain ? txt : rtf);
     d->SetDefaultExtension(g_plain ? L"txt" : L"rtf");
     d->SetFileName(g_path.empty() ? Tr(L"Sem Título") : PathFindFileNameW(g_path.c_str()));
@@ -131,7 +131,7 @@ bool SaveAs() {
 void OpenDialog() {
     IFileOpenDialog* d = nullptr;
     if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&d)))) return;
-    COMDLG_FILTERSPEC f[] = { { L"Documentos de texto", L"*.rtf;*.txt;*.md;*.log;*.csv;*.ini;*.json" }, { L"Todos", L"*.*" } };
+    COMDLG_FILTERSPEC f[] = { { Tr(L"Documentos de texto"), L"*.rtf;*.txt;*.md;*.log;*.csv;*.ini;*.json" }, { Tr(L"Todos os arquivos"), L"*.*" } };
     d->SetFileTypes(2, f);
     if (SUCCEEDED(d->Show(wnd))) {
         IShellItem* it = nullptr;

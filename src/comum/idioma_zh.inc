@@ -1551,3 +1551,8 @@
 { L"Os avisos dos aplicativos aparecem no canto de cima, no visual do Mac.", L"应用通知以 Mac 样式显示在顶部角落。" },
 { L"Calendário na Central de Notificações", L"通知中心中的日历" },
 { L"Relógio na Central de Notificações", L"通知中心中的时钟" },
+{ L"Imagens e PDF", L"图像和 PDF" },
+{ L"Todos os arquivos", L"所有文件" },
+{ L"Texto Formatado (RTF)", L"富文本 (RTF)" },
+{ L"Texto Simples", L"纯文本" },
+{ L"Documentos de texto", L"文本文稿" },
