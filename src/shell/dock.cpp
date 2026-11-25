@@ -3,6 +3,7 @@
 // onde não há nada desenhado, o clique passa). Ver docs/dock-e-barra-de-menus.md.
 #include "shell.h"
 #include "../menu/context_menu.h"
+#include "../nucleo/curvas.h"
 #include <shellapi.h>
 #include <shlobj.h>
 #include <dwmapi.h>
@@ -353,13 +354,11 @@ void Layout() {
         float s = 1;
         float mx = g_mouseX >= 0 ? g_mouseX : g_lastMouseX;
         if (g_magnify && mx >= 0 && g_magAmt > 0.001f && g_items[i].kind != I_SEP && !g_dragging) {
-            float d = std::fabs(mx - (left0 + c0[i])) / slot;
-            if (d < R) { float k = std::cos(d / R * 3.14159f / 2); s = 1 + (M - 1) * k * k * g_magAmt; }
+            s = curvas::DockMagnify(std::fabs(mx - (left0 + c0[i])) / slot, R, M, g_magAmt);
         }
         float sepS = 1;  // Tahoe (guia, seção 63): o separador também cresce perto do ponteiro (31 → 40 com 64)
         if (TAHOE_DOCK && g_magnify && mx >= 0 && g_magAmt > 0.001f && g_items[i].kind == I_SEP && !g_dragging) {
-            float d = std::fabs(mx - (left0 + c0[i])) / slot;
-            if (d < R) { float k = std::cos(d / R * 3.14159f / 2); sepS = 1 + (40.f / 31.f - 1) * k * k * g_magAmt; }
+            sepS = curvas::DockMagnify(std::fabs(mx - (left0 + c0[i])) / slot, R, 40.f / 31.f, g_magAmt);
         }
         g_items[i].size = g_items[i].kind == I_SEP ? 0 : g_tile * s;
         wv.push_back(g_items[i].kind == I_SEP ? SEP_W * sepS : slot * s * (g_items[i].kind == I_MINWIN ? SlotFactor(g_items[i]) : AppFactor(g_items[i])));
