@@ -1,4 +1,7 @@
-# On every commit to main and every pull request into main: checks that Liquinix builds (build.cmd plus the 32/64-bit title bar DLLs).
+# On every commit to main and every pull request into main: checks that Liquinix builds.
+#   windows: build.cmd plus the 32/64-bit title bar DLLs.
+#   linux:   the CMake build (Qt 6, layer-shell-qt) in a Fedora 44 container, then a smoke test of liquinix-dock in a
+#            headless KWin (tools/linux/ci-smoke.sh).
 # Skipped when a push or pull request only changes docs (Markdown, docs/, .claude/); run it by hand to build anyway.
 # Releases are published with tools\publicar.ps1. They never carry Apple's fonts, sounds or cursors: the installer
 # downloads those on the user's PC.
@@ -37,3 +40,23 @@ jobs:
         run: |
           call build.cmd || exit /b 1
           call build.cmd janelas || exit /b 1
+
+  linux:
+    runs-on: ubuntu-24.04
+    # Fedora 44: the same packages as the toolbox in docs/linux-dev.md. Pinned by digest, like the actions.
+    container: registry.fedoraproject.org/fedora@sha256:68b5ed88f893d3456ddf118b4890cbd6221029d90b20708f34dc9cdc03f4cc13  # fedora:44
+    steps:
+      - name: Install build tools, Qt 6, layer-shell-qt and KWin
+        run: dnf install -y -q git gcc-c++ cmake ninja-build qt6-qtbase-devel layer-shell-qt-devel kwin dbus-daemon
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build
+        run: |
+          cmake -B build -G Ninja
+          ninja -C build
+
+      - name: Smoke test in a headless KWin
+        run: tools/linux/ci-smoke.sh ./build/liquinix-dock

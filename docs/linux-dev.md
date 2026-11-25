@@ -58,6 +58,10 @@ versions, which a Plasma 6 desktop on the same Fedora release does. Shared code 
 code at all) and `src/plataforma` (one interface, a `win/` and a `linux/` backend); Linux-only programs are in
 `src/linux`.
 
+`tools/linux/ci-smoke.sh ./build/liquinix-dock` runs the same check as the CI's Linux job: a headless KWin
+(`kwin_wayland --virtual`, with its own runtime folder and D-Bus, so your desktop isn't touched) and the Dock inside
+it, passing only if the Dock got its layer-shell surface and drew a frame.
+
 ## 2. Run in a nested KWin
 
 `tools/linux/nested-kwin.sh` opens a second KWin as a window on your desktop. Programs started inside it talk to
