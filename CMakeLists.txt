@@ -1,5 +1,5 @@
-# Build do lado Linux do Liquinix (Qt 6 + layer-shell-qt; ver docs/linux-roadmap.md e docs/linux-dev.md).
-# O Windows continua no build.cmd: este arquivo só monta os programas liquinix-* do Linux.
+# Build of Liquinix's Linux side (Qt 6 + layer-shell-qt; see docs/linux-roadmap.md and docs/linux-dev.md).
+# Windows keeps using build.cmd: this file only builds the Linux liquinix-* programs.
 #   cmake -B build -G Ninja && ninja -C build
 #   tools/linux/nested-kwin.sh ./build/liquinix-dock
 cmake_minimum_required(VERSION 3.22)
@@ -21,21 +21,21 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui WaylandClient)
 find_package(PlasmaWaylandProtocols REQUIRED)  # Plasma's window-management protocol (the Dock's "running" dots)
 find_package(LayerShellQt REQUIRED)
 
-# código sem nada de plataforma (src/nucleo) e o backend Linux da plataforma (src/plataforma/linux): o mesmo
-# código que o Windows usa pelo build.cmd, com o outro backend
-add_library(liquinix-nucleo STATIC
-    src/nucleo/curvas.cpp
-    src/nucleo/dock_desenho.cpp
-    src/nucleo/dock_layout.cpp
-    src/plataforma/linux/plataforma_linux.cpp)
-target_include_directories(liquinix-nucleo PUBLIC src)
+# platform-free code (src/core) and the Linux platform backend (src/platform/linux): the same code Windows builds
+# through build.cmd, with the other backend
+add_library(liquinix-core STATIC
+    src/core/curves.cpp
+    src/core/dock_drawing.cpp
+    src/core/dock_layout.cpp
+    src/platform/linux/platform_linux.cpp)
+target_include_directories(liquinix-core PUBLIC src)
 
-# o pintor sobre QPainter (desenho::Pintor no Linux)
-add_library(liquinix-pintor-qt STATIC src/plataforma/linux/pintor_qt.cpp)
-target_link_libraries(liquinix-pintor-qt PUBLIC liquinix-nucleo Qt6::Gui)
+# the painter over QPainter (drawing::Painter on Linux)
+add_library(liquinix-painter-qt STATIC src/platform/linux/painter_qt.cpp)
+target_link_libraries(liquinix-painter-qt PUBLIC liquinix-core Qt6::Gui)
 
-# o Dock (#20): apps fixos dos .desktop, ícones do tema, ampliação; a disposição é a do Windows (src/nucleo)
+# the Dock (#20): pinned apps from .desktop files, theme icons, magnification, running dots; the layout is the Windows one
 add_executable(liquinix-dock src/linux/dock/main.cpp src/linux/dock/apps.cpp src/linux/dock/window_list.cpp src/linux/dock/window_list.h)
 set_target_properties(liquinix-dock PROPERTIES AUTOMOC ON)
 qt6_generate_wayland_protocol_client_sources(liquinix-dock FILES ${PLASMA_WAYLAND_PROTOCOLS_DIR}/plasma-window-management.xml)
-target_link_libraries(liquinix-dock PRIVATE liquinix-nucleo liquinix-pintor-qt Qt6::Core Qt6::Gui Qt6::WaylandClient LayerShellQt::Interface)
+target_link_libraries(liquinix-dock PRIVATE liquinix-core liquinix-painter-qt Qt6::Core Qt6::Gui Qt6::WaylandClient LayerShellQt::Interface)

@@ -1,5 +1,5 @@
-// Apps do Dock no Linux: os fixos (dock.txt na pasta dos ajustes, um id de .desktop por linha) e como abrir cada um.
-// Os .desktop vêm das pastas do padrão XDG (Desktop Entry Specification): $XDG_DATA_HOME/applications e
+// The Dock's apps on Linux: the pinned ones (dock.txt in the settings folder, one .desktop id per line) and how to
+// launch each. .desktop files come from the XDG folders (Desktop Entry Specification): $XDG_DATA_HOME/applications and
 // $XDG_DATA_DIRS/applications.
 #pragma once
 #include <QString>
@@ -7,24 +7,24 @@
 #include <optional>
 #include <vector>
 
-struct AppDesktop {
-    QString id;       // "org.kde.dolphin" (o nome do arquivo sem .desktop)
-    QString nome;     // Name (na língua do sistema, se o arquivo tiver)
-    QString icone;    // Icon: nome no tema de ícones ou caminho absoluto
-    QString exec;     // Exec, sem os códigos de campo (%f, %U...)
-    QString arquivo;  // caminho do .desktop
+struct DesktopApp {
+    QString id;       // "org.kde.dolphin" (the file name without .desktop)
+    QString name;     // Name (in the system's language, if the file has it)
+    QString icon;     // Icon: a name in the icon theme or an absolute path
+    QString exec;     // Exec, without the field codes (%f, %U...)
+    QString file;     // path of the .desktop file
     QString wmClass;  // StartupWMClass: the windows' app_id when it isn't the .desktop id
 };
 
+// finds the .desktop file by id; empty if it doesn't exist, is hidden (NoDisplay/Hidden) or isn't an application
+std::optional<DesktopApp> FindApp(const QString& id);
+
+// the pinned apps: reads <dir>/dock.txt; if it doesn't exist, writes a starting list with the common apps found here
+std::vector<DesktopApp> ReadPinned(const QString& dir);
+
+// starts the app (a separate process, without waiting); false if it couldn't
+bool LaunchApp(const DesktopApp& app);
+
 // Does a window (by its Wayland app_id) belong to this app? Compares, ignoring case, with the .desktop id, its last
 // part (org.kde.dolphin -> dolphin) and StartupWMClass.
-bool WindowBelongsTo(const AppDesktop& app, const QString& appId);
-
-// procura o .desktop pelo id; vazio se não existir, se estiver escondido (NoDisplay/Hidden) ou não for um app
-std::optional<AppDesktop> AcharApp(const QString& id);
-
-// os fixos: lê <pasta>/dock.txt; se não existir, grava uma lista inicial com os apps comuns que existem neste sistema
-std::vector<AppDesktop> LerFixos(const QString& pasta);
-
-// abre o app (processo à parte, sem esperar); false se não deu
-bool AbrirApp(const AppDesktop& app);
+bool WindowBelongsTo(const DesktopApp& app, const QString& appId);

@@ -55,8 +55,8 @@ ninja -C build                 # build/liquinix-dock
 ```
 
 The programs run on the host too (outside the toolbox), as long as the host has the same Qt 6 and layer-shell-qt
-versions, which a Plasma 6 desktop on the same Fedora release does. Shared code lives in `src/nucleo` (no platform
-code at all) and `src/plataforma` (one interface, a `win/` and a `linux/` backend); Linux-only programs are in
+versions, which a Plasma 6 desktop on the same Fedora release does. Shared code lives in `src/core` (no platform
+code at all) and `src/platform` (one interface, a `win/` and a `linux/` backend); Linux-only programs are in
 `src/linux`.
 
 `tools/linux/ci-smoke.sh ./build/liquinix-dock` runs the same check as the CI's Linux job: a headless KWin

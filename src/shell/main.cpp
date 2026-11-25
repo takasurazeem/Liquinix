@@ -4,7 +4,7 @@
 #include "shell.h"
 #include "../comum/simbolos.h"
 #include "../menu/context_menu.h"
-#include "../plataforma/plataforma.h"
+#include "../platform/platform.h"
 #include <shlobj.h>
 #include <share.h>
 #include <cstdarg>
@@ -293,7 +293,7 @@ std::wstring shell::Setting(const wchar_t* key, const wchar_t* def) {
 }
 
 static std::wstring SettingsPath() {
-    std::wstring f = plataforma::PastaAjustes();
+    std::wstring f = platform::SettingsDir();
     CreateDirectoryW(f.c_str(), nullptr);
     return f + L"\\ajustes.txt";
 }
@@ -347,9 +347,9 @@ void shell::OpenSettings(const std::wstring& page) {
 }
 
 static void LoadSettings() {
-    std::wstring pasta = plataforma::PastaAjustes();
-    if (pasta.empty()) return;
-    std::wstring f = pasta + L"\\ajustes.txt";
+    std::wstring dir = platform::SettingsDir();
+    if (dir.empty()) return;
+    std::wstring f = dir + L"\\ajustes.txt";
     FILE* fp = nullptr;
     if (_wfopen_s(&fp, f.c_str(), L"r, ccs=UTF-8") || !fp) return;
     wchar_t line[512];

@@ -69,10 +69,11 @@ or run (for example, Windows code edited from Linux).
 - `src/janelas`: Mac title bars injected into other apps' windows; `src/titulos`: those title bars without the shell.
 - `src/menu`: context menus over the real Windows shell extensions. `src/dialogo`: the Mac Open/Save dialog.
 - `src/comum`: shared code (program names in `nomes.h`, language, glass, shadows, SF Symbols drawing).
-- `src/nucleo`: code with nothing platform-specific in it, for Windows and Linux alike (animation curves, the Dock's
-  magnification). Standard C++ only.
-- `src/plataforma`: platform services behind a small interface (`plataforma.h`: clock, settings folder), with a
-  `win/` and a `linux/` backend. See the `liquinix-platform-layer` skill.
+- `src/core`: code with nothing platform-specific in it, for Windows and Linux alike: animation curves, the
+  `drawing::Painter` interface, and the Dock's layout and badge. Standard C++ only.
+- `src/linux`: the Linux programs (Qt 6, Wayland), built by `CMakeLists.txt`: so far `liquinix-dock`.
+- `src/platform`: platform services behind a small interface (`platform.h`: clock, settings folder) and the
+  painters (Direct2D, QPainter), with a `win/` and a `linux/` backend. See the `liquinix-platform-layer` skill.
 - `src/setup`: the installer app. `instalador/`: install, update and uninstall scripts.
 - `tools/`: build, resource, icon and packaging scripts.
 - `icones/tahoe`: the only bundled icons (MacTahoe icon theme by vinceliuice, GPL-3.0). The code also looks for
@@ -100,9 +101,11 @@ or run (for example, Windows code edited from Linux).
 
 ## Linux port
 
-Linux support is planned, not started. When working on it, put platform-specific code (windows, drawing, tray,
-hotkeys, file icons, the shell integration) behind a platform layer with separate Windows and Linux backends
-instead of adding `#ifdef`s through app code, and keep the Windows build passing.
+Linux support has started: KDE Plasma 6 on Wayland, with Qt 6 (decisions in `docs/linux-roadmap.md`; how to build
+and test in `docs/linux-dev.md`). The first program is the Dock (`liquinix-dock`). Put platform-specific code
+(windows, drawing, tray, hotkeys, file icons, the shell integration) behind the platform layer (`src/platform`)
+instead of adding `#ifdef`s through app code, share what can be shared in `src/core`, and keep the Windows build
+passing. CI builds and smoke-tests both sides.
 
 ## Skills
 

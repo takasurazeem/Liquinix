@@ -4,23 +4,23 @@
 //  - Curva padrão do Core Animation: cubic-bezier(0.25, 0.1, 0.25, 1.0) (CAMediaTimingFunctionName.default).
 //  - Molas como as do SwiftUI: resposta (s) e amortecimento; "suave" (sem quique) e "ágil" (um quique leve).
 #include "shell.h"
-#include "../nucleo/curvas.h"
-#include "../plataforma/plataforma.h"
+#include "../core/curves.h"
+#include "../platform/platform.h"
 #include <cmath>
 
-double anim::Now() { return plataforma::AgoraMs(); }
+double anim::Now() { return platform::NowMs(); }
 
-// As curvas moram em src/nucleo/curvas.cpp (sem nada do Windows, para o lado Linux usar as mesmas: #19)
-float anim::Bezier(float t, float x1, float y1, float x2, float y2) { return curvas::Bezier(t, x1, y1, x2, y2); }
-float anim::Ease(float t) { return curvas::Ease(t); }            // padrão do sistema
-float anim::EaseInOut(float t) { return curvas::EaseInOut(t); }  // entra e sai devagar
-float anim::EaseOut(float t) { return curvas::EaseOut(t); }      // começa rápido
-float anim::Spring(float tSec, float response, float damping) { return curvas::Spring(tSec, response, damping); }
+// The curves live in src/core/curves.cpp (nothing Windows-specific, so the Linux side uses the same ones: #19)
+float anim::Bezier(float t, float x1, float y1, float x2, float y2) { return curves::Bezier(t, x1, y1, x2, y2); }
+float anim::Ease(float t) { return curves::Ease(t); }            // the system default
+float anim::EaseInOut(float t) { return curves::EaseInOut(t); }  // slow in and out
+float anim::EaseOut(float t) { return curves::EaseOut(t); }      // fast start
+float anim::Spring(float tSec, float response, float damping) { return curves::Spring(tSec, response, damping); }
 
 // Tahoe: gravado quadro a quadro no macOS 26 (guia macOS26-Theme-Reference, seções 44 e 53): o Spotlight (e os
 // painéis de vidro) aparece com um fade de ~80 ms e cresce de 98 % a 100 % numa curva out-expo até ~300 ms; some
 // com um fade de ~100 ms encolhendo de leve. A Central de Controle tem a dela (CCIn/CCOut).
-using curvas::OutExpo;
+using curves::OutExpo;
 
 bool anim::reduceMotion = false;
 
@@ -83,7 +83,7 @@ anim::Panel anim::CCOut(double ms) {
     return p;
 }
 
-float anim::SpringDuration(float response, float damping) { return curvas::SpringDuration(response, damping); }
+float anim::SpringDuration(float response, float damping) { return curves::SpringDuration(response, damping); }
 
 // mesma base do GetTickCount (tempo de interrupção), mas com fração de milissegundo: serve para comparar
 // com marcas gravadas por GetTickCount (ex.: App::launchedAt) sem os degraus de 15,6 ms

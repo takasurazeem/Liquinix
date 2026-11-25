@@ -3,9 +3,9 @@
 // onde não há nada desenhado, o clique passa). Ver docs/dock-e-barra-de-menus.md.
 #include "shell.h"
 #include "../menu/context_menu.h"
-#include "../nucleo/dock_desenho.h"
-#include "../nucleo/dock_layout.h"
-#include "../plataforma/win/pintor_d2d.h"
+#include "../core/dock_drawing.h"
+#include "../core/dock_layout.h"
+#include "../platform/win/painter_d2d.h"
 #include <shellapi.h>
 #include <shlobj.h>
 #include <dwmapi.h>
@@ -340,28 +340,28 @@ void BuildItems() {
 
 // Posições e tamanhos (com ampliação), centralizado na tela.
 void Layout() {
-    // a conta da disposição é compartilhada com o Linux (src/nucleo/dock_layout.cpp); aqui só entra e sai o estado do Dock
-    std::vector<dock_layout::Item> itens(g_items.size());
+    // the layout arithmetic is shared with Linux (src/core/dock_layout.cpp); here only the Dock's state goes in and out
+    std::vector<dock_layout::Item> items(g_items.size());
     for (size_t i = 0; i < g_items.size(); i++) {
-        auto& it = g_items[i]; auto& o = itens[i];
-        o.separador = it.kind == I_SEP;
+        auto& it = g_items[i]; auto& o = items[i];
+        o.separator = it.kind == I_SEP;
         o.app = it.kind == I_APP;
-        o.fixoMovel = o.app && apps::list[it.app].pinned && !apps::list[it.app].finder;
-        o.indiceApp = it.app;  // também nos outros tipos (a conta antiga lia .app de qualquer vizinho)
-        o.fator = it.kind == I_MINWIN ? SlotFactor(it) : AppFactor(it);
+        o.movablePinned = o.app && apps::list[it.app].pinned && !apps::list[it.app].finder;
+        o.appIndex = it.app;  // for the other kinds too (the old code read .app from any neighbour)
+        o.factor = it.kind == I_MINWIN ? SlotFactor(it) : AppFactor(it);
         o.cx = it.cx;
     }
-    dock_layout::Parametros prm;
-    prm.eixo = AxisLen();  // ao longo do Dock (dos lados, a altura abaixo da barra de menus)
-    prm.icone = g_tile; prm.ampliado = g_large; prm.passo = SLOT; prm.margem = PAD_X; prm.larguraSeparador = SEP_W;
-    prm.ampliar = g_magnify; prm.tahoe = TAHOE_DOCK;
-    prm.mouse = g_mouseX; prm.ultimoMouse = g_lastMouseX; prm.ampliacao = g_magAmt;
-    prm.arrastando = g_dragging; prm.foraDoDock = g_dragOut;
-    prm.arrastado = g_dragging && g_press >= 0 && g_press < (int)g_items.size() && g_items[g_press].kind == I_APP && apps::list[g_items[g_press].app].pinned ? g_press : -1;
-    dock_layout::Resultado res = dock_layout::Calcular(itens, prm);
-    for (size_t i = 0; i < g_items.size(); i++) { g_items[i].cx = itens[i].cx; g_items[i].size = itens[i].tamanho; }
-    g_dragTo = res.destino;
-    float W = prm.eixo, total = res.total;
+    dock_layout::Params prm;
+    prm.axis = AxisLen();  // along the Dock (on the sides, the height below the menu bar)
+    prm.icon = g_tile; prm.magnified = g_large; prm.step = SLOT; prm.margin = PAD_X; prm.separatorWidth = SEP_W;
+    prm.magnify = g_magnify; prm.tahoe = TAHOE_DOCK;
+    prm.mouse = g_mouseX; prm.lastMouse = g_lastMouseX; prm.magnification = g_magAmt;
+    prm.dragging = g_dragging; prm.outsideDock = g_dragOut;
+    prm.dragged = g_dragging && g_press >= 0 && g_press < (int)g_items.size() && g_items[g_press].kind == I_APP && apps::list[g_items[g_press].app].pinned ? g_press : -1;
+    dock_layout::Result res = dock_layout::Compute(items, prm);
+    for (size_t i = 0; i < g_items.size(); i++) { g_items[i].cx = items[i].cx; g_items[i].size = items[i].size; }
+    g_dragTo = res.dropTarget;
+    float W = prm.axis, total = res.total;
     float H = WinH();
     float hide = (1 - anim::EaseInOut(g_reveal)) * (g_tile + PAD_TOP + PAD_BOTTOM + MARGIN + 2);  // ocultar/mostrar com a curva do Mac
     float bottom = H - MARGIN + hide;
@@ -784,12 +784,12 @@ int BadgeCount(const App& a) {
 }
 
 // ib: o corpo visível do ícone (sem a margem dos PNGs do pacote)
-// o emblema é desenho compartilhado com o Linux (src/nucleo/dock_desenho.cpp), pelo pintor Direct2D com a fonte do Shell
-IDWriteTextFormat* FonteShell(float s, DWRITE_FONT_WEIGHT w, DWRITE_TEXT_ALIGNMENT a) { return ui::Format(s, w, false, a); }
-float LarguraShell(IDWriteTextFormat* tf, const std::wstring& s) { return ui::TextWidth(tf, s); }
+// the badge is drawing shared with Linux (src/core/dock_drawing.cpp), through the Direct2D painter with the shell's font
+IDWriteTextFormat* ShellFont(float s, DWRITE_FONT_WEIGHT w, DWRITE_TEXT_ALIGNMENT a) { return ui::Format(s, w, false, a); }
+float ShellTextWidth(IDWriteTextFormat* tf, const std::wstring& s) { return ui::TextWidth(tf, s); }
 void DrawBadge(ID2D1RenderTarget* rt, ID2D1SolidColorBrush* br, D2D1_RECT_F ib, int n) {
-    PintorD2D p(rt, br, FonteShell, LarguraShell);
-    dock_desenho::Emblema(p, desenho::Ret{ ib.left, ib.top, ib.right, ib.bottom }, n);
+    PainterD2D p(rt, br, ShellFont, ShellTextWidth);
+    dock_drawing::Badge(p, drawing::Rect{ ib.left, ib.top, ib.right, ib.bottom }, n);
 }
 
 void Paint();
