@@ -11,8 +11,11 @@
 #include "platform/platform.h"
 
 #include <LayerShellQt/Window>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
+#include <QFileSystemWatcher>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QMouseEvent>
@@ -26,6 +29,7 @@
 #include <QStandardPaths>
 #include <QSurfaceFormat>
 #include <QTextStream>
+#include <QUrl>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -50,11 +54,40 @@ std::map<QString, QString> ReadSettings(const QString& dir) {
     return m;
 }
 
+// one slot in the Dock: a pinned app, the separator, the Downloads folder or the Trash (the Windows Dock's order)
+struct Entry {
+    enum Kind { App, Separator, Downloads, Trash } kind;
+    int app = -1;     // App: index in apps_
+    QIcon icon;
+    QString label;    // shown on hover
+};
+
+// the XDG trash (Trash specification): $XDG_DATA_HOME/Trash/files
+QString TrashFilesDir() { return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/Trash/files"); }
+bool TrashHasFiles() { return !QDir(TrashFilesDir()).isEmpty(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System); }
+
 class DockWindow : public QRasterWindow {
 public:
     DockWindow(std::vector<DesktopApp> apps, float tile, float large, bool magnify)
         : apps_(std::move(apps)), tile_(tile), large_(large), magnify_(magnify) {
-        for (auto& a : apps_) icons_.push_back(a.icon.startsWith('/') ? QIcon(a.icon) : QIcon::fromTheme(a.icon, QIcon::fromTheme(QStringLiteral("application-x-executable"))));
+        for (size_t i = 0; i < apps_.size(); i++) {
+            const DesktopApp& a = apps_[i];
+            QIcon icon = a.icon.startsWith('/') ? QIcon(a.icon) : QIcon::fromTheme(a.icon, QIcon::fromTheme(QStringLiteral("application-x-executable")));
+            entries_.push_back({ Entry::App, int(i), icon, a.name });
+        }
+        entries_.push_back({ Entry::Separator, -1, QIcon(), QString() });
+        entries_.push_back({ Entry::Downloads, -1, QIcon::fromTheme(QStringLiteral("folder-downloads"), QIcon::fromTheme(QStringLiteral("folder"))), QStringLiteral("Downloads") });
+        entries_.push_back({ Entry::Trash, -1, QIcon(), QStringLiteral("Trash") });
+        UpdateTrash();
+        // the Trash icon follows its contents: a watcher on the trash folder (and its parents, so a first trashed file
+        // that creates the folder is seen too), never polling
+        QString files = TrashFilesDir();
+        for (const QString& d : { files, QFileInfo(files).path(), QFileInfo(QFileInfo(files).path()).path() })
+            if (QDir(d).exists()) trashWatcher_.addPath(d);
+        QObject::connect(&trashWatcher_, &QFileSystemWatcher::directoryChanged, [this, files] {
+            if (QDir(files).exists() && !trashWatcher_.directories().contains(files)) trashWatcher_.addPath(files);
+            UpdateTrash();
+        });
         setFlag(Qt::FramelessWindowHint);
         running_.assign(apps_.size(), false);
     }
@@ -151,10 +184,16 @@ protected:
         qreal dpr = p.device()->devicePixelRatio();
         for (size_t i = 0; i < items_.size(); i++) {
             float s = items_[i].size, cx = items_[i].cx;
+            if (entries_[i].kind == Entry::Separator) {  // a thin line across the shelf (the Windows Dock's)
+                float h = tile_ * 0.93f, cy = (bg_.top + bg_.bottom) / 2;
+                p.setPen(QPen(dark ? QColor::fromRgbF(1, 1, 1, 0.22f) : QColor::fromRgbF(0, 0, 0, 0.18f), 1));
+                p.drawLine(QPointF(cx, cy - h / 2), QPointF(cx, cy + h / 2));
+                continue;
+            }
             QRectF r(cx - s / 2, baseline - s, s, s);
-            QPixmap px = icons_[i].pixmap(QSize(int(std::ceil(s)), int(std::ceil(s))), dpr);  // QIcon caches the sizes it made
+            QPixmap px = entries_[i].icon.pixmap(QSize(int(std::ceil(s)), int(std::ceil(s))), dpr);  // QIcon caches the sizes it made
             p.drawPixmap(r, px, QRectF(0, 0, px.width(), px.height()));
-            if (running_[i]) {  // running: Tahoe's small dot, a little above the edge (the same as on Windows)
+            if (entries_[i].kind == Entry::App && running_[entries_[i].app]) {  // running: Tahoe's small dot, a little above the edge (the same as on Windows)
                 float dotR = std::max(1.25f, tile_ * 0.028f), dotY = bg_.bottom - tile_ * 0.088f;
                 pq.FillRoundedRect(drawing::Rect{ cx - dotR, dotY - dotR, cx + dotR, dotY + dotR }, dotR, drawing::Color{ 0.05f, 0.07f, 0.20f, 0.85f });
             }
@@ -162,7 +201,7 @@ protected:
         // the name of the app under the pointer, in a label above its icon (as on the Mac)
         if (hover_ >= 0 && magAmt_ > 0.5f) {
             float s = items_[hover_].size, cx = items_[hover_].cx;
-            std::wstring name = apps_[hover_].name.toStdWString();
+            std::wstring name = entries_[hover_].label.toStdWString();
             float tw = pq.TextWidth(name, 13, drawing::Weight::Normal);
             if (tw >= 0) {
                 float w = tw + 24, h = 26, top = baseline - s - 12 - h;
@@ -183,15 +222,24 @@ protected:
         mouseX_ = inside ? x : -1;
         if (inside) lastMouseX_ = x;
         int h = -1;
-        for (size_t i = 0; inside && i < items_.size(); i++) if (std::fabs(x - items_[i].cx) <= Slot() * items_[i].size / tile_ / 2) h = int(i);
+        for (size_t i = 0; inside && i < items_.size(); i++)
+            if (!items_[i].separator && std::fabs(x - items_[i].cx) <= Slot() * items_[i].size / tile_ / 2) h = int(i);
         hover_ = h;
         update();
     }
     void mouseReleaseEvent(QMouseEvent* e) override {
         if (e->button() != Qt::LeftButton || hover_ < 0) return;
-        const DesktopApp& a = apps_[hover_];
+        const Entry& en = entries_[hover_];
+        if (en.kind == Entry::Downloads || en.kind == Entry::Trash) {  // open the folder in the file manager
+            QUrl url = en.kind == Entry::Trash ? QUrl(QStringLiteral("trash:/")) : QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
+            bool ok = QDesktopServices::openUrl(url);
+            std::printf("liquinix-dock: open %s: %s\n", qPrintable(url.toString()), ok ? "ok" : "failed"); std::fflush(stdout);
+            return;
+        }
+        if (en.kind != Entry::App) return;
+        const DesktopApp& a = apps_[en.app];
         // already running: bring its window to the front (as on the Mac) instead of starting it again
-        if (running_[hover_] && windowList_ && windowList_->Activate([&](const QString& id) { return WindowBelongsTo(a, id); })) {
+        if (running_[en.app] && windowList_ && windowList_->Activate([&](const QString& id) { return WindowBelongsTo(a, id); })) {
             std::printf("liquinix-dock: activate %s\n", qPrintable(a.id)); std::fflush(stdout);
             return;
         }
@@ -214,9 +262,22 @@ private:
         std::fflush(stdout);
         update();
     }
+    void UpdateTrash() {
+        bool full = TrashHasFiles();
+        for (auto& e : entries_)
+            if (e.kind == Entry::Trash && (e.icon.isNull() || full != trashFull_))
+                e.icon = QIcon::fromTheme(full ? QStringLiteral("user-trash-full") : QStringLiteral("user-trash"));
+        if (full != trashFull_) { std::printf("liquinix-dock: trash %s\n", full ? "has files" : "is empty"); std::fflush(stdout); }
+        trashFull_ = full;
+        update();
+    }
     void Layout(float W, float H) {
-        items_.assign(apps_.size(), {});
-        for (size_t i = 0; i < apps_.size(); i++) { items_[i].app = true; items_[i].appIndex = int(i); }
+        items_.assign(entries_.size(), {});
+        for (size_t i = 0; i < entries_.size(); i++) {
+            items_[i].separator = entries_[i].kind == Entry::Separator;
+            items_[i].app = entries_[i].kind == Entry::App;
+            items_[i].appIndex = entries_[i].app;
+        }
         dock_layout::Params prm;
         prm.axis = W; prm.icon = tile_; prm.magnified = large_; prm.step = Slot(); prm.margin = PadX();
         prm.separatorWidth = tile_ * 0.484f; prm.magnify = magnify_; prm.tahoe = true;
@@ -244,7 +305,9 @@ private:
     }
 
     std::vector<DesktopApp> apps_;
-    std::vector<QIcon> icons_;
+    std::vector<Entry> entries_;          // what the Dock shows, in order (items_ is laid out from it)
+    QFileSystemWatcher trashWatcher_;
+    bool trashFull_ = false;
     std::vector<dock_layout::Item> items_;
     std::vector<bool> running_;           // per pinned app: has an open window
     WindowList* windowList_ = nullptr;
