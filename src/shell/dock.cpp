@@ -4,6 +4,8 @@
 #include "shell.h"
 #include "../menu/context_menu.h"
 #include "../nucleo/curvas.h"
+#include "../nucleo/dock_desenho.h"
+#include "../plataforma/win/pintor_d2d.h"
 #include <shellapi.h>
 #include <shlobj.h>
 #include <dwmapi.h>
@@ -826,28 +828,12 @@ int BadgeCount(const App& a) {
 }
 
 // ib: o corpo visível do ícone (sem a margem dos PNGs do pacote)
+// o emblema é desenho compartilhado com o Linux (src/nucleo/dock_desenho.cpp), pelo pintor Direct2D com a fonte do Shell
+IDWriteTextFormat* FonteShell(float s, DWRITE_FONT_WEIGHT w, DWRITE_TEXT_ALIGNMENT a) { return ui::Format(s, w, false, a); }
+float LarguraShell(IDWriteTextFormat* tf, const std::wstring& s) { return ui::TextWidth(tf, s); }
 void DrawBadge(ID2D1RenderTarget* rt, ID2D1SolidColorBrush* br, D2D1_RECT_F ib, int n) {
-    float body = ib.right - ib.left;
-    float cx = (ib.left + ib.right) / 2, cy = (ib.top + ib.bottom) / 2;
-    // medidas da referência do Mac (ícone do Mensagens): círculo de ~44% do ícone, passando ~13% da borda
-    // para a direita e ~10% para cima; número fino, ~55% do círculo
-    float d = body * 0.44f;
-    std::wstring t = n > 99 ? L"99+" : std::to_wstring(n);
-    IDWriteTextFormat* tf = ui::Format(d * 0.60f, DWRITE_FONT_WEIGHT_NORMAL, false, DWRITE_TEXT_ALIGNMENT_CENTER);
-    float tw = tf ? ui::TextWidth(tf, t) : d * 0.5f;
-    float w = std::max(d, tw + d * 0.55f);
-    float bx = cx + body / 2 + body * 0.13f - w / 2, by = cy - body / 2 - body * 0.10f + d / 2;  // borda direita e topo passando do ícone
-    D2D1_RECT_F r{ bx - w / 2, by - d / 2, bx + w / 2, by + d / 2 };
-    br->SetColor(D2D1::ColorF(0, 0, 0, 0.18f));  // sombrinha
-    rt->FillRoundedRectangle(D2D1::RoundedRect(D2D1::RectF(r.left, r.top + d * 0.04f, r.right, r.bottom + d * 0.06f), d / 2, d / 2), br);
-    br->SetColor(D2D1::ColorF(1.0f, 0.231f, 0.188f));  // vermelho do sistema (#FF3B30)
-    rt->FillRoundedRectangle(D2D1::RoundedRect(r, d / 2, d / 2), br);
-    if (tf) {
-        tf->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
-        br->SetColor(D2D1::ColorF(1, 1, 1));
-        rt->DrawTextW(t.c_str(), (UINT32)t.size(), tf, D2D1::RectF(r.left, r.top - d * 0.04f, r.right, r.bottom - d * 0.04f), br);
-        tf->Release();
-    }
+    PintorD2D p(rt, br, FonteShell, LarguraShell);
+    dock_desenho::Emblema(p, desenho::Ret{ ib.left, ib.top, ib.right, ib.bottom }, n);
 }
 
 void Paint();

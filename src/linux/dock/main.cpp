@@ -2,6 +2,8 @@
 // Por enquanto (#18) só o esqueleto: uma superfície de layer-shell presa à borda de baixo, desenhada com QPainter.
 // Os ícones, os apps abertos e a ampliação vêm no #20, com a lógica compartilhada de src/nucleo.
 #include "nucleo/curvas.h"
+#include "nucleo/dock_desenho.h"
+#include "plataforma/linux/pintor_qt.h"
 #include "plataforma/plataforma.h"
 
 #include <LayerShellQt/Window>
@@ -32,7 +34,12 @@ protected:
         p.fillPath(path, QColor(245, 245, 247, 200));
         p.setPen(QColor(255, 255, 255, 180)); p.drawPath(path);
         p.setPen(QColor(30, 30, 30));
-        p.drawText(bg, Qt::AlignCenter, QStringLiteral("liquinix-dock"));
+        p.drawText(bg.adjusted(70, 0, 0, 0), Qt::AlignCenter, QStringLiteral("liquinix-dock"));
+        // um ícone de mentira com o emblema de avisos: o desenho compartilhado com o Windows (src/nucleo), pelo QPainter
+        desenho::Ret icone{ 26, 18, 74, 66 };
+        PintorQt pq(p);
+        pq.RetArredondado(icone, 11, desenho::Cor{ 0.35f, 0.55f, 0.95f, 1 });
+        dock_desenho::Emblema(pq, icone, 3);
     }
 };
 
