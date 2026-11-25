@@ -4,6 +4,7 @@
 // o que é do Linux: os apps (.desktop), os ícones do tema, abrir os apps, a janela e a entrada do mouse.
 // Quadros só enquanto algo se mexe (update() -> requestUpdate, no ritmo do compositor); parado, nada roda.
 #include "apps.h"
+#include "window_list.h"
 #include "nucleo/curvas.h"
 #include "nucleo/dock_layout.h"
 #include "plataforma/linux/pintor_qt.h"
@@ -30,6 +31,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <map>
+#include <memory>
 
 namespace {
 
@@ -53,6 +55,20 @@ public:
         : apps_(std::move(apps)), tile_(tile), large_(large), magnify_(magnify) {
         for (auto& a : apps_) icons_.push_back(a.icone.startsWith('/') ? QIcon(a.icone) : QIcon::fromTheme(a.icone, QIcon::fromTheme(QStringLiteral("application-x-executable"))));
         setFlag(Qt::FramelessWindowHint);
+        running_.assign(apps_.size(), false);
+    }
+    // Open windows (Wayland only, and only if KWin offers the protocol): the "running" dots, and clicks that bring an
+    // open app to the front instead of starting it again
+    void ConnectWindowList(WindowList* list) {
+        windowList_ = list;
+        QObject::connect(list, &WindowList::Changed, [this] { UpdateRunning(); });
+        auto report = [this] {
+            std::printf("liquinix-dock: Plasma window list %s\n", windowList_->Available() ? "connected" : "not available yet");
+            std::fflush(stdout);
+            UpdateRunning();
+        };
+        QObject::connect(list, &WindowList::activeChanged, report);
+        report();  // it may have connected already, before this signal was hooked up
     }
     // medidas do Tahoe (as mesmas do Dock do Windows, src/shell/dock.cpp)
     float PadX() const { return tile_ * 0.125f; }
@@ -120,6 +136,10 @@ protected:
             QRectF r(cx - s / 2, baseline - s, s, s);
             QPixmap px = icons_[i].pixmap(QSize(int(std::ceil(s)), int(std::ceil(s))), dpr);  // o QIcon guarda os tamanhos já feitos
             p.drawPixmap(r, px, QRectF(0, 0, px.width(), px.height()));
+            if (running_[i]) {  // running: Tahoe's small dot, a little above the edge (the same as on Windows)
+                float dotR = std::max(1.25f, tile_ * 0.028f), dotY = bg_.base - tile_ * 0.088f;
+                pq.RetArredondado(desenho::Ret{ cx - dotR, dotY - dotR, cx + dotR, dotY + dotR }, dotR, desenho::Cor{ 0.05f, 0.07f, 0.20f, 0.85f });
+            }
         }
         // o nome do app sob o ponteiro, numa etiqueta acima do ícone (como no Mac)
         if (hover_ >= 0 && magAmt_ > 0.5f) {
@@ -152,6 +172,11 @@ protected:
     void mouseReleaseEvent(QMouseEvent* e) override {
         if (e->button() != Qt::LeftButton || hover_ < 0) return;
         const AppDesktop& a = apps_[hover_];
+        // already running: bring its window to the front (as on the Mac) instead of starting it again
+        if (running_[hover_] && windowList_ && windowList_->Activate([&](const QString& id) { return WindowBelongsTo(a, id); })) {
+            std::printf("liquinix-dock: activate %s\n", qPrintable(a.id)); std::fflush(stdout);
+            return;
+        }
         bool ok = AbrirApp(a);
         std::printf("liquinix-dock: abrir %s (%s): %s\n", qPrintable(a.id), qPrintable(a.exec), ok ? "ok" : "falhou");
         std::fflush(stdout);
@@ -159,6 +184,18 @@ protected:
     void resizeEvent(QResizeEvent*) override { update(); }
 
 private:
+    void UpdateRunning() {
+        QStringList ids = windowList_ && windowList_->Available() ? windowList_->AppIds() : QStringList();
+        std::vector<bool> now(apps_.size(), false);
+        for (size_t i = 0; i < apps_.size(); i++)
+            for (const QString& id : ids) if (WindowBelongsTo(apps_[i], id)) { now[i] = true; break; }
+        if (now == running_) return;
+        running_ = now;
+        QStringList names; for (size_t i = 0; i < apps_.size(); i++) if (running_[i]) names << apps_[i].id;
+        std::printf("liquinix-dock: running: %s\n", names.isEmpty() ? "(none)" : qPrintable(names.join(QStringLiteral(", "))));
+        std::fflush(stdout);
+        update();
+    }
     void Layout(float W, float H) {
         itens_.assign(apps_.size(), {});
         for (size_t i = 0; i < apps_.size(); i++) { itens_[i].app = true; itens_[i].indiceApp = int(i); }
@@ -181,6 +218,8 @@ private:
     std::vector<AppDesktop> apps_;
     std::vector<QIcon> icons_;
     std::vector<dock_layout::Item> itens_;
+    std::vector<bool> running_;           // per pinned app: has an open window
+    WindowList* windowList_ = nullptr;
     float tile_, large_;
     bool magnify_;
     float mouseX_ = -1, lastMouseX_ = -1, magAmt_ = 0;
@@ -242,6 +281,10 @@ int main(int argc, char** argv) {
         ls->setExclusiveZone(0);  // por cima das janelas, sem reservar espaço (como o Dock do Mac)
         ls->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);
     }
+    std::unique_ptr<WindowList> windowList;
+    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"))) { windowList = std::make_unique<WindowList>(); w.ConnectWindowList(windowList.get()); }
     w.show();
-    return app.exec();
+    int result = app.exec();
+    windowList.reset();  // before the window and the connection to the compositor go away
+    return result;
 }

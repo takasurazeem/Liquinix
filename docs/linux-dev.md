@@ -39,7 +39,8 @@ toolbox enter liquinix
 
 # inside the toolbox:
 sudo dnf install gcc-c++ cmake ninja-build git wayland-devel wayland-protocols-devel \
-    layer-shell-qt-devel qt6-qtbase-devel qt6-qtdeclarative-devel  # Qt 6: see docs/linux-roadmap.md
+    layer-shell-qt-devel qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
+    plasma-wayland-protocols-devel  # Qt 6: see docs/linux-roadmap.md
 ```
 
 `sudo` inside the toolbox only changes the container. If an install goes wrong, start over with
@@ -68,6 +69,11 @@ it, passing only if the Dock got its layer-shell surface and drew a frame.
 on first run. `LIQUINIX_DOCK_PNG=dock.png` draws the Dock into an image and exits, without a window
 (`LIQUINIX_DOCK_PNG_MOUSE=<x>` puts the pointer over it); the CI uploads those images with each run. Point
 `XDG_CONFIG_HOME` at a scratch folder when testing, so your own `~/.config` stays untouched.
+
+The Dock marks running apps with a dot and brings an app's window to the front when its icon is clicked, using
+Plasma's window-management protocol (`org_kde_plasma_window_management`), matched by `.desktop` id or
+`StartupWMClass`. KWin may restrict that protocol to trusted programs; the nested KWin offers it without any setup.
+If a session doesn't, the Dock logs `Plasma window list not available yet` and works without the dots.
 
 ## 2. Run in a nested KWin
 
