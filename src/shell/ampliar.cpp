@@ -445,6 +445,8 @@ void ampliar::Shown(HWND h) {
         an.fadeAt = GetTickCount() + (an.b.clip || an.a.clip ? 60 : 150);
         an.retakeAt = 0;
     }
+    // SetTimer de propósito: T_FADE só confere se a janela de verdade já se desenhou (uma foto pequena por vez,
+    // CheckReady); o sumir da foto em si é animação do compositor (Fade), que o DWM faz no ritmo da tela
     SetTimer(g_wnd, T_FADE, 15, nullptr);
 }
 

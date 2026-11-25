@@ -728,6 +728,9 @@ Size SizeOf(Mode m) {
 void UpdateTimers() {
     bool eq = g_shown && g_m.has && (g_mode == M_MEDIA || (g_mode == M_OPEN && g_tab == TAB_HOME)) &&
               (g_m.playing || std::any_of(std::begin(g_bars), std::end(g_bars), [](float b) { return std::fabs(b - 0.18f) > 0.01f; }));
+    // SetTimer de propósito (não o relógio de quadros): o equalizador fica ligado enquanto a música toca, às vezes
+    // por horas. As barras andam pelo tempo real (StepBars) e são pequenas; ~30 quadros/s bastam e custam uma fração
+    // de desenhar a 120-174 Hz. Quando outra animação da ilha está rodando, ela desenha as barras no ritmo da tela.
     if (eq) SetTimer(g_wnd, TM_EQ, 33, nullptr); else KillTimer(g_wnd, TM_EQ);
     bool tick = g_shown && g_tRun && (g_mode == M_TIMER || g_mode == M_MEDIA || (g_mode == M_OPEN && g_tab == TAB_TIMER));
     if (g_tRun && !g_tPaused) SetTimer(g_wnd, TM_TICK, 250, nullptr);  // corre mesmo escondido: precisa avisar ao acabar

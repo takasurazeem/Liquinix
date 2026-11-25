@@ -1117,7 +1117,7 @@ static void DrawLevel(Session& s, int li) {
     if (FAILED(hr)) {
         Log(L"  aviso: EndDraw falhou (hr=0x%08X), repintando", (unsigned)hr);
         L.rt->Release(); L.rt = nullptr;
-        SetTimer(L.hwnd, 2, 16, nullptr);
+        SetTimer(L.hwnd, 2, 16, nullptr);  // uma tentativa só, com o alvo novo (não é animação: SetTimer serve)
         return;
     }
     // Cópia direta para a janela: os bytes de alfa vão junto e o DWM compõe sobre o acrílico.

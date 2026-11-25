@@ -17,7 +17,8 @@
 
 namespace {
 
-const UINT T_ANIM = 1;
+// quadros no ritmo da tela (ui::FrameClock) enquanto está aberto: as estrelas piscam o tempo todo
+const UINT WM_TM_FRAME = WM_APP + 96;
 struct Item { std::wstring name, src; bool dir = false; ULONGLONG mtime = 0; };
 struct Snap { ULONGLONG t = 0; std::vector<Item> items; };  // t = 0: agora
 
@@ -337,7 +338,7 @@ void Paint() {
     ui::GpuEnd(g_s);
 }
 
-void HideNow() { KillTimer(g_wnd, T_ANIM); ShowWindow(g_wnd, SW_HIDE); g_open = g_closing = false; g_snaps.clear(); }
+void HideNow() { ui::FrameClock(g_wnd, WM_TM_FRAME, false); ShowWindow(g_wnd, SW_HIDE); g_open = g_closing = false; g_snaps.clear(); }
 void Close() { if (!g_open || g_closing) return; g_closing = true; g_at = anim::Now(); }
 
 void Go(int to) {
@@ -368,8 +369,9 @@ bool In(D2D1_RECT_F r, D2D1_POINT_2F p) { return p.x >= r.left && p.x < r.right 
 
 LRESULT CALLBACK Proc(HWND h, UINT m, WPARAM w, LPARAM l) {
     switch (m) {
-    case WM_TIMER:
-        if (w == T_ANIM) {
+    case WM_TM_FRAME:
+        ui::FrameAck(h, WM_TM_FRAME);
+        if (g_open) {
             double now = anim::Now(), dt = std::min(100.0, now - g_lastTick); g_lastTick = now;
             float diff = g_sel - g_pos;
             g_pos += diff * (1 - std::exp(-(float)dt / 110.f));
@@ -440,6 +442,6 @@ void tempo::Enter() {
     bool att = ft && ft != me && AttachThreadInput(me, ft, TRUE);
     SetForegroundWindow(g_wnd); SetFocus(g_wnd);
     if (att) AttachThreadInput(me, ft, FALSE);
-    SetTimer(g_wnd, T_ANIM, 16, nullptr);
+    ui::FrameClock(g_wnd, WM_TM_FRAME, true);
     Log(L"time machine: %zu versões de %ls (backup: %ls)", g_snaps.size(), g_folder.c_str(), g_root.empty() ? L"nenhum" : g_root.c_str());
 }

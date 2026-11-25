@@ -543,11 +543,12 @@ int g_tab = T_CPU;
 // Tahoe (guia macOS26-Theme-Reference, seção 11): no segmentado, o item escolhido é uma "gota" que desliza entre
 // as opções com mola (a mesma do switch medido: resposta 0,44 s, amortecimento 0,74)
 float g_segFrom = -1;   // posição (em abas) de onde a gota saiu
-DWORD g_segAt;
-const UINT_PTR T_SEG = 9;
+double g_segAt;  // ms (SegNow, QPC)
+// A gota anda no laço do WM_PAINT (Present(1) no ritmo da tela), não num SetTimer de 8 ms (~64 Hz)
+double SegNow() { LARGE_INTEGER f, t; QueryPerformanceFrequency(&f); QueryPerformanceCounter(&t); return t.QuadPart * 1000.0 / f.QuadPart; }
 float SegPos() {
     if (g_segFrom < 0) return (float)g_tab;
-    float s = (GetTickCount() - g_segAt) / 1000.f, w0 = 2 * 3.14159265f / 0.44f, z = 0.74f, wd = w0 * std::sqrt(1 - z * z);
+    float s = (float)(SegNow() - g_segAt) / 1000.f, w0 = 2 * 3.14159265f / 0.44f, z = 0.74f, wd = w0 * std::sqrt(1 - z * z);
     float e = 1 - std::exp(-z * w0 * s) * (std::cos(wd * s) + z * w0 / wd * std::sin(wd * s));
     if (s >= 0.6f) { g_segFrom = -1; return (float)g_tab; }
     return g_segFrom + (g_tab - g_segFrom) * e;
@@ -942,7 +943,6 @@ void DrawToolbar(ID2D1RenderTarget* rt, ID2D1SolidColorBrush* br, const Pal& pal
             br->SetColor(pal.segSel);
             rt->FillRoundedRectangle(D2D1::RoundedRect(D2D1::RectF(l + 4, r.top + 4, l + w - 4, r.bottom - 4), (PILL_H - 8) / 2, (PILL_H - 8) / 2), br);
             vidro::Borda(rt, D2D1::RectF(l + 4, r.top + 4, l + w - 4, r.bottom - 4), (PILL_H - 8) / 2, 1, g_dark, 0.6f, true);
-            if (g_segFrom >= 0) SetTimer(g_hwnd, T_SEG, 8, nullptr);
         } else if (g_tahoe) {
         } else if (i + 1 < T_COUNT && i + 1 != g_tab) {
             br->SetColor(g_dark ? D2D1::ColorF(1, 1, 1, 0.14f) : D2D1::ColorF(0, 0, 0, 0.12f));
@@ -1314,9 +1314,8 @@ void Invalidate() { InvalidateRect(g_hwnd, nullptr, FALSE); }
 void SetTab(int i) {
     if (i == g_tab) return;
     g_segFrom = g_tahoe ? SegPos() : -1;
-    g_segAt = GetTickCount();
+    g_segAt = SegNow();
     g_tab = i; BuildRows(); g_scroll = 0;
-    if (g_tahoe) SetTimer(g_hwnd, T_SEG, 8, nullptr);
     Invalidate();
 }
 
@@ -1450,7 +1449,18 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
     case WM_ACTIVATEAPP:
         if (w && tahoe::Reload()) { g_tahoe = tahoe::On(); ApplyTheme(); shadow::Update(); Invalidate(); }  // tema trocado no Ajustes
         return 0;
-    case WM_PAINT: { PAINTSTRUCT ps; BeginPaint(h, &ps); Render(); EndPaint(h, &ps); return 0; }
+    case WM_PAINT: {
+        PAINTSTRUCT ps; BeginPaint(h, &ps);
+        double t0 = SegNow();
+        Render();
+        double ms = SegNow() - t0;
+        EndPaint(h, &ps);
+        if (g_segFrom >= 0) {  // a gota do segmentado deslizando: o próximo quadro
+            if (ms < 4) DwmFlush();  // o Present não esperou a tela (máquina virtual, alguns drivers)
+            Invalidate();
+        }
+        return 0;
+    }
     case WM_ACTIVATE: g_active = LOWORD(w) != WA_INACTIVE; if (g_gfx && g_shown) { shadow::SetActive(g_active); shadow::Update(); } Invalidate(); return 0;
     case WM_SETTINGCHANGE: {
         if (tahoe::Reload()) g_tahoe = tahoe::On();
@@ -1462,7 +1472,6 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
     case WM_TIMER:
         if (w == T_SAMPLE) { SetTimer(h, T_SAMPLE, SAMPLE_MS, nullptr); Sample(); BuildRows(); Invalidate(); }
         else if (w == 2 && g_searchFocus) Invalidate();  // cursor da busca piscando
-        else if (w == T_SEG) { if (g_segFrom < 0) KillTimer(h, T_SEG); Invalidate(); }  // a gota do segmentado deslizando
         else if (w == 3 && tahoe::Reload()) { g_tahoe = tahoe::On(); ApplyTheme(); shadow::Update(); Invalidate(); }  // tema trocado no Ajustes: muda na hora
         return 0;
     case WM_MOUSEWHEEL:

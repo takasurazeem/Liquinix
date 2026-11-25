@@ -132,7 +132,7 @@ inline LRESULT CALLBACK SubAbrir(HWND h, UINT m, WPARAM w, LPARAM l, UINT_PTR, D
     }
     if (m == WM_PAINT && GetPropW(h, L"MacJanelaAbrindo") && !GetPropW(h, L"MacJanelaAbrindoAvisou")) {
         LRESULT r = DefSubclassProc(h, m, w, l);  // pinta primeiro; o quadro chega ao DWM logo depois
-        SetTimer(h, T_ABRIR, 16, AbrirPronto);
+        SetTimer(h, T_ABRIR, 16, AbrirPronto);  // uma vez só: dá tempo ao quadro de chegar (não é animação)
         return r;
     }
     if (m == WM_WINDOWPOSCHANGING && l && (((WINDOWPOS*)l)->flags & SWP_HIDEWINDOW) && IsWindowVisible(h) && !IsIconic(h) &&

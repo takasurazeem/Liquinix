@@ -24,6 +24,7 @@ namespace {
 
 const UINT WM_QL_READY = WM_APP + 91;
 const UINT WM_QL_MEDIA = WM_APP + 92;   // evento do MFPlay (vídeo/música pronto, terminou, erro)
+const UINT WM_QL_FRAME = WM_APP + 93;   // quadro da animação de abrir/fechar (ui::FrameClock, no ritmo da tela)
 const float BAR = 38, R = 12, PAD = 0;
 HWND g_wnd;
 ui::Surface g_s;
@@ -111,7 +112,6 @@ float Sc() { return ui::Scale(g_wnd); }
 float g_qlOp = 1, g_qlSc = 1;
 double g_qlAnimT0 = -1;
 bool g_qlAnimOut;
-const UINT_PTR T_QLANIM = 9;
 void CloseNow();
 void ApplyFade() {
     if (!g_back) return;
@@ -127,7 +127,7 @@ void AnimStep() {
     else { g_qlOp = e; g_qlSc = 0.94f + 0.06f * e; }
     ApplyFade();
     if (t >= 1) {
-        KillTimer(g_wnd, T_QLANIM);
+        ui::FrameClock(g_wnd, WM_QL_FRAME, false);
         g_qlAnimT0 = -1;
         if (g_qlAnimOut) { g_qlAnimOut = false; g_qlOp = g_qlSc = 1; CloseNow(); }
         else { g_qlOp = g_qlSc = 1; ApplyFade(); }
@@ -136,7 +136,7 @@ void AnimStep() {
 void AnimStart(bool out) {
     g_qlAnimOut = out;
     g_qlAnimT0 = anim::Now();
-    SetTimer(g_wnd, T_QLANIM, 8, nullptr);
+    ui::FrameClock(g_wnd, WM_QL_FRAME, true);
 }
 
 // Por cima do Finder (como o painel do Mac): fica "sempre visível" enquanto a janela da frente é do Finder ou do
@@ -847,8 +847,11 @@ LRESULT CALLBACK Proc(HWND h, UINT m, WPARAM w, LPARAM l) {
     case WM_TIMER:
         if (w == 7) { if (g_media) PaintCtl(); return 0; }
         if (w == 8) { KeepTop(); return 0; }
-        if (w == T_QLANIM) { AnimStep(); return 0; }
         break;
+    case WM_QL_FRAME:
+        ui::FrameAck(h, WM_QL_FRAME);
+        AnimStep();
+        return 0;
     case WM_QL_READY: {
         auto* r = (std::tuple<int, UINT, UINT, std::vector<BYTE>>*)l;
         if (std::get<0>(*r) == g_gen && !g_hasVideo) {
@@ -979,7 +982,7 @@ std::wstring quicklook::Path() { return IsOpen() ? g_path : L""; }
 namespace {
 void CloseNow() {
     if (!g_wnd) return;
-    KillTimer(g_wnd, T_QLANIM); g_qlAnimT0 = -1; g_qlAnimOut = false; g_qlOp = g_qlSc = 1;
+    ui::FrameClock(g_wnd, WM_QL_FRAME, false); g_qlAnimT0 = -1; g_qlAnimOut = false; g_qlOp = g_qlSc = 1;
     MediaStop();
     KillTimer(g_wnd, 8);
     SetWindowPos(g_wnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);

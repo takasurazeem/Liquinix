@@ -835,7 +835,7 @@ void Invalidate(Mon& m) {
     if (!g_live) { InvalidateRect(m.h, nullptr, FALSE); return; }
     static DWORD last;
     DWORD now = GetTickCount();
-    if (now - last < 15) { SetTimer(m.h, 77, 16, nullptr); return; }
+    if (now - last < 15) { SetTimer(m.h, 77, 16, nullptr); return; }  // SetTimer de propósito: é o limite de custo, não uma animação
     last = now;
     PaintLayered(m);
 }

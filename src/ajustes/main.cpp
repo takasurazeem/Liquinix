@@ -34,7 +34,7 @@ const float SEARCH_H = 28, ACCOUNT_H = 50;
 const float PAD = 20, GROUP_R = 8, GROUP_GAP = 11;
 float ROW_H = 38;
 const UINT WM_APP_REBUILD = WM_APP + 1, WM_APP_BITMAP = WM_APP + 2;
-const UINT_PTR T_REFRESH = 1, T_ANIM = 2, T_CARET = 3, T_FRENTE = 4;  // T_FRENTE: vem para a frente depois de aparecer
+const UINT_PTR T_REFRESH = 1, T_CARET = 3, T_FRENTE = 4;  // T_FRENTE: vem para a frente depois de aparecer
 
 HWND g_hwnd;
 HINSTANCE g_inst;
@@ -114,7 +114,7 @@ struct Hit {
 std::vector<Hit> g_hits;
 int g_hoverSide = -1;
 struct { int g = -1, r = -1; D2D1_RECT_F track{}; } g_drag;  // slider sendo arrastado
-std::map<std::wstring, std::pair<DWORD, bool>> g_toggleAnim;  // chave -> (início, novo estado)
+std::map<std::wstring, std::pair<double, bool>> g_toggleAnim;  // chave -> (início em ms de NowMs, novo estado)
 
 std::vector<int> g_sideVisible;  // índices de SidebarItems() mostrados (com a busca)
 
@@ -129,6 +129,7 @@ std::map<std::wstring, std::wstring> g_settings;
 
 void Invalidate() { if (g_hwnd) InvalidateRect(g_hwnd, nullptr, FALSE); }
 double Qpf() { static LARGE_INTEGER f{}; if (!f.QuadPart) QueryPerformanceFrequency(&f); return (double)f.QuadPart; }
+double NowMs() { LARGE_INTEGER c; QueryPerformanceCounter(&c); return c.QuadPart * 1000.0 / Qpf(); }
 // medida da rolagem (log "rolagem: ..."): quadros, tempo e quanto custa desenhar um quadro
 struct Rolagem { bool on = false; int n = 0; double soma = 0, pior = 0; LARGE_INTEGER ini{}, ult{}; } g_rol;
 D2D1_POINT_2F ToDip(int x, int y) { return { x / g_scale, y / g_scale }; }
@@ -883,7 +884,7 @@ void DrawRow(aj::Ctx& c, const aj::Row& r, D2D1_RECT_F rr, int gi, int ri) {
         float t = 1;
         auto it = g_toggleAnim.find(RowKey(gi, ri));
         if (it != g_toggleAnim.end()) {
-            float ms = (float)(GetTickCount() - it->second.first);
+            float ms = (float)(NowMs() - it->second.first);
             if (g_tahoe) {  // mola medida no switch do macOS 26 (guia, seção 30): resposta 0,44 s, amortecimento 0,74
                 float s = ms / 1000.f, w0 = 2 * 3.14159265f / 0.44f, z = 0.74f, wd = w0 * std::sqrt(1 - z * z);
                 t = 1 - std::exp(-z * w0 * s) * (std::cos(wd * s) + z * w0 / wd * std::sin(wd * s));
@@ -1562,6 +1563,27 @@ void RenderLeopard() {
 }
 
 // ================= Quadro
+// Animações (rolagem suave e os interruptores) no ritmo da tela: cada WM_PAINT dá um passo pelo tempo real e pede
+// outro quadro enquanto algo se mexe. Antes era um SetTimer de 15/4 ms, que anda a ~64 Hz e dava trancos a 120-174 Hz.
+double g_animAt = 0;  // ms (NowMs) do último passo; 0 = parado
+bool Moving() { return g_scroll != g_scrollTarget || !g_toggleAnim.empty(); }
+void StepAnim() {
+    double now = NowMs(), dt = g_animAt > 0 ? now - g_animAt : 15.0;
+    g_animAt = now;
+    // um interruptor que saiu da tela (rolou) não termina sozinho no desenho: some depois do tempo da animação
+    for (auto it = g_toggleAnim.begin(); it != g_toggleAnim.end();) if (now - it->second.first > 600) it = g_toggleAnim.erase(it); else ++it;
+    if (g_scroll == g_scrollTarget) return;
+    float diff = g_scrollTarget - g_scroll;
+    if (std::fabs(diff) < 0.5f) g_scroll = g_scrollTarget; else g_scroll += diff * (float)(1.0 - std::pow(0.7, std::clamp(dt, 1.0, 60.0) / 15.0));
+    if (g_scroll == g_scrollTarget && g_rol.on) {
+        LARGE_INTEGER q; QueryPerformanceCounter(&q);
+        double tot = (q.QuadPart - g_rol.ini.QuadPart) * 1000.0 / Qpf();
+        Log(L"rolagem: %d quadros em %.0f ms (%.0f quadros/s; desenho médio %.2f ms, pior %.2f ms)", g_rol.n, tot,
+            tot > 0 ? g_rol.n * 1000.0 / tot : 0.0, g_rol.n ? g_rol.soma / g_rol.n : 0.0, g_rol.pior);
+        g_rol.on = false;
+    }
+}
+
 void Render() {
     if (Leo()) { RenderLeopard(); return; }  // Mac OS X Leopard: as Preferências do Sistema do 10.5 (desenho próprio)
     auto* dc = gfx::Begin(g_dpi);
@@ -1721,7 +1743,7 @@ void Render() {
     if (winClip) { dc->PopLayer(); tahoe::WindowRim(dc, br, s, winR, g_dark); }
     br->Release();
     gfx::End();
-    if (!g_toggleAnim.empty()) SetTimer(g_hwnd, T_ANIM, 15, nullptr);
+    if (Moving()) Invalidate();  // o próximo quadro (WM_PAINT anda a animação; o Present espera a tela)
 }
 
 const Hit* HitAt(D2D1_POINT_2F p) {
@@ -1869,7 +1891,7 @@ void Click(D2D1_POINT_2F p, bool right) {
         aj::Row* r = RowOf(h);
         if (!r || !r->enabled || !r->set) break;
         bool nv = !(r->get ? r->get() : false);
-        g_toggleAnim[RowKey(h.a, h.b)] = { GetTickCount(), nv };
+        g_toggleAnim[RowKey(h.a, h.b)] = { NowMs(), nv };
         r->set(nv);
         ShowPage();
         break;
@@ -1959,10 +1981,15 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         break;
     case WM_PAINT: {
         PAINTSTRUCT ps; BeginPaint(h, &ps); EndPaint(h, &ps);
+        StepAnim();
         LARGE_INTEGER a, b; QueryPerformanceCounter(&a);
         Render();
         QueryPerformanceCounter(&b);
-        if (g_rol.on) { double ms = (b.QuadPart - a.QuadPart) * 1000.0 / Qpf(); g_rol.n++; g_rol.soma += ms; g_rol.pior = std::max(g_rol.pior, ms); }
+        double ms = (b.QuadPart - a.QuadPart) * 1000.0 / Qpf();
+        if (g_rol.on) { g_rol.n++; g_rol.soma += ms; g_rol.pior = std::max(g_rol.pior, ms); }
+        // o Present nem sempre espera a tela (máquina virtual, alguns drivers): sem isto a animação rodaria a centenas
+        // de quadros/s gastando a CPU à toa
+        if (Moving()) { if (ms < 4) DwmFlush(); } else g_animAt = 0;
         return 0;
     }
     case WM_ERASEBKGND: return 1;
@@ -1992,9 +2019,11 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         float d = -GET_WHEEL_DELTA_WPARAM(w) / 120.f * 48;
         if (pt.x / g_scale < SIDE_W) g_sideScroll = std::clamp(g_sideScroll + d, 0.f, SideMaxScroll());
         else {
+            float antes = g_scrollTarget;
             g_scrollTarget = std::clamp(g_scrollTarget + d, 0.f, MaxScroll());
-            if (!g_rol.on) { g_rol = {}; g_rol.on = true; QueryPerformanceCounter(&g_rol.ini); g_rol.ult = g_rol.ini; }
-            SetTimer(h, T_ANIM, 4, nullptr);
+            // só mede se a rolagem anda: um clique da roda no fim da página não move nada, e a medida ficaria
+            // aberta até a próxima rolagem, somando o tempo parado (quadros/s baixos no log sem tranco nenhum)
+            if (!g_rol.on && g_scrollTarget != antes) { g_rol = {}; g_rol.on = true; QueryPerformanceCounter(&g_rol.ini); g_rol.ult = g_rol.ini; }
         }
         Invalidate();
         return 0;
@@ -2015,21 +2044,6 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 ShowPage();
                 Invalidate();
             }
-        } else if (w == T_ANIM) {
-            // passo pelo tempo real (antes 30% por tique de 15 ms: o SetTimer anda a ~64 Hz e a rolagem dava trancos)
-            LARGE_INTEGER now; QueryPerformanceCounter(&now);
-            double dt = g_rol.on ? (now.QuadPart - g_rol.ult.QuadPart) * 1000.0 / Qpf() : 15.0;
-            if (g_rol.on) g_rol.ult = now;
-            float diff = g_scrollTarget - g_scroll;
-            if (std::fabs(diff) < 0.5f) g_scroll = g_scrollTarget; else g_scroll += diff * (float)(1.0 - std::pow(0.7, std::clamp(dt, 1.0, 60.0) / 15.0));
-            if (g_scroll == g_scrollTarget && g_rol.on) {
-                double tot = (now.QuadPart - g_rol.ini.QuadPart) * 1000.0 / Qpf();
-                Log(L"rolagem: %d quadros em %.0f ms (%.0f quadros/s; desenho médio %.2f ms, pior %.2f ms)", g_rol.n, tot,
-                    tot > 0 ? g_rol.n * 1000.0 / tot : 0.0, g_rol.n ? g_rol.soma / g_rol.n : 0.0, g_rol.pior);
-                g_rol.on = false;
-            }
-            if (g_scroll == g_scrollTarget && g_toggleAnim.empty()) KillTimer(h, T_ANIM);
-            Invalidate();
         } else if (w == T_CARET) {
             if (!g_searchFocus && !g_sheet.open) KillTimer(h, T_CARET);
             Invalidate();

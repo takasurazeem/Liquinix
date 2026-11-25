@@ -3444,7 +3444,7 @@ static void DrawPathBar(ID2D1DeviceContext* dc, const Palette& pal, ID2D1SolidCo
 // painel todo; texto aparece numa folha; o resto mostra ícone grande e informações.
 
 static bool g_ql;
-static DWORD g_qlOpenedAt;   // para a animação de abrir (zoom + fade)
+static double g_qlOpenedAt;  // para a animação de abrir (zoom + fade); ms de NowMs (QPC)
 static std::wstring g_qlTextPath;
 static std::vector<std::wstring> g_qlLines;
 static IDWriteTextFormat *g_tfMono, *g_tfQlTitle, *g_tfQlButton, *g_tfQlGlyph, *g_tfQlTime, *g_tfQlArtist;
@@ -3452,7 +3452,9 @@ const DWORD QL_ANIM_MS = 240, QL_CLOSE_MS = 190;
 // Quick Look sai do ícone do arquivo e volta para ele ao fechar (como no Mac)
 static D2D1_RECT_F g_qlFrom{};   // ícone (janela, DIP) no momento de abrir; vazio = cresce do centro
 static bool g_qlClosing;
-static DWORD g_qlClosedAt;
+static double g_qlClosedAt;
+// A animação de abrir/fechar anda no laço do WM_PAINT (Present(1) no ritmo da tela), não num SetTimer de 15 ms
+static bool QlAnimating() { return g_ql && (g_qlClosing || NowMs() - g_qlOpenedAt < QL_ANIM_MS + 20); }
 
 static bool IsTextFile(const Entry& e) {
     static const wchar_t* exts[] = { L"txt", L"md", L"log", L"json", L"xml", L"csv", L"ini", L"cfg", L"yaml", L"yml", L"cpp", L"c", L"h",
@@ -3668,11 +3670,10 @@ static void DrawQlControls(ID2D1DeviceContext* dc, const Palette& pal, ID2D1Soli
     dc->FillEllipse(D2D1::Ellipse({ x, cy }, 5.5f, 5.5f), br);
 }
 
-static void QlClose() {  // volta para o ícone; o timer 6 desenha e no fim some
+static void QlClose() {  // volta para o ícone; o WM_PAINT desenha (QlAnimating) e no fim some
     if (!g_ql || g_qlClosing) return;
     g_qlClosing = true;
-    g_qlClosedAt = GetTickCount();
-    SetTimer(g_hwnd, 6, 15, nullptr);
+    g_qlClosedAt = NowMs();
     Invalidate();
 }
 
@@ -3710,9 +3711,8 @@ static void QlToggle() {
         auto c = ContentRect();
         if (g_qlFrom.bottom < c.top || g_qlFrom.top > c.bottom || g_qlFrom.right - g_qlFrom.left < 4) g_qlFrom = {};
     }
-    g_qlOpenedAt = GetTickCount();
-    SetTimer(g_hwnd, 6, 15, nullptr);  // anima a abertura
-    Invalidate();
+    g_qlOpenedAt = NowMs();
+    Invalidate();  // anima a abertura (QlAnimating)
 }
 
 static IDWriteTextFormat* Format(const wchar_t* family, float size, DWRITE_FONT_WEIGHT weight, DWRITE_TEXT_ALIGNMENT align, DWRITE_PARAGRAPH_ALIGNMENT para, bool wrap);
@@ -3849,11 +3849,11 @@ static void DrawQuickLook(ID2D1DeviceContext* dc, const Palette& pal, ID2D1Solid
     auto r = QlPanel();
     float ease;
     if (g_qlClosing) {  // fechando: acelera de volta para o ícone
-        float t = std::min(1.f, (GetTickCount() - g_qlClosedAt) / (float)QL_CLOSE_MS);
+        float t = std::min(1.f, (float)(NowMs() - g_qlClosedAt) / QL_CLOSE_MS);
         ease = 1 - t * t;
         if (t >= 1) { g_ql = g_qlClosing = false; return; }
     } else {
-        float t = std::min(1.f, (GetTickCount() - g_qlOpenedAt) / (float)QL_ANIM_MS);
+        float t = std::min(1.f, (float)(NowMs() - g_qlOpenedAt) / QL_ANIM_MS);
         float u = 1 - t;
         ease = 1 - u * u * u * u;  // sai rápido e assenta
     }
@@ -6051,10 +6051,15 @@ static LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         PAINTSTRUCT ps; BeginPaint(h, &ps);
         bool more = StepScroll();
         g_thumbFading = false;
+        double t0 = NowMs();
         Render();
-        more |= g_thumbFading;
+        double ms = NowMs() - t0;
+        more |= g_thumbFading || QlAnimating();
         EndPaint(h, &ps);
-        if (more) Invalidate();  // próximo quadro: o Present(1) espera a tela, então anda no ritmo dela (174 Hz)
+        if (more) {  // próximo quadro: o Present(1) espera a tela, então anda no ritmo dela (174 Hz)
+            if (ms < 4) DwmFlush();  // ...quando espera: na máquina virtual e em alguns drivers volta na hora
+            Invalidate();
+        }
         return 0;
     }
     case WM_ERASEBKGND: return 1;
@@ -6430,6 +6435,7 @@ static LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
             break;
         }
         case T_MEDIA: {  // quadros do vídeo; tempo da música ~5x por segundo
+            // SetTimer de propósito: confere se o vídeo tem quadro novo (o ritmo é o do vídeo, não o da tela)
             static DWORD last;
             if (!media::Active()) { KillTimer(h, T_MEDIA); break; }
             bool fresh = media::UpdateFrame();
@@ -6437,10 +6443,6 @@ static LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
             break;
         }
         case T_CARET: g_caretOn = !g_caretOn; Invalidate(); break;
-        case 6:  // animação do Quick Look
-            if (!g_ql || (!g_qlClosing && GetTickCount() - g_qlOpenedAt > QL_ANIM_MS + 20)) KillTimer(h, 6);
-            Render();
-            break;
         }
         return 0;
     case WM_APP_THUMB: {

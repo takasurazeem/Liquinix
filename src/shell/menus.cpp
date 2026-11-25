@@ -21,7 +21,10 @@ namespace {
 
 const UINT MN_SELECT = 0x01E5;  // MN_SELECTITEM (não documentada): destaca o item no menu nativo
 const ULONG_PTR KEY_MARK = 0x53484C4C;  // o mesmo de main.cpp: teclas nossas não passam pelo gancho da tecla Windows
-const UINT T_SUBMENU = 1, T_SUBCHECK = 2, T_SCROLL = 3, T_CHOOSECHECK = 4, T_SHOWNOW = 5;
+const UINT T_SUBMENU = 1, T_SUBCHECK = 2, T_CHOOSECHECK = 4, T_SHOWNOW = 5;
+// rolagem pela seta do menu: quadros no ritmo da tela (ui::FrameClock), 0,375 pt/ms (os antigos 6 pt a cada 16 ms)
+const UINT WM_MENU_SCROLL = WM_APP + 5;
+double g_scrollAt = -1;
 const UINT MN_BTNDOWN = 0x01ED, MN_BTNUP = 0x01EF;  // MN_BUTTONDOWN/UP (não documentadas): clique no item pela posição
 const UINT MN_OPENHIER = 0x01E3;  // MN_OPENHIERARCHY (não documentada): abre o submenu do item destacado
 const UINT WM_MENU_MOVE = WM_APP + 1, WM_MENU_CLICK = WM_APP + 2, WM_MENU_WHEEL = WM_APP + 3, WM_MENU_SHOWNOW = WM_APP + 4, WM_HOOK_ON = WM_USER + 1, WM_HOOK_OFF = WM_USER + 2;
@@ -485,7 +488,7 @@ void OnMove() {
     g_movePending = false;
     g_lastMouse = GetTickCount();
     POINT pt; GetCursorPos(&pt);
-    { int dir = 0; if (ArrowUnder(pt, &dir)) SetTimer(g_host, T_SCROLL, 16, nullptr); }
+    { int dir = 0; if (ArrowUnder(pt, &dir) && g_scrollAt < 0) { g_scrollAt = anim::Now(); ui::FrameClock(g_host, WM_MENU_SCROLL, true); } }
     Level* lv = nullptr; int idx = -1;
     if (!HitAt(pt, &lv, &idx)) {  // fora: tira o destaque do nível mais fundo (como no Mac)
         if (!g_levels.empty() && g_levels.back()->hover >= 0 && !g_levels.back()->items[g_levels.back()->hover].sub) {
@@ -628,7 +631,7 @@ void StopHooks() {
     KillTimer(g_host, T_SUBMENU);
     KillTimer(g_host, T_SUBCHECK);
     KillTimer(g_host, T_CHOOSECHECK);
-    KillTimer(g_host, T_SCROLL);
+    ui::FrameClock(g_host, WM_MENU_SCROLL, false); g_scrollAt = -1;
 }
 
 void CALLBACK OnMenu(HWINEVENTHOOK, DWORD ev, HWND hwnd, LONG, LONG, DWORD, DWORD) {
@@ -698,13 +701,16 @@ LRESULT CALLBACK HostProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         }
         return 0;
     }
-    if (m == WM_TIMER && w == T_SCROLL) {
+    if (m == WM_MENU_SCROLL) {
+        ui::FrameAck(h, WM_MENU_SCROLL);
         POINT pt; GetCursorPos(&pt);
         int dir = 0;
         Level* lv = ArrowUnder(pt, &dir);
-        if (!lv) { KillTimer(h, T_SCROLL); return 0; }
+        if (!lv || g_scrollAt < 0) { ui::FrameClock(h, WM_MENU_SCROLL, false); g_scrollAt = -1; return 0; }
+        double now = anim::Now(), dt = std::min(50.0, now - g_scrollAt);
+        g_scrollAt = now;
         lv->hover = -1;
-        ScrollBy(lv, dir * 6.f);
+        ScrollBy(lv, dir * 0.375f * (float)dt);
         return 0;
     }
     if (m == WM_TIMER && w == T_CHOOSECHECK) {
