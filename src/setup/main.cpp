@@ -544,17 +544,27 @@ static void DoUninstall() {
     // valor (o _wtoi dava 0 e desligava a barra nos outros monitores de quem nunca tinha mexido nisso)
     wstring aj = Env(L"APPDATA") + L"\\Shell\\ajustes.txt";
     {
-        auto ls = Lines(ReadText(aj)); wstring keep; bool changed = false;
+        auto ls = Lines(ReadText(aj)); wstring keep; bool changed = false, wrote = false;
         for (auto& l : ls) {
             if (l.rfind(L"barra_windows_monitores_antes=", 0) == 0) {
                 wstring v = Trim(l.substr(30)); const wchar_t* adv = L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced";
-                if (v == L"x") RegDelValue(HKEY_CURRENT_USER, adv, L"MMTaskbarEnabled");
-                else if (!v.empty()) RegSetDword(HKEY_CURRENT_USER, adv, L"MMTaskbarEnabled", (DWORD)_wtoi(v.c_str()));
+                // só um número de verdade vai para o registro: texto estragado ou editado à mão não vira 0 (desligaria a barra)
+                bool num = !v.empty() && v.size() <= 9 && v.find_first_not_of(L"0123456789") == wstring::npos;
+                if (v == L"x") { RegDelValue(HKEY_CURRENT_USER, adv, L"MMTaskbarEnabled"); wrote = true; }
+                else if (num) { RegSetDword(HKEY_CURRENT_USER, adv, L"MMTaskbarEnabled", (DWORD)_wtoi(v.c_str())); wrote = true; }
                 changed = true; continue;
             }
             keep += l + L"\r\n";
         }
         if (changed) WriteText(aj, keep);
+        // o Explorador só relê o ajuste quando avisado (como o Shell faz ao sair, TellExplorerTray); sem isto a barra nos
+        // outros monitores só voltava depois de reiniciar o Explorador
+        if (wrote)
+            EnumWindows([](HWND h, LPARAM) -> BOOL {
+                wchar_t c[64] = {}; GetClassNameW(h, c, 64);
+                if (!wcscmp(c, L"Shell_TrayWnd")) SendMessageTimeoutW(h, WM_SETTINGCHANGE, 0, (LPARAM)L"TraySettings", SMTO_ABORTIFHUNG, 1000, nullptr);
+                return TRUE;
+            }, 0);
     }
     g_progress = 0.25f;
     Status(T(L"Removendo o início automático e os atalhos…", L"Removing autostart and shortcuts…"));

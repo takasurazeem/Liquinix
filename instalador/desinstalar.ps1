@@ -55,9 +55,23 @@ $cfgAj = Join-Path $env:APPDATA 'Shell\ajustes.txt'
 $antes = if (Test-Path $cfgAj) { (Get-Content $cfgAj -Encoding utf8 | Where-Object { $_ -match '^barra_windows_monitores_antes=(.+)$' } | Select-Object -First 1) } else { $null }
 if ($antes -match '=(.+)$') {
     $v = $Matches[1].Trim(); $adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
-    if ($v -eq 'x') { Remove-ItemProperty $adv -Name MMTaskbarEnabled -ErrorAction SilentlyContinue } else { Set-ItemProperty $adv -Name MMTaskbarEnabled -Value ([int]$v) -Type DWord }
+    # só um número de verdade vai para o registro (texto estragado não vira erro nem desliga a barra)
+    $devolveu = $true
+    if ($v -eq 'x') { Remove-ItemProperty $adv -Name MMTaskbarEnabled -ErrorAction SilentlyContinue }
+    elseif ($v -match '^\d{1,9}$') { Set-ItemProperty $adv -Name MMTaskbarEnabled -Value ([int]$v) -Type DWord }
+    else { $devolveu = $false }
     (Get-Content $cfgAj -Encoding utf8) | Where-Object { $_ -notmatch '^barra_windows_monitores_antes=' } | Set-Content $cfgAj -Encoding utf8
-    Write-Host 'Barra do Windows nos outros monitores devolvida.'
+    if ($devolveu) {
+        # o Explorador só relê o ajuste quando avisado (como o Shell faz ao sair)
+        Add-Type -Namespace Liquinix -Name Tray -MemberDefinition @'
+[DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindow(string c, string t);
+[DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessageTimeout(IntPtr h, uint m, IntPtr w, string l, uint f, uint t, out IntPtr r);
+'@ -ErrorAction SilentlyContinue
+        $r = [IntPtr]::Zero
+        $tray = [Liquinix.Tray]::FindWindow('Shell_TrayWnd', $null)
+        if ($tray -ne [IntPtr]::Zero) { [void][Liquinix.Tray]::SendMessageTimeout($tray, 0x1A, [IntPtr]::Zero, 'TraySettings', 2, 1000, [ref]$r) }
+        Write-Host 'Barra do Windows nos outros monitores devolvida.'
+    }
 }
 
 Unregister-ScheduledTask -TaskName 'Liquinix' -Confirm:$false -ErrorAction SilentlyContinue
