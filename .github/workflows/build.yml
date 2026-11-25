@@ -61,6 +61,10 @@ jobs:
       - name: Smoke test in a headless KWin
         run: tools/linux/ci-smoke.sh ./build/liquinix-dock
 
+      # dragging to reorder or unpin, saving dock.txt, the launch bounce (scripted mouse events, no screen)
+      - name: Dock behaviour tests
+        run: tools/linux/ci-dock-tests.sh ./build/liquinix-dock
+
       # the Dock drawn into an image (at rest and magnified), to look at from the run's page
       - name: Render the Dock
         run: |

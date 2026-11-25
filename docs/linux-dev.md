@@ -72,7 +72,9 @@ on first run. `LIQUINIX_DOCK_PNG=dock.png` draws the Dock into an image and exit
 
 `LIQUINIX_DOCK_SCRIPT="move 501 140; press; move 580 140; release"` (with `QT_QPA_PLATFORM=offscreen`) sends
 those mouse events to the Dock, prints the pinned order and exits: a way to test dragging without a screen. A press and
-release without moving is a real click and launches the app.
+release without moving is a real click and launches the app. `tools/linux/ci-dock-tests.sh ./build/liquinix-dock` runs
+the CI's behaviour tests that way (dragging to reorder and unpin, saving `dock.txt`, the launch bounce), with fake apps
+that launch nothing.
 
 The Dock marks running apps with a dot and brings an app's window to the front when its icon is clicked, using
 Plasma's window-management protocol (`org_kde_plasma_window_management`), matched by `.desktop` id or
