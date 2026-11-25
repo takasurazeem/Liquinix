@@ -60,3 +60,15 @@ jobs:
 
       - name: Smoke test in a headless KWin
         run: tools/linux/ci-smoke.sh ./build/liquinix-dock
+
+      # the Dock drawn into an image (at rest and magnified), to look at from the run's page
+      - name: Render the Dock
+        run: |
+          QT_QPA_PLATFORM=offscreen LIQUINIX_DOCK_PNG=dock.png ./build/liquinix-dock
+          QT_QPA_PLATFORM=offscreen LIQUINIX_DOCK_PNG=dock-magnified.png LIQUINIX_DOCK_PNG_MOUSE=640 ./build/liquinix-dock
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: liquinix-dock
+          path: dock*.png
+          retention-days: 14

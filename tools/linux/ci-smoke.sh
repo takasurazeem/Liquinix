@@ -51,7 +51,8 @@ log="$LOGS/dock.log"; fail=0
 check() { if grep -Eq "$2" "$log"; then echo "ok   $1"; else echo "FAIL $1"; fail=1; fi; }
 check "started"                         'liquinix-dock: '
 check "layer-shell surface (top layer)" 'zwlr_layer_shell_v1#[0-9]+\.get_layer_surface\(.*, 2, "liquinix-dock"\)'
-check "anchored to the bottom edge"     'zwlr_layer_surface_v1#[0-9]+\.set_anchor\(2\)'
+# anchors are bits (top 1, bottom 2, left 4, right 8): any combination with the bottom edge
+check "anchored to the bottom edge"     'zwlr_layer_surface_v1#[0-9]+\.set_anchor\((2|3|6|7|10|11|14|15)\)'
 check "configured by KWin"              'zwlr_layer_surface_v1#[0-9]+\.ack_configure\('
 # a frame after the configure: a buffer attached and committed on a surface
 if awk '/zwlr_layer_surface_v1#[0-9]+\.ack_configure\(/{f=1} f && /wl_surface#[0-9]+\.attach\(wl_buffer/{a=1} a && /wl_surface#[0-9]+\.commit\(\)/{ok=1; exit} END{exit !ok}' "$log"; then
