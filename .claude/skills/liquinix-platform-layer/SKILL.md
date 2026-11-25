@@ -12,7 +12,7 @@ down the Windows version, which is the one users run.
 ## Principles
 
 1. **An interface, not `#ifdef`s through app code.** Put platform services behind small C++ interfaces, with one
-   backend per platform, for example `src/plataforma/` with `win/` and `linux/`. App logic (Dock layout,
+   backend per platform, as in `src/platform/` with `win/` and `linux/`. App logic (Dock layout,
    Spotlight ranking, settings, translations, animation curves) should not know which backend it runs on.
    `#ifdef` belongs only in the backend selection.
 2. **Extract before you port.** First move existing Windows code behind the interface with no behaviour change,
