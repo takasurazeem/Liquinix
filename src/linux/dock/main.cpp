@@ -5,6 +5,7 @@
 // Frames only while something moves (update() -> requestUpdate, paced by the compositor); idle, nothing runs.
 #include "apps.h"
 #include "background_effect.h"
+#include "dock_menu.h"
 #include "window_list.h"
 #include "core/curves.h"
 #include "core/dock_layout.h"
@@ -237,6 +238,7 @@ protected:
         return QRasterWindow::event(e);
     }
     void mousePressEvent(QMouseEvent* e) override {
+        if (e->button() == Qt::RightButton && hover_ >= 0) { ShowMenu(hover_); return; }
         if (e->button() != Qt::LeftButton) return;
         pressIndex_ = hover_ >= 0 && entries_[hover_].kind == Entry::App ? hover_ : -1;  // only pinned apps can be dragged
         pressPos_ = e->position();
@@ -265,7 +267,24 @@ protected:
         if (e->button() == Qt::LeftButton && dragging_) { FinishDrag(); return; }
         pressIndex_ = -1;
         if (e->button() != Qt::LeftButton || hover_ < 0) return;
-        const Entry& en = entries_[hover_];
+        OpenEntry(hover_);
+    }
+    void resizeEvent(QResizeEvent*) override { update(); }
+
+public:
+    // LIQUINIX_DOCK_SCRIPT's "menu <label>": picks an item of the open right-click menu
+    bool ChooseMenu(const QString& label) { return menu_ && menu_->isVisible() && menu_->Choose(label); }
+    bool MenuPng(const QString& file, int hoverY) {
+        if (!menu_ || !menu_->isVisible()) return false;
+        QMouseEvent mv(QEvent::MouseMove, QPointF(20, hoverY), menu_->mapToGlobal(QPointF(20, hoverY)), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(menu_.get(), &mv);  // highlight the item under y, as a pointer would
+        return menu_->SavePng(file);
+    }
+
+private:
+    // a click on an entry: open the folder, bring a running app forward, or launch it (and bounce)
+    void OpenEntry(int index) {
+        const Entry& en = entries_[index];
         if (en.kind == Entry::Downloads || en.kind == Entry::Trash) {  // open the folder in the file manager
             QUrl url = en.kind == Entry::Trash ? QUrl(QStringLiteral("trash:/")) : QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
             bool ok = QDesktopServices::openUrl(url);
@@ -284,7 +303,54 @@ protected:
         std::printf("liquinix-dock: launch %s (%s): %s\n", qPrintable(a.id), qPrintable(a.exec), ok ? "ok" : "failed");
         std::fflush(stdout);
     }
-    void resizeEvent(QResizeEvent*) override { update(); }
+    // the right-click menu (as on the Mac and the Windows Dock): Open or Quit, and Remove from Dock, for a pinned app;
+    // Open for Downloads and the Trash
+    enum MenuAction { kOpen = 1, kQuit, kRemove };
+    void ShowMenu(int index) {
+        const Entry& en = entries_[index];
+        if (en.kind == Entry::Separator) return;
+        std::vector<DockMenu::Item> items;
+        bool running = en.kind == Entry::App && running_[en.app];
+        items.push_back({ running ? QStringLiteral("Quit") : QStringLiteral("Open"), running ? kQuit : kOpen });
+        if (en.kind == Entry::App) { items.push_back({ QString(), 0, true }); items.push_back({ QStringLiteral("Remove from Dock"), kRemove }); }
+        // the choice refers to the entry by what it shows (the list can change while the menu is open)
+        Entry::Kind kind = en.kind;
+        QString appId = en.kind == Entry::App ? apps_[en.app].id : QString();
+        menu_ = std::make_unique<DockMenu>(this, std::move(items), [this, kind, appId](int action) { MenuChosen(kind, appId, action); });
+        menu_->Open(QPoint(int(items_[index].cx), int(bg_.top) - 8));
+        hover_ = -1;
+        update();
+    }
+    void MenuChosen(Entry::Kind kind, const QString& appId, int action) {
+        int index = -1;
+        for (int i = 0; i < int(entries_.size()); i++)
+            if (entries_[i].kind == kind && (kind != Entry::App || apps_[entries_[i].app].id == appId)) { index = i; break; }
+        if (index < 0) return;
+        if (action == kOpen) { OpenEntry(index); return; }
+        int app = entries_[index].app;
+        if (action == kQuit && windowList_) {  // ask its windows to close (the app may still ask to save)
+            const DesktopApp& a = apps_[app];
+            int n = windowList_->CloseAll([&](const QString& id) { return WindowBelongsTo(a, id); });
+            std::printf("liquinix-dock: quit %s: %d window(s) asked to close\n", qPrintable(a.id), n); std::fflush(stdout);
+        } else if (action == kRemove) {
+            Unpin(app);
+        }
+    }
+    void Unpin(int app) {
+        std::printf("liquinix-dock: unpin %s\n", qPrintable(apps_[app].id));
+        apps_.erase(apps_.begin() + app); appIcons_.erase(appIcons_.begin() + app);
+        PinnedChanged();
+    }
+    // the pinned list changed (moved or removed): new slots, and save dock.txt
+    void PinnedChanged() {
+        BuildEntries();
+        running_.assign(apps_.size(), false);
+        launchedAt_.assign(apps_.size(), 0);
+        UpdateRunning();
+        if (!WritePinned(settingsDir_, apps_)) std::printf("liquinix-dock: couldn't save %s/dock.txt\n", qPrintable(settingsDir_));
+        std::fflush(stdout);
+        update();
+    }
 
 private:
     void UpdateRunning() {
@@ -356,28 +422,18 @@ private:
         // where it lands, from the pointer's position now (on a copy: the release can come before the next frame)
         std::vector<dock_layout::Item> copy = items_;
         int dropTarget = dock_layout::Compute(copy, LayoutParams(float(width()))).dropTarget;
-        bool changed = false;
-        if (outside_) {
-            std::printf("liquinix-dock: unpin %s\n", qPrintable(apps_[from].id));
-            apps_.erase(apps_.begin() + from); appIcons_.erase(appIcons_.begin() + from);
-            changed = true;
-        } else if (dropTarget >= 0 && dropTarget != from) {
+        bool out = outside_;
+        dragging_ = false; outside_ = false; pressIndex_ = -1;
+        if (out) { Unpin(from); return; }
+        if (dropTarget >= 0 && dropTarget != from) {
             int to = std::clamp(dropTarget, 0, int(apps_.size()) - 1);  // the same move as the Windows Dock (apps::Move)
             std::printf("liquinix-dock: move %s from %d to %d\n", qPrintable(apps_[from].id), from, to);
             DesktopApp a = apps_[from]; QIcon icon = appIcons_[from];
             apps_.erase(apps_.begin() + from); appIcons_.erase(appIcons_.begin() + from);
             apps_.insert(apps_.begin() + to, a); appIcons_.insert(appIcons_.begin() + to, icon);
-            changed = true;
+            PinnedChanged();
+            return;
         }
-        dragging_ = false; outside_ = false; pressIndex_ = -1;
-        if (changed) {
-            BuildEntries();
-            running_.assign(apps_.size(), false);
-            launchedAt_.assign(apps_.size(), 0);
-            UpdateRunning();
-            if (!WritePinned(settingsDir_, apps_)) std::printf("liquinix-dock: couldn't save %s/dock.txt\n", qPrintable(settingsDir_));
-        }
-        std::fflush(stdout);
         update();
     }
     // the compositor's blur behind the shelf only (its rounded shape), sent again only when the shape changes
@@ -404,6 +460,7 @@ private:
     QPointF pressPos_;
     bool dragging_ = false, outside_ = false;  // dragging that app; dropped now it would be unpinned
     float dragY_ = 0;
+    std::unique_ptr<DockMenu> menu_;      // the right-click menu while it's open
     std::vector<Entry> entries_;          // what the Dock shows, in order (items_ is laid out from it)
     QFileSystemWatcher trashWatcher_;
     bool trashFull_ = false;
@@ -483,6 +540,22 @@ int main(int argc, char** argv) {
             if (p[0] == QLatin1String("move") && p.size() == 3) pos = QPointF(p[1].toDouble(), p[2].toDouble());
             else if (p[0] == QLatin1String("press")) { type = QEvent::MouseButtonPress; buttons = Qt::LeftButton; }
             else if (p[0] == QLatin1String("release")) { type = QEvent::MouseButtonRelease; buttons = Qt::NoButton; }
+            else if (p[0] == QLatin1String("rclick") && p.size() == 3) {  // a right click at x y (opens the menu)
+                pos = QPointF(p[1].toDouble(), p[2].toDouble());
+                QMouseEvent mv(QEvent::MouseMove, pos, w.mapToGlobal(pos), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+                QCoreApplication::sendEvent(&w, &mv); settle();
+                QMouseEvent pr(QEvent::MouseButtonPress, pos, w.mapToGlobal(pos), Qt::RightButton, Qt::RightButton, Qt::NoModifier);
+                QCoreApplication::sendEvent(&w, &pr); settle();
+                continue;
+            } else if (p[0] == QLatin1String("menupng") && p.size() == 3) {  // the open menu in an image, item at y highlighted
+                w.MenuPng(p[1], p[2].toInt());
+                continue;
+            } else if (p[0] == QLatin1String("menu") && p.size() >= 2) {  // picks a menu item by its label
+                QString label = QStringList(p.mid(1)).join(' ');
+                std::printf("liquinix-dock: menu \"%s\": %s\n", qPrintable(label), w.ChooseMenu(label) ? "chosen" : "not found");
+                settle();
+                continue;
+            }
             else if (p[0] == QLatin1String("wait") && p.size() == 2) {  // let time pass (animations step by the clock)
                 QElapsedTimer t; t.start();
                 while (t.elapsed() < p[1].toInt()) QCoreApplication::processEvents(QEventLoop::AllEvents, 5);

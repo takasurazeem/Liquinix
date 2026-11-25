@@ -4,8 +4,8 @@
 #
 #   tools/linux/ci-dock-tests.sh [./build/liquinix-dock]
 #
-# Checks: dragging a pinned app reorders the Dock and saves dock.txt; dragging it out unpins it; a click makes the icon
-# bounce, and the bounce stops after 8 s. Exits 0 when all pass.
+# Checks: dragging a pinned app reorders the Dock and saves dock.txt; dragging it out unpins it; the right-click menu
+# unpins and opens; a click makes the icon bounce, and the bounce stops after 8 s. Exits 0 when all pass.
 set -uo pipefail
 
 DOCK="${1:-./build/liquinix-dock}"
@@ -36,6 +36,12 @@ check "drag the last app to the front" "$got" "fake-d,fake-a,fake-b,fake-c"
 reset; got=$(run "move 501 140; press; move 501 40; move 501 -80; release")
 check "drag the first app out of the Dock to unpin it" "$got" "fake-b,fake-c,fake-d"
 check "the unpinned app is gone from dock.txt" "$(saved)" "fake-b,fake-c,fake-d"
+
+# the right-click menu: Remove from Dock unpins; Open launches
+reset; got=$(run "rclick 552 140; menu Remove from Dock")
+check "right-click > Remove from Dock unpins the app" "$got" "fake-a,fake-c,fake-d"
+reset; launched=$(LIQUINIX_DOCK_SCRIPT="rclick 501 140; menu Open" timeout 60 "$DOCK" 2>&1 | grep -c "launch fake-a (true): ok")
+check "right-click > Open launches the app" "$launched" "1"
 
 # a click bounces the icon (Exec=true never opens a window, so it bounces for the full 8 s), then it stops. The resting
 # picture is taken once the hover has settled (its label fades in), so only the bounce can make the pictures differ.

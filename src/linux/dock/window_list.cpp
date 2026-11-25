@@ -36,3 +36,10 @@ bool WindowList::Activate(const std::function<bool(const QString&)>& belongs) {
     }
     return false;
 }
+
+int WindowList::CloseAll(const std::function<bool(const QString&)>& belongs) {
+    int n = 0;
+    for (auto& w : windows_)
+        if (w->ready && belongs(w->appId) && !(w->state & org_kde_plasma_window_management::state_skiptaskbar)) { w->close(); n++; }
+    return n;
+}
