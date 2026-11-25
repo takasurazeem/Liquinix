@@ -540,14 +540,16 @@ static void DoUninstall() {
     if (!CloseEverything()) { g_workOk = false; g_workDone = true; return; }
     g_progress = 0.15f;
     if (!help.empty()) { Status(T(L"Devolvendo as janelas ao visual do Windows…", L"Restoring the Windows look of open windows…")); RunWait(help, L"--desfazer-janelas", 30000); }
-    // barra do Windows nos outros monitores
+    // barra do Windows nos outros monitores. Vazio = o Shell já devolveu ao sair (ele deixa a linha vazia); não é um
+    // valor (o _wtoi dava 0 e desligava a barra nos outros monitores de quem nunca tinha mexido nisso)
     wstring aj = Env(L"APPDATA") + L"\\Shell\\ajustes.txt";
     {
         auto ls = Lines(ReadText(aj)); wstring keep; bool changed = false;
         for (auto& l : ls) {
             if (l.rfind(L"barra_windows_monitores_antes=", 0) == 0) {
                 wstring v = Trim(l.substr(30)); const wchar_t* adv = L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced";
-                if (v == L"x") RegDelValue(HKEY_CURRENT_USER, adv, L"MMTaskbarEnabled"); else RegSetDword(HKEY_CURRENT_USER, adv, L"MMTaskbarEnabled", (DWORD)_wtoi(v.c_str()));
+                if (v == L"x") RegDelValue(HKEY_CURRENT_USER, adv, L"MMTaskbarEnabled");
+                else if (!v.empty()) RegSetDword(HKEY_CURRENT_USER, adv, L"MMTaskbarEnabled", (DWORD)_wtoi(v.c_str()));
                 changed = true; continue;
             }
             keep += l + L"\r\n";
@@ -609,6 +611,7 @@ static void DoUninstall() {
     RegDelTree(HKEY_CURRENT_USER, L"Software\\ShellProprio");
     RegDelTree(HKEY_CURRENT_USER, L"Software\\Classes\\AppUserModelId\\Liquinix.Atualizacao");
     for (auto& a : ASSOC) AssocUndo(a);
+    SHDeleteEmptyKeyW(HKEY_CURRENT_USER, L"Software\\SequoiaShell");  // sobrava vazia (Musica e QuickTime saem acima)
     SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
     RegDelTree(HKEY_CURRENT_USER, UNINST_KEY);
     g_progress = 0.7f;
