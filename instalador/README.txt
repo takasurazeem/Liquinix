@@ -6,6 +6,9 @@
    "More info" > "Run anyway" (the program isn't code-signed yet).
 3. Pick what to install: the full Liquinix, only the apps, only the Mac title bars, or apps + title bars.
    The installer follows your Windows language (English or Portuguese).
+   This package has nothing from Apple. On the same page you can tick "Download the SF Pro and SF Mono fonts
+   from Apple" and "Download the macOS alert sounds": they are downloaded on your PC during the install.
+   For the Mac cursor, run instalar.cmd instead (it opens the cursor's download page).
 
 Update: Settings > General > Software Update > Update Now (or run LiquinixSetup.exe again).
 Uninstall: Windows Settings > Apps > Installed apps > Liquinix > Uninstall (your settings can stay).
