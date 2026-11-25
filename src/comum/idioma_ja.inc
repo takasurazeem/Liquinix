@@ -1551,3 +1551,8 @@
 { L"Os avisos dos aplicativos aparecem no canto de cima, no visual do Mac.", L"アプリの通知が Mac のスタイルで上の隅に表示されます。" },
 { L"Calendário na Central de Notificações", L"通知センターにカレンダー" },
 { L"Relógio na Central de Notificações", L"通知センターに時計" },
+{ L"Imagens e PDF", L"画像と PDF" },
+{ L"Todos os arquivos", L"すべてのファイル" },
+{ L"Texto Formatado (RTF)", L"リッチテキスト (RTF)" },
+{ L"Texto Simples", L"標準テキスト" },
+{ L"Documentos de texto", L"テキスト書類" },

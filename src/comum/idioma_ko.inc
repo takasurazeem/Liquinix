@@ -1551,3 +1551,8 @@
 { L"Os avisos dos aplicativos aparecem no canto de cima, no visual do Mac.", L"앱 알림이 Mac 스타일로 위쪽 모서리에 나타납니다." },
 { L"Calendário na Central de Notificações", L"알림 센터에 캘린더" },
 { L"Relógio na Central de Notificações", L"알림 센터에 시계" },
+{ L"Imagens e PDF", L"이미지 및 PDF" },
+{ L"Todos os arquivos", L"모든 파일" },
+{ L"Texto Formatado (RTF)", L"서식 있는 텍스트(RTF)" },
+{ L"Texto Simples", L"일반 텍스트" },
+{ L"Documentos de texto", L"텍스트 문서" },

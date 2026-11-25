@@ -1551,3 +1551,8 @@
 { L"Os avisos dos aplicativos aparecem no canto de cima, no visual do Mac.", L"Uygulama bildirimleri Mac tarzında üst köşede görünür." },
 { L"Calendário na Central de Notificações", L"Bildirim Merkezi’nde Takvim" },
 { L"Relógio na Central de Notificações", L"Bildirim Merkezi’nde Saat" },
+{ L"Imagens e PDF", L"Görüntüler ve PDF" },
+{ L"Todos os arquivos", L"Tüm Dosyalar" },
+{ L"Texto Formatado (RTF)", L"Zengin Metin (RTF)" },
+{ L"Texto Simples", L"Düz Metin" },
+{ L"Documentos de texto", L"Metin Belgeleri" },

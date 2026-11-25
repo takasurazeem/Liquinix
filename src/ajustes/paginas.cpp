@@ -1751,7 +1751,7 @@ static bool g_allPhotos;  // Imagem de Fundo: "Mostrar Todas"
 void AddPhoto() {
     IFileOpenDialog* d = nullptr;
     if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&d)))) return;
-    COMDLG_FILTERSPEC spec[] = { { L"Imagens", L"*.jpg;*.jpeg;*.png;*.bmp" } };
+    COMDLG_FILTERSPEC spec[] = { { Tr(L"Imagens"), L"*.jpg;*.jpeg;*.png;*.bmp" } };
     d->SetFileTypes(1, spec);
     if (SUCCEEDED(d->Show(Window()))) {
         IShellItem* it = nullptr;
@@ -2170,8 +2170,8 @@ void Default() {
 void Pick(bool video) {
     IFileOpenDialog* d = nullptr;
     if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&d)))) return;
-    COMDLG_FILTERSPEC img[] = { { L"Imagens", L"*.jpg;*.jpeg;*.png;*.bmp;*.heic;*.webp" } };
-    COMDLG_FILTERSPEC vid[] = { { L"Vídeos", L"*.mp4;*.mov;*.m4v" } };
+    COMDLG_FILTERSPEC img[] = { { Tr(L"Imagens"), L"*.jpg;*.jpeg;*.png;*.bmp;*.heic;*.webp" } };
+    COMDLG_FILTERSPEC vid[] = { { Tr(L"Vídeos"), L"*.mp4;*.mov;*.m4v" } };
     d->SetFileTypes(1, video ? vid : img);
     std::wstring in;
     if (SUCCEEDED(d->Show(Window()))) {

@@ -321,7 +321,7 @@ void Open(const std::wstring& path) {
 void OpenDialog() {
     IFileOpenDialog* d = nullptr;
     if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&d)))) return;
-    COMDLG_FILTERSPEC f[] = { { L"Filmes", L"*.mp4;*.mov;*.m4v;*.mkv;*.avi;*.wmv;*.webm;*.mp3;*.m4a;*.wav" }, { L"Todos", L"*.*" } };
+    COMDLG_FILTERSPEC f[] = { { Tr(L"Filmes"), L"*.mp4;*.mov;*.m4v;*.mkv;*.avi;*.wmv;*.webm;*.mp3;*.m4a;*.wav" }, { Tr(L"Todos os arquivos"), L"*.*" } };
     d->SetFileTypes(2, f);
     if (SUCCEEDED(d->Show(wnd))) { IShellItem* it = nullptr; if (SUCCEEDED(d->GetResult(&it))) { PWSTR p = nullptr; if (SUCCEEDED(it->GetDisplayName(SIGDN_FILESYSPATH, &p))) {
         if (g_path.empty()) Open(p); else { wchar_t me[MAX_PATH]; GetModuleFileNameW(nullptr, me, MAX_PATH); ShellExecuteW(nullptr, L"open", me, (L"\"" + std::wstring(p) + L"\"").c_str(), nullptr, SW_SHOWNORMAL); }

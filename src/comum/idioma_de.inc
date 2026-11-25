@@ -1551,3 +1551,8 @@
 { L"Os avisos dos aplicativos aparecem no canto de cima, no visual do Mac.", L"Mitteilungen der Apps erscheinen oben in der Ecke im Mac-Stil." },
 { L"Calendário na Central de Notificações", L"Kalender in der Mitteilungszentrale" },
 { L"Relógio na Central de Notificações", L"Uhr in der Mitteilungszentrale" },
+{ L"Imagens e PDF", L"Bilder und PDF" },
+{ L"Todos os arquivos", L"Alle Dateien" },
+{ L"Texto Formatado (RTF)", L"Formatierter Text (RTF)" },
+{ L"Texto Simples", L"Reiner Text" },
+{ L"Documentos de texto", L"Textdokumente" },
