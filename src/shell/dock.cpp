@@ -3,8 +3,8 @@
 // onde não há nada desenhado, o clique passa). Ver docs/dock-e-barra-de-menus.md.
 #include "shell.h"
 #include "../menu/context_menu.h"
-#include "../nucleo/curvas.h"
 #include "../nucleo/dock_desenho.h"
+#include "../nucleo/dock_layout.h"
 #include "../plataforma/win/pintor_d2d.h"
 #include <shellapi.h>
 #include <shlobj.h>
@@ -340,72 +340,28 @@ void BuildItems() {
 
 // Posições e tamanhos (com ampliação), centralizado na tela.
 void Layout() {
-    float W = AxisLen();  // ao longo do Dock (dos lados, a altura abaixo da barra de menus)
-    float slot = SLOT;
-    // largura base para achar os centros sem ampliação
-    float base = PAD_X;
-    std::vector<float> c0;
-    for (auto& it : g_items) { float w = it.kind == I_SEP ? SEP_W : slot; c0.push_back(base + w / 2); base += w; }
-    base += PAD_X;
-    float left0 = (W - base) / 2;
-    // Tahoe (guia, seção 63): curva cos² com alcance de ~3,5 ícones para cada lado (medido 85/82/74/65 com 64 de base)
-    float M = g_large / g_tile, R = TAHOE_DOCK ? 3.5f : 2.6f;
-    std::vector<float> wv;
-    float total = PAD_X * 2;
+    // a conta da disposição é compartilhada com o Linux (src/nucleo/dock_layout.cpp); aqui só entra e sai o estado do Dock
+    std::vector<dock_layout::Item> itens(g_items.size());
     for (size_t i = 0; i < g_items.size(); i++) {
-        float s = 1;
-        float mx = g_mouseX >= 0 ? g_mouseX : g_lastMouseX;
-        if (g_magnify && mx >= 0 && g_magAmt > 0.001f && g_items[i].kind != I_SEP && !g_dragging) {
-            s = curvas::DockMagnify(std::fabs(mx - (left0 + c0[i])) / slot, R, M, g_magAmt);
-        }
-        float sepS = 1;  // Tahoe (guia, seção 63): o separador também cresce perto do ponteiro (31 → 40 com 64)
-        if (TAHOE_DOCK && g_magnify && mx >= 0 && g_magAmt > 0.001f && g_items[i].kind == I_SEP && !g_dragging) {
-            sepS = curvas::DockMagnify(std::fabs(mx - (left0 + c0[i])) / slot, R, 40.f / 31.f, g_magAmt);
-        }
-        g_items[i].size = g_items[i].kind == I_SEP ? 0 : g_tile * s;
-        wv.push_back(g_items[i].kind == I_SEP ? SEP_W * sepS : slot * s * (g_items[i].kind == I_MINWIN ? SlotFactor(g_items[i]) : AppFactor(g_items[i])));
-        total += wv.back();
+        auto& it = g_items[i]; auto& o = itens[i];
+        o.separador = it.kind == I_SEP;
+        o.app = it.kind == I_APP;
+        o.fixoMovel = o.app && apps::list[it.app].pinned && !apps::list[it.app].finder;
+        o.indiceApp = it.app;  // também nos outros tipos (a conta antiga lia .app de qualquer vizinho)
+        o.fator = it.kind == I_MINWIN ? SlotFactor(it) : AppFactor(it);
+        o.cx = it.cx;
     }
-    // Arrastando um app fixo: os outros abrem espaço ao vivo onde ele cairia (como no Mac); arrastado
-    // para fora do Dock, o lugar dele fecha. g_dragTo guarda a posição de destino (índice em apps::list).
-    std::vector<int> order;
-    for (int i = 0; i < (int)g_items.size(); i++) order.push_back(i);
-    int drag = g_dragging && g_press >= 0 && g_press < (int)g_items.size() && g_items[g_press].kind == I_APP && apps::list[g_items[g_press].app].pinned ? g_press : -1;
-    g_dragTo = -1;
-    if (drag >= 0) {
-        order.erase(std::find(order.begin(), order.end(), drag));
-        total -= wv[drag];
-        if (!g_dragOut) {
-            // centros sem o arrastado; o lugar novo fica entre os fixos, depois do Finder e do Launchpad
-            float xx = (W - total - wv[drag]) / 2 + PAD_X;
-            int pos = -1, firstPinned = -1, lastPinned = -1;
-            for (int k = 0; k < (int)order.size(); k++) {
-                auto& it = g_items[order[k]];
-                bool pinned = it.kind == I_APP && apps::list[it.app].pinned && !apps::list[it.app].finder;
-                if (pinned) { if (firstPinned < 0) firstPinned = k; lastPinned = k; }
-                float c = xx + wv[order[k]] / 2;
-                if (pos < 0 && pinned && g_mouseX < c) pos = k;
-                xx += wv[order[k]];
-            }
-            if (firstPinned < 0) firstPinned = lastPinned = (int)order.size() - 1;
-            if (pos < 0) pos = lastPinned + 1;
-            pos = std::clamp(pos, firstPinned, lastPinned + 1);
-            order.insert(order.begin() + pos, drag);
-            total += wv[drag];
-            int from = g_items[drag].app;
-            if (pos > firstPinned) { int prev = g_items[order[pos - 1]].app; g_dragTo = prev + (prev < from ? 1 : 0); }
-            else if (pos + 1 < (int)order.size() && g_items[order[pos + 1]].kind == I_APP) g_dragTo = g_items[order[pos + 1]].app - (g_items[order[pos + 1]].app > from ? 1 : 0);
-            else g_dragTo = from;
-        }
-    }
-    float x = (W - total) / 2 + PAD_X;
-    for (int i : order) {
-        float target = x + wv[i] / 2;
-        // desliza até o lugar novo em vez de pular (só durante o arrasto; o relógio de quadros está ligado)
-        g_items[i].cx = g_dragging && g_items[i].cx > 0 ? g_items[i].cx + (target - g_items[i].cx) * 0.35f : target;
-        x += wv[i];
-    }
-    if (drag >= 0 && g_dragOut) g_items[drag].cx = -1000;
+    dock_layout::Parametros prm;
+    prm.eixo = AxisLen();  // ao longo do Dock (dos lados, a altura abaixo da barra de menus)
+    prm.icone = g_tile; prm.ampliado = g_large; prm.passo = SLOT; prm.margem = PAD_X; prm.larguraSeparador = SEP_W;
+    prm.ampliar = g_magnify; prm.tahoe = TAHOE_DOCK;
+    prm.mouse = g_mouseX; prm.ultimoMouse = g_lastMouseX; prm.ampliacao = g_magAmt;
+    prm.arrastando = g_dragging; prm.foraDoDock = g_dragOut;
+    prm.arrastado = g_dragging && g_press >= 0 && g_press < (int)g_items.size() && g_items[g_press].kind == I_APP && apps::list[g_items[g_press].app].pinned ? g_press : -1;
+    dock_layout::Resultado res = dock_layout::Calcular(itens, prm);
+    for (size_t i = 0; i < g_items.size(); i++) { g_items[i].cx = itens[i].cx; g_items[i].size = itens[i].tamanho; }
+    g_dragTo = res.destino;
+    float W = prm.eixo, total = res.total;
     float H = WinH();
     float hide = (1 - anim::EaseInOut(g_reveal)) * (g_tile + PAD_TOP + PAD_BOTTOM + MARGIN + 2);  // ocultar/mostrar com a curva do Mac
     float bottom = H - MARGIN + hide;
