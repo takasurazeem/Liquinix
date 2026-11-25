@@ -66,7 +66,7 @@ it, passing only if the Dock got its layer-shell surface and drew a frame.
 `liquinix-dock` reads the same `ajustes.txt` keys as the Windows Dock (`tamanho`, `ampliacao`,
 `ampliacao_tamanho`, `animar_abertura`, `ocultar`) from `$XDG_CONFIG_HOME/liquinix/`, plus `tema_icones` (an icon theme name such as
 `MacTahoe`; by default KDE's theme). Its pinned apps are in `dock.txt` there, one `.desktop` id per line, created
-on first run. `LIQUINIX_DOCK_PNG=dock.png` draws the Dock into an image and exits, without a window
+on first run. Changes to both files apply live, without restarting the Dock. `LIQUINIX_DOCK_PNG=dock.png` draws the Dock into an image and exits, without a window
 (`LIQUINIX_DOCK_PNG_MOUSE=<x>` puts the pointer over it); the CI uploads those images with each run. Point
 `XDG_CONFIG_HOME` at a scratch folder when testing, so your own `~/.config` stays untouched.
 
