@@ -7,7 +7,7 @@ $log  = Join-Path $dest 'instalacao.log'
 function Pergunta($texto) { (Read-Host "$texto (s/n)").Trim().ToLower().StartsWith('s') }
 
 Write-Host "Liquinix - desinstalar`n"
-if (-not (Pergunta "Remover o Liquinix de $dest?")) { exit }
+if (-not (Pergunta "Remover o Liquinix de ${dest}?")) { exit }
 
 # as chamadas do Windows (fechar o Shell, devolver as janelas, cursor) são feitas pelo próprio LiquinixShell.exe (modo
 # ajudante, src\shell\ajudante.cpp), sem C# embutido no script (o antivírus estranhava)
