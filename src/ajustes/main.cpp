@@ -2019,8 +2019,11 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         float d = -GET_WHEEL_DELTA_WPARAM(w) / 120.f * 48;
         if (pt.x / g_scale < SIDE_W) g_sideScroll = std::clamp(g_sideScroll + d, 0.f, SideMaxScroll());
         else {
+            float antes = g_scrollTarget;
             g_scrollTarget = std::clamp(g_scrollTarget + d, 0.f, MaxScroll());
-            if (!g_rol.on) { g_rol = {}; g_rol.on = true; QueryPerformanceCounter(&g_rol.ini); g_rol.ult = g_rol.ini; }
+            // só mede se a rolagem anda: um clique da roda no fim da página não move nada, e a medida ficaria
+            // aberta até a próxima rolagem, somando o tempo parado (quadros/s baixos no log sem tranco nenhum)
+            if (!g_rol.on && g_scrollTarget != antes) { g_rol = {}; g_rol.on = true; QueryPerformanceCounter(&g_rol.ini); g_rol.ult = g_rol.ini; }
         }
         Invalidate();
         return 0;
