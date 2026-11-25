@@ -3,6 +3,7 @@
 // onde não há nada desenhado, o clique passa). Ver docs/dock-e-barra-de-menus.md.
 #include "shell.h"
 #include "../menu/context_menu.h"
+#include "../core/curves.h"
 #include "../core/dock_drawing.h"
 #include "../core/dock_layout.h"
 #include "../platform/win/painter_d2d.h"
@@ -580,7 +581,7 @@ ID2D1Bitmap* IconBitmap(ID2D1RenderTarget* rt, App& a) {
 // pulo do Mac: cada salto é uma parábola (sobe freando e desce acelerando, como a gravidade)
 float BounceOffset(const App& a) {
     double now = anim::Tick();
-    auto hop = [](double ms, float period) { float u = (float)std::fmod(ms / period, 1.0); return 4 * u * (1 - u); };
+    auto hop = [](double ms, float period) { return curves::DockHop(ms, period); };  // shared with Linux (src/core/curves)
     if (a.launchedAt && now - a.launchedAt < 8000 && shell::Setting(L"animar_abertura", L"1") == L"1")
         return -hop(now - a.launchedAt, 620) * g_tile * 0.5f;
     if (a.attentionAt && now - a.attentionAt < 1860)  // pedindo atenção: três pulos mais altos

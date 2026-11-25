@@ -21,4 +21,8 @@ float SpringDuration(float response, float damping);  // how long the spring tak
 // (0..1). Returns 1 out of reach.
 float DockMagnify(float dist, float reach, float maxScale, float amount);
 
+// A Dock icon's hop (the launch bounce): 0 -> 1 -> 0 as a parabola, repeating every `periodMs`. `ms` = time since it
+// started. Callers scale it by the hop height.
+float DockHop(double ms, float periodMs);
+
 }  // namespace curves

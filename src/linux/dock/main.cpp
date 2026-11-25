@@ -6,6 +6,7 @@
 #include "apps.h"
 #include "background_effect.h"
 #include "window_list.h"
+#include "core/curves.h"
 #include "core/dock_layout.h"
 #include "platform/linux/painter_qt.h"
 #include "platform/platform.h"
@@ -13,6 +14,7 @@
 #include <LayerShellQt/Window>
 #include <QDesktopServices>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QFileSystemWatcher>
@@ -69,8 +71,8 @@ bool TrashHasFiles() { return !QDir(TrashFilesDir()).isEmpty(QDir::AllEntries | 
 
 class DockWindow : public QRasterWindow {
 public:
-    DockWindow(std::vector<DesktopApp> apps, float tile, float large, bool magnify, QString settingsDir)
-        : apps_(std::move(apps)), tile_(tile), large_(large), magnify_(magnify), settingsDir_(std::move(settingsDir)) {
+    DockWindow(std::vector<DesktopApp> apps, float tile, float large, bool magnify, QString settingsDir, bool bounce)
+        : apps_(std::move(apps)), tile_(tile), large_(large), magnify_(magnify), settingsDir_(std::move(settingsDir)), bounce_(bounce) {
         for (const DesktopApp& a : apps_)
             appIcons_.push_back(a.icon.startsWith('/') ? QIcon(a.icon) : QIcon::fromTheme(a.icon, QIcon::fromTheme(QStringLiteral("application-x-executable"))));
         BuildEntries();
@@ -86,6 +88,7 @@ public:
         });
         setFlag(Qt::FramelessWindowHint);
         running_.assign(apps_.size(), false);
+        launchedAt_.assign(apps_.size(), 0);
     }
     // Open windows (Wayland only, and only if KWin offers the protocol): the "running" dots, and clicks that bring an
     // open app to the front instead of starting it again
@@ -136,11 +139,22 @@ protected:
         Draw(p, float(width()), float(height()));
         p.end();
         UpdateMask();
-        bool animating = magAmt_ != target || dragging_;
+        bool animating = magAmt_ != target || dragging_ || AnyBouncing(now);
         if (animating) update(); else last_ = 0;  // another frame only while something still moves
     }
 
 public:
+    // LIQUINIX_DOCK_SCRIPT's "png": the window's current state drawn into an image
+    bool SnapshotPng(const QString& file) {
+        Layout(float(width()), float(height()));
+        QImage img(width() * 2, height() * 2, QImage::Format_ARGB32_Premultiplied);
+        img.setDevicePixelRatio(2);
+        img.fill(QColor(70, 90, 120));
+        QPainter p(&img);
+        Draw(p, float(width()), float(height()));
+        p.end();
+        return img.save(file);
+    }
     QString PinnedIds() const { QStringList ids; for (auto& a : apps_) ids << a.id; return ids.join(QStringLiteral(", ")); }
     // LIQUINIX_DOCK_PNG: the same drawing into an image (no window), with the pointer at `mouse` and full magnification
     bool SavePng(const QString& file, int W, float mouse, qreal scale) {
@@ -188,7 +202,8 @@ protected:
                 p.drawLine(QPointF(cx, cy - h / 2), QPointF(cx, cy + h / 2));
                 continue;
             }
-            QRectF r(cx - s / 2, baseline - s, s, s);
+            float hop = entries_[i].kind == Entry::App ? BounceOffset(entries_[i].app) : 0;  // launching: the icon bounces
+            QRectF r(cx - s / 2, baseline - s + hop, s, s);
             QPixmap px = entries_[i].icon.pixmap(QSize(int(std::ceil(s)), int(std::ceil(s))), dpr);  // QIcon caches the sizes it made
             p.drawPixmap(r, px, QRectF(0, 0, px.width(), px.height()));
             if (entries_[i].kind == Entry::App && running_[entries_[i].app]) {  // running: Tahoe's small dot, a little above the edge (the same as on Windows)
@@ -265,6 +280,7 @@ protected:
             return;
         }
         bool ok = LaunchApp(a);
+        if (ok && bounce_) { launchedAt_[en.app] = platform::NowMs(); update(); }  // bounce until its window shows up
         std::printf("liquinix-dock: launch %s (%s): %s\n", qPrintable(a.id), qPrintable(a.exec), ok ? "ok" : "failed");
         std::fflush(stdout);
     }
@@ -276,6 +292,7 @@ private:
         std::vector<bool> now(apps_.size(), false);
         for (size_t i = 0; i < apps_.size(); i++)
             for (const QString& id : ids) if (WindowBelongsTo(apps_[i], id)) { now[i] = true; break; }
+        for (size_t i = 0; i < apps_.size(); i++) if (now[i]) launchedAt_[i] = 0;  // its window is here: stop bouncing
         if (now == running_) return;
         running_ = now;
         QStringList names; for (size_t i = 0; i < apps_.size(); i++) if (running_[i]) names << apps_[i].id;
@@ -306,6 +323,13 @@ private:
         auto res = dock_layout::Compute(items_, LayoutParams(W));
         float bottom = H - Margin();
         bg_ = drawing::Rect{ (W - res.total) / 2, bottom - (tile_ + PadTop() + PadBottom()), (W + res.total) / 2, bottom };
+    }
+    // launching: half an icon high hops of 620 ms (the Windows Dock's, curves::DockHop) for up to 8 s, until a window shows up
+    bool Bouncing(int app, double now) const { return launchedAt_[app] > 0 && now - launchedAt_[app] < 8000; }
+    bool AnyBouncing(double now) const { for (size_t i = 0; i < launchedAt_.size(); i++) if (Bouncing(int(i), now)) return true; return false; }
+    float BounceOffset(int app) const {
+        double now = platform::NowMs();
+        return Bouncing(app, now) ? -curves::DockHop(now - launchedAt_[app], 620) * tile_ * 0.5f : 0.f;
     }
     // the shared layout's inputs from the Dock's current state
     dock_layout::Params LayoutParams(float W) const {
@@ -349,6 +373,7 @@ private:
         if (changed) {
             BuildEntries();
             running_.assign(apps_.size(), false);
+            launchedAt_.assign(apps_.size(), 0);
             UpdateRunning();
             if (!WritePinned(settingsDir_, apps_)) std::printf("liquinix-dock: couldn't save %s/dock.txt\n", qPrintable(settingsDir_));
         }
@@ -384,10 +409,12 @@ private:
     bool trashFull_ = false;
     std::vector<dock_layout::Item> items_;
     std::vector<bool> running_;           // per pinned app: has an open window
+    std::vector<double> launchedAt_;      // per pinned app: when it was launched (NowMs), 0 = not bouncing
     WindowList* windowList_ = nullptr;
     float tile_, large_;
     bool magnify_;
     QString settingsDir_;                 // where dock.txt is saved
+    bool bounce_;                         // bounce launching apps (animar_abertura, on by default)
     BackgroundEffect* effect_ = nullptr;
     bool blurOn_ = false;      // blur requested: draw the glass tint instead of the opaque shelf
     QRegion blurRegion_;
@@ -434,7 +461,8 @@ int main(int argc, char** argv) {
                 qPrintable(dir), apps.size(), tile, magnify ? "on" : "off", large, qPrintable(QIcon::themeName()));
     std::fflush(stdout);  // output goes to a file or pipe: without this the line would only appear on exit
 
-    DockWindow w(std::move(apps), tile, large, magnify, dir);
+    bool bounce = settings["animar_abertura"] != QLatin1String("0");  // the Windows setting: on unless turned off
+    DockWindow w(std::move(apps), tile, large, magnify, dir, bounce);
     if (const char* png = std::getenv("LIQUINIX_DOCK_PNG")) {  // test: draw into an image and exit (CI and checks)
         const char* mx = std::getenv("LIQUINIX_DOCK_PNG_MOUSE");
         bool ok = w.SavePng(QString::fromLocal8Bit(png), 1280, mx ? float(std::atof(mx)) : -1.f, 2.0);
@@ -455,6 +483,11 @@ int main(int argc, char** argv) {
             if (p[0] == QLatin1String("move") && p.size() == 3) pos = QPointF(p[1].toDouble(), p[2].toDouble());
             else if (p[0] == QLatin1String("press")) { type = QEvent::MouseButtonPress; buttons = Qt::LeftButton; }
             else if (p[0] == QLatin1String("release")) { type = QEvent::MouseButtonRelease; buttons = Qt::NoButton; }
+            else if (p[0] == QLatin1String("wait") && p.size() == 2) {  // let time pass (animations step by the clock)
+                QElapsedTimer t; t.start();
+                while (t.elapsed() < p[1].toInt()) QCoreApplication::processEvents(QEventLoop::AllEvents, 5);
+                continue;
+            } else if (p[0] == QLatin1String("png") && p.size() == 2) { w.SnapshotPng(p[1]); continue; }
             else continue;
             QMouseEvent ev(type, pos, w.mapToGlobal(pos), type == QEvent::MouseMove ? Qt::NoButton : Qt::LeftButton, buttons, Qt::NoModifier);
             QCoreApplication::sendEvent(&w, &ev);
