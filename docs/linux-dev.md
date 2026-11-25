@@ -70,6 +70,10 @@ on first run. `LIQUINIX_DOCK_PNG=dock.png` draws the Dock into an image and exit
 (`LIQUINIX_DOCK_PNG_MOUSE=<x>` puts the pointer over it); the CI uploads those images with each run. Point
 `XDG_CONFIG_HOME` at a scratch folder when testing, so your own `~/.config` stays untouched.
 
+`LIQUINIX_DOCK_SCRIPT="move 501 140; press; move 580 140; release"` (with `QT_QPA_PLATFORM=offscreen`) sends
+those mouse events to the Dock, prints the pinned order and exits: a way to test dragging without a screen. A press and
+release without moving is a real click and launches the app.
+
 The Dock marks running apps with a dot and brings an app's window to the front when its icon is clicked, using
 Plasma's window-management protocol (`org_kde_plasma_window_management`), matched by `.desktop` id or
 `StartupWMClass`. KWin may restrict that protocol to trusted programs; the nested KWin offers it without any setup.

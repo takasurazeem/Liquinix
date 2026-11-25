@@ -22,6 +22,9 @@ std::optional<DesktopApp> FindApp(const QString& id);
 // the pinned apps: reads <dir>/dock.txt; if it doesn't exist, writes a starting list with the common apps found here
 std::vector<DesktopApp> ReadPinned(const QString& dir);
 
+// saves the pinned apps, in this order, to <dir>/dock.txt (replacing it); false if it couldn't
+bool WritePinned(const QString& dir, const std::vector<DesktopApp>& apps);
+
 // starts the app (a separate process, without waiting); false if it couldn't
 bool LaunchApp(const DesktopApp& app);
 
