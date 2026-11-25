@@ -3,12 +3,12 @@
 # Liquinix
 
 **A macOS-style desktop for Windows 11 (menu bar, Dock, Finder, Spotlight, Control Center and Liquid Glass) in
-native C++. Free software under the GPL-3.0. Linux support is planned.**
+native C++. Free software under the GPL-3.0. A Linux version (KDE Plasma) has started.**
 
 [![Build](https://img.shields.io/github/actions/workflow/status/takasurazeem/Liquinix/build.yml?branch=main&style=flat&label=Build)](https://github.com/takasurazeem/Liquinix/actions/workflows/build.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat)](LICENSE)
 ![Windows 11](https://img.shields.io/badge/Windows-11-0078D4?style=flat&logo=windows11&logoColor=white)
-![Linux: planned](https://img.shields.io/badge/Linux-planned-lightgrey?style=flat&logo=linux&logoColor=white)
+![Linux: early](https://img.shields.io/badge/Linux-early-orange?style=flat&logo=linux&logoColor=white)
 ![C++](https://img.shields.io/badge/C%2B%2B-native-00599C?style=flat&logo=cplusplus&logoColor=white)
 
 </div>
@@ -21,16 +21,16 @@ the classic **Mac OS X Leopard** Aqua look.
 Everything is native C++ (Win32, Direct2D, DirectComposition). No Electron, no web views.
 
 Liquinix is a fork of [WacOS](https://github.com/renzyxx/WacOS) by renzyxx, taken from its last GPL-3.0 version (see
-[License](#license)). A Linux version is planned. See [Linux](#linux).
+[License](#license)). A Linux version for KDE Plasma has started. See [Linux](#linux).
 
 **Contents:** [Status](#status) · [Themes](#themes) · [Features](#features) · [Install](#install) ·
 [Is it safe?](#is-it-safe) · [Linux](#linux) · [Roadmap](#roadmap) · [Build](#build) · [License](#license)
 
 ## Status
 
-- **Windows:** the shell and apps work and build on every commit (see the Build badge). **There is no Liquinix
-  release yet.** Until the first one is published, [build it from source](#build).
-- **Linux:** planned, not started. See [Linux](#linux).
+- **Windows:** the shell and apps work and build on every commit (see the Build badge). The first release,
+  [build-1](https://github.com/takasurazeem/Liquinix/releases/latest), is out. See [Install](#install).
+- **Linux:** early. The Dock runs on KDE Plasma 6 (Wayland), built from source. See [Linux](#linux).
 
 Work is tracked on the [project board](https://github.com/users/takasurazeem/projects/10), in the order given in
 [`docs/ROADMAP.md`](docs/ROADMAP.md).
@@ -82,21 +82,20 @@ and a cursor onto your own PC (see [Install](#install)).
 
 ## Install
 
-There is no Liquinix release yet, so for now [build from source](#build) and run `bin\LiquinixSetup.exe`. Once the
-first release is out:
-
 1. Download `Liquinix-<date>.zip` from the [releases page](https://github.com/takasurazeem/Liquinix/releases).
 2. Extract it anywhere and open **`LiquinixSetup.exe`**. It installs, updates, changes and uninstalls Liquinix.
 
-Apple's fonts, sounds and cursors can't be shipped with Liquinix. The installer offers to fetch them onto your own
-PC, from where their owners publish them, and they stay under their owners' licenses:
+Apple's fonts, sounds and cursors can't be shipped with Liquinix. The installer can fetch them onto your own PC, from
+where their owners publish them, and they stay under their owners' licenses. In `LiquinixSetup.exe`, tick them on the
+Installation Type page:
 
 - **SF Pro and SF Mono** from [developer.apple.com/fonts](https://developer.apple.com/fonts/). Apple's license
   applies. The installer opens the `.dmg` with 7-Zip, and installs 7-Zip through `winget` if it's missing.
 - **macOS alert sounds** from [extratone/macOSsystemsounds](https://github.com/extratone/macOSsystemsounds),
   converted to WAV.
-- **A macOS Tahoe cursor** by [jimmyxd2 on DeviantArt](https://www.deviantart.com/jimmyxd2/art/1208233550). The
-  installer opens the page, you download it, and the installer picks it up from your Downloads folder.
+- **A macOS Tahoe cursor** by [jimmyxd2 on DeviantArt](https://www.deviantart.com/jimmyxd2/art/1208233550), only
+  through `instalar.cmd` in the package: it opens the page, you download the cursor, and it picks it up from your
+  Downloads folder.
 
 Liquinix installs for your user only, without administrator rights, in `%LOCALAPPDATA%\Programs\Liquinix`.
 Everything it changes is logged in `instalacao.log` there. To uninstall, use **Settings > Apps > Installed apps >
@@ -151,14 +150,20 @@ It's a fair question for anything that replaces your taskbar. You don't have to 
 
 ## Linux
 
-A Linux version is planned but hasn't started. The first steps are:
-- choose the toolkit and the first desktop to target;
-- set up a CMake build;
-- put the Windows-specific code behind a platform layer;
-- port the Dock.
+The Linux version targets **KDE Plasma 6 on Wayland**, with Qt 6 (the reasons are in
+[`docs/linux-roadmap.md`](docs/linux-roadmap.md)). It shares code with the Windows version: the animation curves, the
+drawing interface and the Dock's layout are the same code on both.
 
-[`docs/linux-dev.md`](docs/linux-dev.md) describes the development setup (a toolbox container, a nested KWin and
-a test account), so the work never risks your own desktop session. The [project board](https://github.com/users/takasurazeem/projects/10)
+**The Dock** (`liquinix-dock`) is the first program:
+- your pinned apps (from `.desktop` files), with icons from your icon theme, then Downloads and the Trash;
+- magnification, the launch bounce, dots under running apps, and a click brings a running app forward;
+- drag to reorder or remove, a right-click menu, automatic hiding and frosted glass behind it;
+- settings changes apply live.
+
+There's no package yet: build it from source (CMake) and try it in a nested KWin window first.
+[`docs/linux-dev.md`](docs/linux-dev.md) covers the setup (a toolbox container, a nested KWin and a test account), so
+the work never risks your own desktop session. The menu bar comes next; its plan is being decided in
+[#65](https://github.com/takasurazeem/Liquinix/issues/65). The [project board](https://github.com/users/takasurazeem/projects/10)
 shows where it stands.
 
 ## Roadmap
