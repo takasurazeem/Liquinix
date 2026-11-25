@@ -25,6 +25,7 @@ find_package(LayerShellQt REQUIRED)
 add_library(liquinix-nucleo STATIC
     src/nucleo/curvas.cpp
     src/nucleo/dock_desenho.cpp
+    src/nucleo/dock_layout.cpp
     src/plataforma/linux/plataforma_linux.cpp)
 target_include_directories(liquinix-nucleo PUBLIC src)
 
