@@ -33,6 +33,6 @@ target_include_directories(liquinix-nucleo PUBLIC src)
 add_library(liquinix-pintor-qt STATIC src/plataforma/linux/pintor_qt.cpp)
 target_link_libraries(liquinix-pintor-qt PUBLIC liquinix-nucleo Qt6::Gui)
 
-# o Dock (#20). Por enquanto, a janela de layer-shell na borda de baixo, sem ícones (#18).
-add_executable(liquinix-dock src/linux/dock/main.cpp)
+# o Dock (#20): apps fixos dos .desktop, ícones do tema, ampliação; a disposição é a do Windows (src/nucleo)
+add_executable(liquinix-dock src/linux/dock/main.cpp src/linux/dock/apps.cpp)
 target_link_libraries(liquinix-dock PRIVATE liquinix-nucleo liquinix-pintor-qt Qt6::Core Qt6::Gui LayerShellQt::Interface)

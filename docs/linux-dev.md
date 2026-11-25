@@ -62,6 +62,13 @@ code at all) and `src/plataforma` (one interface, a `win/` and a `linux/` backen
 (`kwin_wayland --virtual`, with its own runtime folder and D-Bus, so your desktop isn't touched) and the Dock inside
 it, passing only if the Dock got its layer-shell surface and drew a frame.
 
+`liquinix-dock` reads the same `ajustes.txt` keys as the Windows Dock (`tamanho`, `ampliacao`,
+`ampliacao_tamanho`) from `$XDG_CONFIG_HOME/liquinix/`, plus `tema_icones` (an icon theme name such as
+`MacTahoe`; by default KDE's theme). Its pinned apps are in `dock.txt` there, one `.desktop` id per line, created
+on first run. `LIQUINIX_DOCK_PNG=dock.png` draws the Dock into an image and exits, without a window
+(`LIQUINIX_DOCK_PNG_MOUSE=<x>` puts the pointer over it); the CI uploads those images with each run. Point
+`XDG_CONFIG_HOME` at a scratch folder when testing, so your own `~/.config` stays untouched.
+
 ## 2. Run in a nested KWin
 
 `tools/linux/nested-kwin.sh` opens a second KWin as a window on your desktop. Programs started inside it talk to
