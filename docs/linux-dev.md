@@ -39,7 +39,7 @@ toolbox enter liquinix
 
 # inside the toolbox:
 sudo dnf install gcc-c++ cmake ninja-build git wayland-devel wayland-protocols-devel \
-    layer-shell-qt-devel qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
+    layer-shell-qt-devel qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
     plasma-wayland-protocols-devel  # Qt 6: see docs/linux-roadmap.md
 ```
 
@@ -74,6 +74,10 @@ The Dock marks running apps with a dot and brings an app's window to the front w
 Plasma's window-management protocol (`org_kde_plasma_window_management`), matched by `.desktop` id or
 `StartupWMClass`. KWin may restrict that protocol to trusted programs; the nested KWin offers it without any setup.
 If a session doesn't, the Dock logs `Plasma window list not available yet` and works without the dots.
+
+The shelf is frosted glass when the compositor blurs behind it: the standard `ext-background-effect-v1` protocol,
+which KWin 6.8 offers (the older `org_kde_kwin_blur`, which KWindowSystem uses, isn't offered any more). Without it,
+or in safe mode, the shelf is opaque. The Dock logs `blur available` or `blur not available (opaque shelf)`.
 
 ## 2. Run in a nested KWin
 

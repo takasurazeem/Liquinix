@@ -4,6 +4,7 @@
 // is Linux-specific lives here: the apps (.desktop files), the theme icons, launching, the window and pointer input.
 // Frames only while something moves (update() -> requestUpdate, paced by the compositor); idle, nothing runs.
 #include "apps.h"
+#include "background_effect.h"
 #include "window_list.h"
 #include "core/dock_layout.h"
 #include "platform/linux/painter_qt.h"
@@ -21,6 +22,7 @@
 #include <QRegion>
 #include <QScreen>
 #include <QSettings>
+#include <QStyleHints>
 #include <QStandardPaths>
 #include <QSurfaceFormat>
 #include <QTextStream>
@@ -69,6 +71,18 @@ public:
         QObject::connect(list, &WindowList::activeChanged, report);
         report();  // it may have connected already, before this signal was hooked up
     }
+    // The compositor's blur behind the shelf (Wayland only, not in safe mode)
+    void ConnectBackgroundEffect(BackgroundEffect* effect) {
+        effect_ = effect;
+        auto report = [this] {
+            std::printf("liquinix-dock: blur %s\n", effect_->BlurSupported() ? "available" : "not available (opaque shelf)");
+            std::fflush(stdout);
+            blurRegion_ = QRegion();  // send the region again
+            update();
+        };
+        QObject::connect(effect, &BackgroundEffect::CapabilitiesChanged, report);
+        report();
+    }
     // Tahoe measurements (the same as the Windows Dock, src/shell/dock.cpp)
     float PadX() const { return tile_ * 0.125f; }
     float Slot() const { return tile_ * 1.0625f; }
@@ -88,6 +102,7 @@ protected:
         magAmt_ += (target - magAmt_) * (1 - std::exp(-dt / 0.05f));
         if (std::fabs(target - magAmt_) < 0.002f) magAmt_ = target;
         Layout(float(width()), float(height()));
+        UpdateBlur();  // before drawing: KWin applies the new region with this frame's commit
         QPainter p(this);
         Draw(p, float(width()), float(height()));
         p.end();
@@ -124,8 +139,12 @@ protected:
             p.setCompositionMode(QPainter::CompositionMode_SourceOver);
         }
         PainterQt pq(p);
-        // the background (no glass yet: KWin's blur comes in a later step)
-        pq.FillRoundedRect(bg_, Radius(), drawing::Color{ 0.96f, 0.96f, 0.97f, 0.78f });
+        // the background: with KWin's blur behind it, the Windows Dock's Tahoe glass tint (measured on macOS 26: a 0.56
+        // grey at 39% in light mode, 0.28 in dark mode); without blur, an opaque light shelf
+        bool dark = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+        drawing::Color shelf = !blurOn_ ? drawing::Color{ 0.96f, 0.96f, 0.97f, 0.78f }
+                              : dark ? drawing::Color{ 0.28f, 0.28f, 0.29f, 0.39f } : drawing::Color{ 0.56f, 0.56f, 0.57f, 0.39f };
+        pq.FillRoundedRect(bg_, Radius(), shelf);
         QPainterPath border; border.addRoundedRect(QRectF(bg_.left + 0.5, bg_.top + 0.5, bg_.right - bg_.left - 1, bg_.bottom - bg_.top - 1), Radius(), Radius());
         p.setPen(QPen(QColor(255, 255, 255, 170), 1)); p.drawPath(border);
         float baseline = bg_.bottom - PadBottom();
@@ -206,6 +225,16 @@ private:
         float bottom = H - Margin();
         bg_ = drawing::Rect{ (W - res.total) / 2, bottom - (tile_ + PadTop() + PadBottom()), (W + res.total) / 2, bottom };
     }
+    // the compositor's blur behind the shelf only (its rounded shape), sent again only when the shape changes
+    void UpdateBlur() {
+        if (!effect_ || !effect_->BlurSupported()) { blurOn_ = false; return; }
+        QPainterPath shape;
+        shape.addRoundedRect(QRectF(bg_.left, bg_.top, bg_.right - bg_.left, bg_.bottom - bg_.top), Radius(), Radius());
+        QRegion region(shape.toFillPolygon().toPolygon());
+        if (region == blurRegion_) return;
+        blurRegion_ = region;
+        blurOn_ = effect_->SetBlurRegion(this, region);
+    }
     // only the Dock takes the pointer; the rest of the strip lets clicks through to the windows below. With the pointer
     // on it, the area grows upwards (the magnified icons) and sideways.
     void UpdateMask() {
@@ -221,6 +250,9 @@ private:
     WindowList* windowList_ = nullptr;
     float tile_, large_;
     bool magnify_;
+    BackgroundEffect* effect_ = nullptr;
+    bool blurOn_ = false;      // blur requested: draw the glass tint instead of the opaque shelf
+    QRegion blurRegion_;
     float mouseX_ = -1, lastMouseX_ = -1, magAmt_ = 0;
     int hover_ = -1;
     double last_ = 0;
@@ -281,9 +313,14 @@ int main(int argc, char** argv) {
         ls->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);
     }
     std::unique_ptr<WindowList> windowList;
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"))) { windowList = std::make_unique<WindowList>(); w.ConnectWindowList(windowList.get()); }
+    std::unique_ptr<BackgroundEffect> effect;
+    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"))) {
+        windowList = std::make_unique<WindowList>(); w.ConnectWindowList(windowList.get());
+        if (!safeMode) { effect = std::make_unique<BackgroundEffect>(); w.ConnectBackgroundEffect(effect.get()); }  // safe mode: no blur
+    }
     w.show();
     int result = app.exec();
-    windowList.reset();  // before the window and the connection to the compositor go away
+    effect.reset();      // before the window and the connection to the compositor go away
+    windowList.reset();
     return result;
 }
