@@ -16,6 +16,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QFileSystemWatcher>
+#include <QLineF>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QMouseEvent>
@@ -68,16 +69,11 @@ bool TrashHasFiles() { return !QDir(TrashFilesDir()).isEmpty(QDir::AllEntries | 
 
 class DockWindow : public QRasterWindow {
 public:
-    DockWindow(std::vector<DesktopApp> apps, float tile, float large, bool magnify)
-        : apps_(std::move(apps)), tile_(tile), large_(large), magnify_(magnify) {
-        for (size_t i = 0; i < apps_.size(); i++) {
-            const DesktopApp& a = apps_[i];
-            QIcon icon = a.icon.startsWith('/') ? QIcon(a.icon) : QIcon::fromTheme(a.icon, QIcon::fromTheme(QStringLiteral("application-x-executable")));
-            entries_.push_back({ Entry::App, int(i), icon, a.name });
-        }
-        entries_.push_back({ Entry::Separator, -1, QIcon(), QString() });
-        entries_.push_back({ Entry::Downloads, -1, QIcon::fromTheme(QStringLiteral("folder-downloads"), QIcon::fromTheme(QStringLiteral("folder"))), QStringLiteral("Downloads") });
-        entries_.push_back({ Entry::Trash, -1, QIcon(), QStringLiteral("Trash") });
+    DockWindow(std::vector<DesktopApp> apps, float tile, float large, bool magnify, QString settingsDir)
+        : apps_(std::move(apps)), tile_(tile), large_(large), magnify_(magnify), settingsDir_(std::move(settingsDir)) {
+        for (const DesktopApp& a : apps_)
+            appIcons_.push_back(a.icon.startsWith('/') ? QIcon(a.icon) : QIcon::fromTheme(a.icon, QIcon::fromTheme(QStringLiteral("application-x-executable"))));
+        BuildEntries();
         UpdateTrash();
         // the Trash icon follows its contents: a watcher on the trash folder (and its parents, so a first trashed file
         // that creates the folder is seen too), never polling
@@ -140,11 +136,12 @@ protected:
         Draw(p, float(width()), float(height()));
         p.end();
         UpdateMask();
-        bool animating = magAmt_ != target;
+        bool animating = magAmt_ != target || dragging_;
         if (animating) update(); else last_ = 0;  // another frame only while something still moves
     }
 
 public:
+    QString PinnedIds() const { QStringList ids; for (auto& a : apps_) ids << a.id; return ids.join(QStringLiteral(", ")); }
     // LIQUINIX_DOCK_PNG: the same drawing into an image (no window), with the pointer at `mouse` and full magnification
     bool SavePng(const QString& file, int W, float mouse, qreal scale) {
         mouseX_ = lastMouseX_ = mouse; magAmt_ = mouse >= 0 ? 1.f : 0.f;
@@ -184,6 +181,7 @@ protected:
         qreal dpr = p.device()->devicePixelRatio();
         for (size_t i = 0; i < items_.size(); i++) {
             float s = items_[i].size, cx = items_[i].cx;
+            if (dragging_ && int(i) == pressIndex_) continue;  // in the user's hand: drawn at the pointer below
             if (entries_[i].kind == Entry::Separator) {  // a thin line across the shelf (the Windows Dock's)
                 float h = tile_ * 0.93f, cy = (bg_.top + bg_.bottom) / 2;
                 p.setPen(QPen(dark ? QColor::fromRgbF(1, 1, 1, 0.22f) : QColor::fromRgbF(0, 0, 0, 0.18f), 1));
@@ -197,6 +195,13 @@ protected:
                 float dotR = std::max(1.25f, tile_ * 0.028f), dotY = bg_.bottom - tile_ * 0.088f;
                 pq.FillRoundedRect(drawing::Rect{ cx - dotR, dotY - dotR, cx + dotR, dotY + dotR }, dotR, drawing::Color{ 0.05f, 0.07f, 0.20f, 0.85f });
             }
+        }
+        if (dragging_ && pressIndex_ >= 0) {  // the dragged icon at the pointer; faded once it's far enough out to be removed
+            float s = tile_;
+            QPixmap px = entries_[pressIndex_].icon.pixmap(QSize(int(std::ceil(s)), int(std::ceil(s))), dpr);
+            p.setOpacity(outside_ ? 0.55 : 1.0);
+            p.drawPixmap(QRectF(mouseX_ - s / 2, dragY_ - s / 2, s, s), px, QRectF(0, 0, px.width(), px.height()));
+            p.setOpacity(1.0);
         }
         // the name of the app under the pointer, in a label above its icon (as on the Mac)
         if (hover_ >= 0 && magAmt_ > 0.5f) {
@@ -216,8 +221,22 @@ protected:
         if (e->type() == QEvent::Leave) { mouseX_ = -1; hover_ = -1; update(); }
         return QRasterWindow::event(e);
     }
+    void mousePressEvent(QMouseEvent* e) override {
+        if (e->button() != Qt::LeftButton) return;
+        pressIndex_ = hover_ >= 0 && entries_[hover_].kind == Entry::App ? hover_ : -1;  // only pinned apps can be dragged
+        pressPos_ = e->position();
+    }
     void mouseMoveEvent(QMouseEvent* e) override {
         float x = float(e->position().x()), y = float(e->position().y());
+        if (pressIndex_ >= 0 && (e->buttons() & Qt::LeftButton)) {
+            if (!dragging_ && QLineF(pressPos_, e->position()).length() > 6) { dragging_ = true; hover_ = -1; }
+            if (dragging_) {  // the icon follows the pointer; well above the Dock it would be removed
+                mouseX_ = lastMouseX_ = x; dragY_ = y;
+                outside_ = y < bg_.top - large_;
+                update();
+                return;
+            }
+        }
         bool inside = x >= bg_.left - large_ && x <= bg_.right + large_ && y >= bg_.top - (large_ - tile_) - 20;
         mouseX_ = inside ? x : -1;
         if (inside) lastMouseX_ = x;
@@ -228,6 +247,8 @@ protected:
         update();
     }
     void mouseReleaseEvent(QMouseEvent* e) override {
+        if (e->button() == Qt::LeftButton && dragging_) { FinishDrag(); return; }
+        pressIndex_ = -1;
         if (e->button() != Qt::LeftButton || hover_ < 0) return;
         const Entry& en = entries_[hover_];
         if (en.kind == Entry::Downloads || en.kind == Entry::Trash) {  // open the folder in the file manager
@@ -272,19 +293,67 @@ private:
         update();
     }
     void Layout(float W, float H) {
+        std::vector<float> previous;
+        if (items_.size() == entries_.size()) for (auto& it : items_) previous.push_back(it.cx);
         items_.assign(entries_.size(), {});
         for (size_t i = 0; i < entries_.size(); i++) {
             items_[i].separator = entries_[i].kind == Entry::Separator;
             items_[i].app = entries_[i].kind == Entry::App;
+            items_[i].movablePinned = items_[i].app;  // every app here is pinned (there's no Finder slot on Linux)
             items_[i].appIndex = entries_[i].app;
+            if (!previous.empty()) items_[i].cx = previous[i];
         }
+        auto res = dock_layout::Compute(items_, LayoutParams(W));
+        float bottom = H - Margin();
+        bg_ = drawing::Rect{ (W - res.total) / 2, bottom - (tile_ + PadTop() + PadBottom()), (W + res.total) / 2, bottom };
+    }
+    // the shared layout's inputs from the Dock's current state
+    dock_layout::Params LayoutParams(float W) const {
         dock_layout::Params prm;
         prm.axis = W; prm.icon = tile_; prm.magnified = large_; prm.step = Slot(); prm.margin = PadX();
         prm.separatorWidth = tile_ * 0.484f; prm.magnify = magnify_; prm.tahoe = true;
         prm.mouse = mouseX_; prm.lastMouse = lastMouseX_; prm.magnification = magAmt_;
-        auto res = dock_layout::Compute(items_, prm);
-        float bottom = H - Margin();
-        bg_ = drawing::Rect{ (W - res.total) / 2, bottom - (tile_ + PadTop() + PadBottom()), (W + res.total) / 2, bottom };
+        prm.dragging = dragging_; prm.dragged = dragging_ ? pressIndex_ : -1; prm.outsideDock = outside_;
+        return prm;
+    }
+    // the slots: the pinned apps, then the separator, Downloads and the Trash (the Windows Dock's order)
+    void BuildEntries() {
+        QIcon trash = entries_.empty() ? QIcon() : entries_.back().icon;
+        entries_.clear();
+        for (size_t i = 0; i < apps_.size(); i++) entries_.push_back({ Entry::App, int(i), appIcons_[i], apps_[i].name });
+        entries_.push_back({ Entry::Separator, -1, QIcon(), QString() });
+        entries_.push_back({ Entry::Downloads, -1, QIcon::fromTheme(QStringLiteral("folder-downloads"), QIcon::fromTheme(QStringLiteral("folder"))), QStringLiteral("Downloads") });
+        entries_.push_back({ Entry::Trash, -1, trash, QStringLiteral("Trash") });
+        items_.clear();  // a different set of slots: no centres to carry over
+    }
+    // a drag ended: move the app to where the gap opened, or unpin it if it was dropped well above the Dock
+    void FinishDrag() {
+        int from = entries_[pressIndex_].app;
+        // where it lands, from the pointer's position now (on a copy: the release can come before the next frame)
+        std::vector<dock_layout::Item> copy = items_;
+        int dropTarget = dock_layout::Compute(copy, LayoutParams(float(width()))).dropTarget;
+        bool changed = false;
+        if (outside_) {
+            std::printf("liquinix-dock: unpin %s\n", qPrintable(apps_[from].id));
+            apps_.erase(apps_.begin() + from); appIcons_.erase(appIcons_.begin() + from);
+            changed = true;
+        } else if (dropTarget >= 0 && dropTarget != from) {
+            int to = std::clamp(dropTarget, 0, int(apps_.size()) - 1);  // the same move as the Windows Dock (apps::Move)
+            std::printf("liquinix-dock: move %s from %d to %d\n", qPrintable(apps_[from].id), from, to);
+            DesktopApp a = apps_[from]; QIcon icon = appIcons_[from];
+            apps_.erase(apps_.begin() + from); appIcons_.erase(appIcons_.begin() + from);
+            apps_.insert(apps_.begin() + to, a); appIcons_.insert(appIcons_.begin() + to, icon);
+            changed = true;
+        }
+        dragging_ = false; outside_ = false; pressIndex_ = -1;
+        if (changed) {
+            BuildEntries();
+            running_.assign(apps_.size(), false);
+            UpdateRunning();
+            if (!WritePinned(settingsDir_, apps_)) std::printf("liquinix-dock: couldn't save %s/dock.txt\n", qPrintable(settingsDir_));
+        }
+        std::fflush(stdout);
+        update();
     }
     // the compositor's blur behind the shelf only (its rounded shape), sent again only when the shape changes
     void UpdateBlur() {
@@ -305,6 +374,11 @@ private:
     }
 
     std::vector<DesktopApp> apps_;
+    std::vector<QIcon> appIcons_;         // per pinned app, in the same order as apps_
+    int pressIndex_ = -1;                 // entry pressed with the left button (a pinned app), -1 = none
+    QPointF pressPos_;
+    bool dragging_ = false, outside_ = false;  // dragging that app; dropped now it would be unpinned
+    float dragY_ = 0;
     std::vector<Entry> entries_;          // what the Dock shows, in order (items_ is laid out from it)
     QFileSystemWatcher trashWatcher_;
     bool trashFull_ = false;
@@ -313,6 +387,7 @@ private:
     WindowList* windowList_ = nullptr;
     float tile_, large_;
     bool magnify_;
+    QString settingsDir_;                 // where dock.txt is saved
     BackgroundEffect* effect_ = nullptr;
     bool blurOn_ = false;      // blur requested: draw the glass tint instead of the opaque shelf
     QRegion blurRegion_;
@@ -359,12 +434,34 @@ int main(int argc, char** argv) {
                 qPrintable(dir), apps.size(), tile, magnify ? "on" : "off", large, qPrintable(QIcon::themeName()));
     std::fflush(stdout);  // output goes to a file or pipe: without this the line would only appear on exit
 
-    DockWindow w(std::move(apps), tile, large, magnify);
+    DockWindow w(std::move(apps), tile, large, magnify, dir);
     if (const char* png = std::getenv("LIQUINIX_DOCK_PNG")) {  // test: draw into an image and exit (CI and checks)
         const char* mx = std::getenv("LIQUINIX_DOCK_PNG_MOUSE");
         bool ok = w.SavePng(QString::fromLocal8Bit(png), 1280, mx ? float(std::atof(mx)) : -1.f, 2.0);
         std::printf("liquinix-dock: image %s: %s\n", png, ok ? "ok" : "failed");
         return ok ? 0 : 1;
+    }
+    if (const char* script = std::getenv("LIQUINIX_DOCK_SCRIPT")) {
+        // test: real Qt mouse events from a script ("move x y; press; move x y; release"), on a window laid out by the
+        // platform (use QT_QPA_PLATFORM=offscreen); it paints between steps, then prints the pinned order and exits
+        w.resize(1280, w.WindowHeight());
+        w.show();
+        QPointF pos(-1, -1); Qt::MouseButtons buttons;
+        auto settle = [] { for (int i = 0; i < 6; i++) QCoreApplication::processEvents(QEventLoop::AllEvents, 20); };
+        settle();
+        for (const QString& step : QString::fromLocal8Bit(script).split(';', Qt::SkipEmptyParts)) {
+            QStringList p = step.simplified().split(' ');
+            QEvent::Type type = QEvent::MouseMove;
+            if (p[0] == QLatin1String("move") && p.size() == 3) pos = QPointF(p[1].toDouble(), p[2].toDouble());
+            else if (p[0] == QLatin1String("press")) { type = QEvent::MouseButtonPress; buttons = Qt::LeftButton; }
+            else if (p[0] == QLatin1String("release")) { type = QEvent::MouseButtonRelease; buttons = Qt::NoButton; }
+            else continue;
+            QMouseEvent ev(type, pos, w.mapToGlobal(pos), type == QEvent::MouseMove ? Qt::NoButton : Qt::LeftButton, buttons, Qt::NoModifier);
+            QCoreApplication::sendEvent(&w, &ev);
+            settle();
+        }
+        std::printf("liquinix-dock: pinned: %s\n", qPrintable(w.PinnedIds()));
+        return 0;
     }
     QSurfaceFormat fmt = w.format(); fmt.setAlphaBufferSize(8); w.setFormat(fmt);  // transparent background
     w.resize(1, w.WindowHeight());  // the width comes from the compositor (anchored left and right)

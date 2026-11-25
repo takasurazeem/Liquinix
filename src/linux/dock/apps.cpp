@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QLocale>
 #include <QProcess>
+#include <QSaveFile>
 #include <QStandardPaths>
 #include <QTextStream>
 
@@ -84,6 +85,17 @@ std::vector<DesktopApp> ReadPinned(const QString& dir) {
     std::vector<DesktopApp> r;
     for (const QString& id : ids) if (auto a = FindApp(id)) r.push_back(*a);
     return r;
+}
+
+bool WritePinned(const QString& dir, const std::vector<DesktopApp>& apps) {
+    QDir().mkpath(dir);
+    QSaveFile f(dir + QStringLiteral("/dock.txt"));  // written to a temporary file and renamed: never half a list
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) return false;
+    QTextStream out(&f);
+    out << "# Liquinix Dock pinned apps: one .desktop id per line (the file name without .desktop)\n";
+    for (const DesktopApp& a : apps) out << a.id << '\n';
+    out.flush();
+    return f.commit();
 }
 
 bool LaunchApp(const DesktopApp& app) {
