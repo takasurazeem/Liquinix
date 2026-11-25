@@ -72,8 +72,9 @@ bool TrashHasFiles() { return !QDir(TrashFilesDir()).isEmpty(QDir::AllEntries | 
 
 class DockWindow : public QRasterWindow {
 public:
-    DockWindow(std::vector<DesktopApp> apps, float tile, float large, bool magnify, QString settingsDir, bool bounce)
-        : apps_(std::move(apps)), tile_(tile), large_(large), magnify_(magnify), settingsDir_(std::move(settingsDir)), bounce_(bounce) {
+    DockWindow(std::vector<DesktopApp> apps, float tile, float large, bool magnify, QString settingsDir, bool bounce, bool autohide)
+        : apps_(std::move(apps)), tile_(tile), large_(large), magnify_(magnify), settingsDir_(std::move(settingsDir)), bounce_(bounce),
+          autohide_(autohide), reveal_(autohide ? 0.f : 1.f) {
         for (const DesktopApp& a : apps_)
             appIcons_.push_back(a.icon.startsWith('/') ? QIcon(a.icon) : QIcon::fromTheme(a.icon, QIcon::fromTheme(QStringLiteral("application-x-executable"))));
         BuildEntries();
@@ -134,13 +135,17 @@ protected:
         float target = mouseX_ >= 0 ? 1.f : 0.f;
         magAmt_ += (target - magAmt_) * (1 - std::exp(-dt / 0.05f));
         if (std::fabs(target - magAmt_) < 0.002f) magAmt_ = target;
+        // automatic hiding: slides in and out over 0.32 s (the Windows Dock's reveal, with the Mac's ease-in-out curve)
+        float shown = WantShown() ? 1.f : 0.f;
+        reveal_ = std::clamp(reveal_ + (shown > reveal_ ? dt : -dt) / 0.32f, 0.f, 1.f);
+        if (std::fabs(shown - reveal_) < 0.001f) reveal_ = shown;
         Layout(float(width()), float(height()));
         UpdateBlur();  // before drawing: KWin applies the new region with this frame's commit
         QPainter p(this);
         Draw(p, float(width()), float(height()));
         p.end();
         UpdateMask();
-        bool animating = magAmt_ != target || dragging_ || AnyBouncing(now);
+        bool animating = magAmt_ != target || dragging_ || AnyBouncing(now) || reveal_ != shown;
         if (animating) update(); else last_ = 0;  // another frame only while something still moves
     }
 
@@ -183,6 +188,7 @@ protected:
             p.fillRect(QRect(0, 0, width(), height()), Qt::transparent);
             p.setCompositionMode(QPainter::CompositionMode_SourceOver);
         }
+        if (reveal_ <= 0.f) return;  // hidden: nothing to draw (only the edge strip takes input)
         PainterQt pq(p);
         // the background: with KWin's blur behind it, the Windows Dock's Tahoe glass tint (measured on macOS 26: a 0.56
         // grey at 39% in light mode, 0.28 in dark mode); without blur, an opaque light shelf
@@ -234,7 +240,7 @@ protected:
     }
 
     bool event(QEvent* e) override {
-        if (e->type() == QEvent::Leave) { mouseX_ = -1; hover_ = -1; update(); }
+        if (e->type() == QEvent::Leave) { mouseX_ = -1; hover_ = -1; edgeTouched_ = false; update(); }
         return QRasterWindow::event(e);
     }
     void mousePressEvent(QMouseEvent* e) override {
@@ -245,6 +251,7 @@ protected:
     }
     void mouseMoveEvent(QMouseEvent* e) override {
         float x = float(e->position().x()), y = float(e->position().y());
+        if (autohide_ && y >= height() - 3) edgeTouched_ = true;  // the pointer reached the screen's bottom edge: come back
         if (pressIndex_ >= 0 && (e->buttons() & Qt::LeftButton)) {
             if (!dragging_ && QLineF(pressPos_, e->position()).length() > 6) { dragging_ = true; hover_ = -1; }
             if (dragging_) {  // the icon follows the pointer; well above the Dock it would be removed
@@ -261,6 +268,7 @@ protected:
         for (size_t i = 0; inside && i < items_.size(); i++)
             if (!items_[i].separator && std::fabs(x - items_[i].cx) <= Slot() * items_[i].size / tile_ / 2) h = int(i);
         hover_ = h;
+        if (!inside && y < height() - 3) edgeTouched_ = false;
         update();
     }
     void mouseReleaseEvent(QMouseEvent* e) override {
@@ -387,7 +395,9 @@ private:
             if (!previous.empty()) items_[i].cx = previous[i];
         }
         auto res = dock_layout::Compute(items_, LayoutParams(W));
-        float bottom = H - Margin();
+        // hidden by this much (the Windows Dock's formula: the shelf, the margin and 2 points more)
+        float hide = (1 - curves::EaseInOut(reveal_)) * (tile_ + PadTop() + PadBottom() + Margin() + 2);
+        float bottom = H - Margin() + hide;
         bg_ = drawing::Rect{ (W - res.total) / 2, bottom - (tile_ + PadTop() + PadBottom()), (W + res.total) / 2, bottom };
     }
     // launching: half an icon high hops of 620 ms (the Windows Dock's, curves::DockHop) for up to 8 s, until a window shows up
@@ -397,6 +407,8 @@ private:
         double now = platform::NowMs();
         return Bouncing(app, now) ? -curves::DockHop(now - launchedAt_[app], 620) * tile_ * 0.5f : 0.f;
     }
+    // automatic hiding: shown while the pointer is on the Dock or just touched the edge, while dragging, or with the menu open
+    bool WantShown() const { return !autohide_ || mouseX_ >= 0 || edgeTouched_ || dragging_ || (menu_ && menu_->isVisible()); }
     // the shared layout's inputs from the Dock's current state
     dock_layout::Params LayoutParams(float W) const {
         dock_layout::Params prm;
@@ -441,7 +453,7 @@ private:
         if (!effect_ || !effect_->BlurSupported()) { blurOn_ = false; return; }
         QPainterPath shape;
         shape.addRoundedRect(QRectF(bg_.left, bg_.top, bg_.right - bg_.left, bg_.bottom - bg_.top), Radius(), Radius());
-        QRegion region(shape.toFillPolygon().toPolygon());
+        QRegion region = reveal_ > 0.f ? QRegion(shape.toFillPolygon().toPolygon()) & QRegion(0, 0, width(), height()) : QRegion();
         if (region == blurRegion_) return;
         blurRegion_ = region;
         blurOn_ = effect_->SetBlurRegion(this, region);
@@ -449,7 +461,8 @@ private:
     // only the Dock takes the pointer; the rest of the strip lets clicks through to the windows below. With the pointer
     // on it, the area grows upwards (the magnified icons) and sideways.
     void UpdateMask() {
-        QRect r = mouseX_ >= 0 ? QRectF(bg_.left - large_, 0, bg_.right - bg_.left + 2 * large_, height()).toAlignedRect()
+        QRect r = autohide_ && reveal_ <= 0.f ? QRect(0, height() - 2, width(), 2)  // hidden: only the edge strip
+                : mouseX_ >= 0 ? QRectF(bg_.left - large_, 0, bg_.right - bg_.left + 2 * large_, height()).toAlignedRect()
                                : QRectF(bg_.left, bg_.top, bg_.right - bg_.left, bg_.bottom - bg_.top).toAlignedRect();
         if (r != mask_) { mask_ = r; setMask(QRegion(r)); }
     }
@@ -472,6 +485,9 @@ private:
     bool magnify_;
     QString settingsDir_;                 // where dock.txt is saved
     bool bounce_;                         // bounce launching apps (animar_abertura, on by default)
+    bool autohide_;                       // automatic hiding (ocultar=1)
+    float reveal_;                        // 0 = hidden, 1 = shown
+    bool edgeTouched_ = false;            // the pointer touched the bottom edge while hidden
     BackgroundEffect* effect_ = nullptr;
     bool blurOn_ = false;      // blur requested: draw the glass tint instead of the opaque shelf
     QRegion blurRegion_;
@@ -519,7 +535,8 @@ int main(int argc, char** argv) {
     std::fflush(stdout);  // output goes to a file or pipe: without this the line would only appear on exit
 
     bool bounce = settings["animar_abertura"] != QLatin1String("0");  // the Windows setting: on unless turned off
-    DockWindow w(std::move(apps), tile, large, magnify, dir, bounce);
+    bool autohide = !safeMode && settings["ocultar"] == QLatin1String("1");  // automatic hiding (the Windows setting)
+    DockWindow w(std::move(apps), tile, large, magnify, dir, bounce, autohide);
     if (const char* png = std::getenv("LIQUINIX_DOCK_PNG")) {  // test: draw into an image and exit (CI and checks)
         const char* mx = std::getenv("LIQUINIX_DOCK_PNG_MOUSE");
         bool ok = w.SavePng(QString::fromLocal8Bit(png), 1280, mx ? float(std::atof(mx)) : -1.f, 2.0);
@@ -540,6 +557,11 @@ int main(int argc, char** argv) {
             if (p[0] == QLatin1String("move") && p.size() == 3) pos = QPointF(p[1].toDouble(), p[2].toDouble());
             else if (p[0] == QLatin1String("press")) { type = QEvent::MouseButtonPress; buttons = Qt::LeftButton; }
             else if (p[0] == QLatin1String("release")) { type = QEvent::MouseButtonRelease; buttons = Qt::NoButton; }
+            else if (p[0] == QLatin1String("leave")) {  // the pointer leaves the window
+                QEvent leave(QEvent::Leave);
+                QCoreApplication::sendEvent(&w, &leave); settle();
+                continue;
+            }
             else if (p[0] == QLatin1String("rclick") && p.size() == 3) {  // a right click at x y (opens the menu)
                 pos = QPointF(p[1].toDouble(), p[2].toDouble());
                 QMouseEvent mv(QEvent::MouseMove, pos, w.mapToGlobal(pos), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
