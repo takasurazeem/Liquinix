@@ -283,6 +283,7 @@ static const wchar_t* MODE_ID[] = { L"completo", L"apps", L"barras", L"apps+barr
 struct Choices {
     Mode mode = M_FULL;
     bool autostart = true, cursor = true, fonts = true, assoc = false, launch = true;
+    bool dlFonts = false, dlSounds = false;  // baixar da Apple / do GitHub neste PC (o pacote não traz): só se a pessoa marcar
     bool delSettings = false, cleanCache = false;
 } g_ch;
 
@@ -408,6 +409,12 @@ static void RegisterUninstall() {
 }
 
 // O mesmo que o instalar.ps1. update = só os arquivos (o resto fica como estava).
+// tools\\baixar-apple.ps1 do pacote (ou da instalação): baixa no PC da pessoa o que é da Apple. Vazio se não houver.
+static wstring AppleScript() {
+    for (auto& p : { g_dest + L"\\tools\\baixar-apple.ps1", g_src + L"\\tools\\baixar-apple.ps1" }) if (Exists(p)) return p;
+    return L"";
+}
+
 static void DoInstall(bool update) {
     g_progress = 0.02f;
     if (!CloseEverything()) { g_workOk = false; g_workDone = true; return; }
@@ -445,23 +452,52 @@ static void DoInstall(bool update) {
             if (Lower(RegGetStr(HKEY_CURRENT_USER, wstring(L"Software\\Classes\\") + a.prog + L"\\shell\\open\\command", nullptr)).find(Lower(g_dest + L"\\bin\\")) != wstring::npos) AssocRegister(a);
         Status(T(L"Atualizado.", L"Updated.")); g_progress = 1; g_workOk = true; g_workDone = true; (void)shellWasOpen; return; }
     bool full = g_ch.mode == M_FULL, apps = g_ch.mode == M_APPS || g_ch.mode == M_APPSBARS, bars = g_ch.mode == M_BARS || g_ch.mode == M_APPSBARS;
-    // 3. fontes SF (só para este usuário)
-    if (g_ch.fonts && IsDir(g_src + L"\\fontes")) {
+    // 2b. o que é da Apple e não vem no pacote do GitHub, baixado aqui (tools\\baixar-apple.ps1, o mesmo do instalar.ps1):
+    // fontes SF do site da Apple e sons de alerta do repositório público extratone/macOSsystemsounds. O cursor fica
+    // para o instalar.cmd: o DeviantArt pede para clicar em Download na página, e esta janela não tem como esperar.
+    wstring baixar = AppleScript(), dlFontes;
+    if (!baixar.empty() && (g_ch.dlFonts || (full && g_ch.dlSounds))) {
+        wstring ps = Env(L"SystemRoot") + L"\\System32\\WindowsPowerShell\\v1.0\\powershell.exe";
+        wstring base = L"-NoProfile -ExecutionPolicy Bypass -File \"" + baixar + L"\"";
+        if (g_ch.dlFonts) {
+            Status(T(L"Baixando as fontes SF do site da Apple…", L"Downloading the SF fonts from Apple…")); g_progress = 0.74f;
+            dlFontes = Env(L"TEMP") + L"\\liquinix-apple-fontes";
+            RunWait(ps, base + L" -Fontes \"" + dlFontes + L"\"", 15 * 60000);
+            std::vector<wstring> got; if (IsDir(dlFontes)) ListFiles(dlFontes, L"", got);
+            Anota(L"fontes SF baixadas da Apple: " + std::to_wstring(got.size()));
+        }
+        if (full && g_ch.dlSounds) {
+            Status(T(L"Baixando os sons do macOS…", L"Downloading the macOS sounds…")); g_progress = 0.77f;
+            RunWait(ps, base + L" -Sons \"" + g_dest + L"\\sons\\mac\"", 5 * 60000);
+            std::vector<wstring> got; if (IsDir(g_dest + L"\\sons\\mac")) ListFiles(g_dest + L"\\sons\\mac", L"", got);
+            Anota(L"sons do macOS baixados em " + g_dest + L"\\sons\\mac: " + std::to_wstring(got.size()));
+        }
+    }
+    // 3. fontes SF (só para este usuário): as do pacote completo e as baixadas agora
+    std::vector<wstring> fontDirs;
+    if (g_ch.fonts && IsDir(g_src + L"\\fontes")) fontDirs.push_back(g_src + L"\\fontes");
+    if (!dlFontes.empty() && IsDir(dlFontes)) fontDirs.push_back(dlFontes);
+    if (!fontDirs.empty()) {
         Status(T(L"Instalando as fontes…", L"Installing fonts…"));
         wstring fdir = Env(L"LOCALAPPDATA") + L"\\Microsoft\\Windows\\Fonts"; MkDirs(fdir);
-        std::vector<wstring> fs; ListFiles(g_src + L"\\fontes", L"", fs);
         int n = 0;
-        for (auto& r : fs) {
-            wstring ext = Lower(ExtOf(r)); if (ext != L".otf" && ext != L".ttf") continue;
-            wstring alvo = fdir + L"\\" + Leaf(r);
-            if (!Exists(alvo) && CopyFileW((g_src + L"\\fontes\\" + r).c_str(), alvo.c_str(), TRUE)) Anota(L"fonte: " + alvo);
-            wstring base = Leaf(r); base = base.substr(0, base.find_last_of(L'.'));
-            wstring nome = base + (ext == L".otf" ? L" (OpenType)" : L" (TrueType)");
-            const wchar_t* fk = L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts";
-            if (RegGetStr(HKEY_CURRENT_USER, fk, nome.c_str()) != alvo) { RegSetStr(HKEY_CURRENT_USER, fk, nome.c_str(), alvo); Anota(L"registro: HKCU:\\" + wstring(fk) + L" | " + nome + L" = " + alvo); }
-            AddFontResourceW(alvo.c_str()); n++;
+        for (auto& from : fontDirs) {
+            std::vector<wstring> fs; ListFiles(from, L"", fs);
+            for (auto& r : fs) {
+                wstring ext = Lower(ExtOf(r)); if (ext != L".otf" && ext != L".ttf") continue;
+                wstring alvo = fdir + L"\\" + Leaf(r);
+                if (!Exists(alvo) && CopyFileW((from + L"\\" + r).c_str(), alvo.c_str(), TRUE)) Anota(L"fonte: " + alvo);
+                wstring base = Leaf(r); base = base.substr(0, base.find_last_of(L'.'));
+                wstring nome = base + (ext == L".otf" ? L" (OpenType)" : L" (TrueType)");
+                const wchar_t* fk = L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts";
+                if (RegGetStr(HKEY_CURRENT_USER, fk, nome.c_str()) != alvo) { RegSetStr(HKEY_CURRENT_USER, fk, nome.c_str(), alvo); Anota(L"registro: HKCU:\\" + wstring(fk) + L" | " + nome + L" = " + alvo); }
+                AddFontResourceW(alvo.c_str()); n++;
+            }
         }
         if (n) SendMessageTimeoutW(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, SMTO_ABORTIFHUNG, 1000, nullptr);
+    }
+    if (!dlFontes.empty() && IsDir(dlFontes)) {  // já copiadas para a pasta de fontes do usuário
+        wstring t2 = dlFontes; t2.push_back(0); SHFILEOPSTRUCTW o{}; o.wFunc = FO_DELETE; o.pFrom = t2.c_str(); o.fFlags = FOF_NO_UI; SHFileOperationW(&o);
     }
     g_progress = 0.8f;
     // 4. cursor do Mac (o anterior fica no log e o desinstalar devolve)
@@ -991,6 +1027,12 @@ static void Paint() {
         if (full || bars) { CheckBox(L, Y, full ? T(L"Abrir o Liquinix ao entrar no Windows", L"Open Liquinix when you sign in") : T(L"Ligar as barras de título ao entrar no Windows", L"Turn on the title bars when you sign in"), g_ch.autostart, B_CHK0); Y += 28; }
         if (full && IsDir(g_src + L"\\cursor")) { CheckBox(L, Y, T(L"Usar o cursor do Mac", L"Use the Mac cursor"), g_ch.cursor, B_CHK0 + 1); Y += 28; }
         if (IsDir(g_src + L"\\fontes")) { CheckBox(L, Y, T(L"Instalar as fontes SF Pro (o visual fica igual ao do Mac)", L"Install the SF Pro fonts (for the exact Mac look)"), g_ch.fonts, B_CHK0 + 2); Y += 28; }
+        // o pacote do GitHub não traz nada da Apple: oferece baixar neste PC (desmarcado; a pessoa escolhe)
+        bool dlF = !IsDir(g_src + L"\\fontes") && !AppleScript().empty(), dlS = full && !IsDir(g_src + L"\\sons\\mac") && !AppleScript().empty();
+        if (dlF) { CheckBox(L, Y, T(L"Baixar as fontes SF Pro e SF Mono do site da Apple", L"Download the SF Pro and SF Mono fonts from Apple"), g_ch.dlFonts, B_CHK0 + 4, Rr - L); Y += 28; }
+        if (dlS) { CheckBox(L, Y, T(L"Baixar os sons de alerta do macOS", L"Download the macOS alert sounds"), g_ch.dlSounds, B_CHK0 + 5, Rr - L); Y += 28; }
+        if (dlF || dlS) Para(T(L"Baixados neste PC: as fontes de developer.apple.com/fonts (licença da Apple; pode instalar o 7-Zip para abrir o arquivo) e os sons de github.com/extratone/macOSsystemsounds. São da Apple: uso pessoal. O cursor do Mac fica no instalar.cmd.",
+                               L"Downloaded on this PC: the fonts from developer.apple.com/fonts (Apple's license; may install 7-Zip to open them) and the sounds from github.com/extratone/macOSsystemsounds. They belong to Apple: personal use only. The Mac cursor is in instalar.cmd."), 11.5f, Fg2());
         if (g_ch.mode != M_BARS) { CheckBox(L, Y, T(L"Pôr o Música e o QuickTime em \"Abrir com\"", L"Add Music and QuickTime to \"Open with\""), g_ch.assoc, B_CHK0 + 3); Y += 28; }
         if (std::any_of(std::begin(OUR_PROCS), std::end(OUR_PROCS), [](const wchar_t* p) { return Running(p); }) || Running(L"LiquinixShell.exe"))
             Para(T(L"O Liquinix e os apps dele que estiverem abertos vão ser fechados durante a instalação.", L"Liquinix and its apps will be closed during installation."), 11.5f, Fg2());
@@ -1175,6 +1217,8 @@ static void Click(int id) {
     else if (id == B_CHK0 + 1) g_ch.cursor = !g_ch.cursor;
     else if (id == B_CHK0 + 2) g_ch.fonts = !g_ch.fonts;
     else if (id == B_CHK0 + 3) g_ch.assoc = !g_ch.assoc;
+    else if (id == B_CHK0 + 4) g_ch.dlFonts = !g_ch.dlFonts;
+    else if (id == B_CHK0 + 5) g_ch.dlSounds = !g_ch.dlSounds;
     else if (id == B_CHK0 + 4) g_ch.delSettings = !g_ch.delSettings;
     else if (id == B_CHK0 + 5) g_ch.cleanCache = !g_ch.cleanCache;
     else if (id == B_CHK0 + 6) g_ch.launch = !g_ch.launch;
