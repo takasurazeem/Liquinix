@@ -40,7 +40,7 @@ try {
         $dst = "$env:WINDIR\Web\Screen\macOS"
         New-Item -ItemType Directory -Force $dst | Out-Null
         Copy-Item C:\SequoiaMac\tahoe\* $dst -Force
-        $out.Add("papel dinâmico em $dst: " + ((Get-ChildItem $dst -Filter 'tahoe-*' | ForEach-Object Name) -join ', '))
+        $out.Add("papel dinâmico em ${dst}: " + ((Get-ChildItem $dst -Filter 'tahoe-*' | ForEach-Object Name) -join ', '))
     }
     $f = Get-Item $dll
     $out.Add("System32\AuthUX.dll: $($f.Length) bytes, $($f.LastWriteTime)")
