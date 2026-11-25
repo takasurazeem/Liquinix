@@ -39,7 +39,7 @@ toolbox enter liquinix
 
 # inside the toolbox:
 sudo dnf install gcc-c++ cmake ninja-build git wayland-devel wayland-protocols-devel \
-    layer-shell-qt-devel qt6-qtbase-devel qt6-qtdeclarative-devel  # adjust once the toolkit is chosen
+    layer-shell-qt-devel qt6-qtbase-devel qt6-qtdeclarative-devel  # Qt 6: see docs/linux-roadmap.md
 ```
 
 `sudo` inside the toolbox only changes the container. If an install goes wrong, start over with
