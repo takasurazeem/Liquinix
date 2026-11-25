@@ -31,6 +31,7 @@
 #include <windows.graphics.capture.interop.h>
 #include <windows.graphics.directx.direct3d11.interop.h>
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
@@ -1386,8 +1387,35 @@ struct Thumb {
 };
 static Thumb* g_thumb;
 
+// Quadros da miniatura no ritmo da tela: enquanto ela entra ou sai (fases 0 e 2), uma thread espera o DwmFlush e
+// manda WM_TH_FRAME (antes um SetTimer de 15 ms, ~64 Hz, que dava trancos a 120-174 Hz). Parada no lugar (fase 1),
+// basta um tique lento para o "some em 5 s".
+const UINT WM_TH_FRAME = WM_APP + 60;
+static std::atomic<HWND> g_thFrameWnd{ nullptr };
+static std::atomic<bool> g_thPending{ false };
+static HANDLE g_thWake;
+static void ThumbFrames(HWND h) {  // nullptr: para
+    if (h == g_thFrameWnd) return;
+    g_thPending = false;
+    g_thFrameWnd = h;
+    if (!h) return;
+    if (!g_thWake) {
+        g_thWake = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+        std::thread([] {
+            for (;;) {
+                if (!g_thFrameWnd) { WaitForSingleObject(g_thWake, INFINITE); continue; }
+                if (FAILED(DwmFlush())) Sleep(8);
+                HWND w = g_thFrameWnd;
+                if (w && !g_thPending.exchange(true) && !PostMessageW(w, WM_TH_FRAME, 0, 0)) g_thPending = false;
+            }
+        }).detach();
+    }
+    SetEvent(g_thWake);
+}
+
 static void DestroyThumb() {
     if (!g_thumb) return;
+    ThumbFrames(nullptr);
     g_thumb->L.Destroy();
     delete g_thumb; g_thumb = nullptr; g_thumbOn = false;
 }
@@ -1397,6 +1425,7 @@ static void DismissThumb() { DestroyThumb(); }
 static void ThumbOut() {
     if (!g_thumb || g_thumb->phase == 2) return;
     g_thumb->phase = 2; g_thumb->t0 = Now(); g_thumb->outFrom = g_thumb->off;
+    ThumbFrames(g_thumb->L.h);
 }
 
 static void ThumbPlace() {
@@ -1413,7 +1442,7 @@ static void ThumbTick() {
         float k = (float)std::min(1.0, (now - t.t0) / 300.0);
         float e = 1 - (1 - k) * (1 - k) * (1 - k);
         t.off = (1 - e) * 70 * t.sc; t.alpha = (BYTE)std::lround(255 * std::min(1.f, k * 1.6f));
-        if (k >= 1) { t.phase = 1; t.stayUntil = now + 5000; }
+        if (k >= 1) { t.phase = 1; t.stayUntil = now + 5000; ThumbFrames(nullptr); }
     } else if (t.phase == 1) {
         t.alpha = 255;
         if (!t.swipe) t.off = 0;
@@ -1498,7 +1527,8 @@ static LRESULT CALLBACK ThumbProc(HWND h, UINT m, WPARAM w, LPARAM l) {
     Thumb& t = *g_thumb;
     switch (m) {
     case WM_MOUSEACTIVATE: return MA_NOACTIVATE;
-    case WM_TIMER: ThumbTick(); return 0;
+    case WM_TIMER: if (t.phase == 1) ThumbTick(); return 0;  // parada: só confere se já é hora de sair
+    case WM_TH_FRAME: g_thPending = false; ThumbTick(); return 0;
     case WM_MOUSEMOVE: {
         if (!t.hover) { TRACKMOUSEEVENT tm{ sizeof(tm), TME_LEAVE, h, 0 }; TrackMouseEvent(&tm); t.hover = true; }
         if (t.down && t.phase != 2) {
@@ -1587,7 +1617,8 @@ static void ShowThumb(const Img& im, const std::wstring& path, const Mon& m) {
     t.home = { m.work.right - gap - (int)(t.margin + t.imgW), m.work.bottom - gap - (int)(t.margin + t.imgH) };
     t.phase = 0; t.t0 = Now(); t.off = 70 * t.sc; t.alpha = 0;
     ThumbPlace();
-    SetTimer(t.L.h, 1, 15, nullptr);
+    ThumbFrames(t.L.h);
+    SetTimer(t.L.h, 1, 100, nullptr);
     g_thumbOn = true;
 }
 

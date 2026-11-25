@@ -200,6 +200,8 @@ void CALLBACK OnEvent(HWINEVENTHOOK, DWORD ev, HWND h, LONG obj, LONG, DWORD, DW
         g_drag = h;
         GetWindowRect(h, &g_start);
         Hide();
+        // SetTimer de propósito: só confere onde está o ponteiro enquanto arrasta (o contorno do encaixe aparece
+        // inteiro, sem animação); não há quadros a acompanhar
         g_timer = SetTimer(nullptr, 0, 15, TimerProc);
     } else if (ev == EVENT_SYSTEM_MOVESIZEEND) {
         if (h != g_drag) return;

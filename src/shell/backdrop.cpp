@@ -494,7 +494,9 @@ LRESULT CALLBACK MsgProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         else SetTimer(h, T_RG + 1, soPapel ? 33 : 16, nullptr);  // cedo demais: monta no próximo tique (uma vez só)
         return 0;
     }
-    // o que ficou pendente; o temporizador só existe enquanto há algo (antes acordava 60 vezes/s sempre)
+    // o que ficou pendente; o temporizador só existe enquanto há algo (antes acordava 60 vezes/s sempre).
+    // SetTimer de propósito: os quadros vêm da captura (WM_RG_FRAME); o temporizador só limita a montagem a ~60/s,
+    // porque cada montagem copia as janelas de trás (o vidro em cima anima pelo compositor)
     if (m == WM_TIMER && w == T_RG + 1) {
         KillTimer(h, T_RG + 1);
         st_nonDesk = false;
