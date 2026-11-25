@@ -52,6 +52,7 @@ the order changes, update both.
 | 16 | [#14](https://github.com/takasurazeem/Liquinix/issues/14) | Move the Calculator's key animation off `SetTimer` | P3 | none | Windows to verify |
 | 17 | [#33](https://github.com/takasurazeem/Liquinix/issues/33) | Move the remaining `SetTimer` animations onto the display clock | P3 | #14 | Windows to verify |
 | 18 | [#13](https://github.com/takasurazeem/Liquinix/issues/13) | Update `docs/BRIEFING.md` for the fork | P3 | none | Any |
+| 19 | [#50](https://github.com/takasurazeem/Liquinix/issues/50) | Use English names and comments in the code | P3 | none | Any (part 2 needs a decision from the user) |
 
 **Why this order:**
 - **1–6 make a clean first release possible:**
