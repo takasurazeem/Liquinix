@@ -57,6 +57,7 @@ std::optional<AppDesktop> AcharApp(const QString& id) {
     a.nome = Localizado(m, QStringLiteral("Name"));
     a.icone = m.value(QStringLiteral("Icon"));
     a.exec = SemCodigos(m.value(QStringLiteral("Exec")));
+    a.wmClass = m.value(QStringLiteral("StartupWMClass"));
     if (a.exec.isEmpty()) return std::nullopt;
     return a;
 }
@@ -90,4 +91,10 @@ bool AbrirApp(const AppDesktop& app) {
     if (partes.isEmpty()) return false;
     QString programa = partes.takeFirst();
     return QProcess::startDetached(programa, partes);
+}
+
+bool WindowBelongsTo(const AppDesktop& app, const QString& appId) {
+    if (appId.isEmpty()) return false;
+    auto same = [&](const QString& x) { return !x.isEmpty() && x.compare(appId, Qt::CaseInsensitive) == 0; };
+    return same(app.id) || same(app.wmClass) || same(app.id.section('.', -1));
 }

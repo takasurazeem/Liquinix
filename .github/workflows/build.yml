@@ -46,8 +46,8 @@ jobs:
     # Fedora 44: the same packages as the toolbox in docs/linux-dev.md. Pinned by digest, like the actions.
     container: registry.fedoraproject.org/fedora@sha256:68b5ed88f893d3456ddf118b4890cbd6221029d90b20708f34dc9cdc03f4cc13  # fedora:44
     steps:
-      - name: Install build tools, Qt 6, layer-shell-qt and KWin
-        run: dnf install -y -q git gcc-c++ cmake ninja-build qt6-qtbase-devel layer-shell-qt-devel kwin dbus-daemon
+      - name: Install build tools, Qt 6, layer-shell-qt, Plasma protocols and KWin
+        run: dnf install -y -q git gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtwayland-devel layer-shell-qt-devel plasma-wayland-protocols-devel kwin dbus-daemon
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

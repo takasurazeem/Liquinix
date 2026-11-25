@@ -13,7 +13,12 @@ struct AppDesktop {
     QString icone;    // Icon: nome no tema de ícones ou caminho absoluto
     QString exec;     // Exec, sem os códigos de campo (%f, %U...)
     QString arquivo;  // caminho do .desktop
+    QString wmClass;  // StartupWMClass: the windows' app_id when it isn't the .desktop id
 };
+
+// Does a window (by its Wayland app_id) belong to this app? Compares, ignoring case, with the .desktop id, its last
+// part (org.kde.dolphin -> dolphin) and StartupWMClass.
+bool WindowBelongsTo(const AppDesktop& app, const QString& appId);
 
 // procura o .desktop pelo id; vazio se não existir, se estiver escondido (NoDisplay/Hidden) ou não for um app
 std::optional<AppDesktop> AcharApp(const QString& id);
