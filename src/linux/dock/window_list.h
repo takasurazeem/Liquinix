@@ -23,6 +23,8 @@ public:
     QStringList AppIds() const;
     // brings the most recent window whose app_id `belongs` accepts to the front (and out of minimized)
     bool Activate(const std::function<bool(const QString&)>& belongs);
+    // asks every window whose app_id `belongs` accepts to close (the app may still ask to save); returns how many
+    int CloseAll(const std::function<bool(const QString&)>& belongs);
 
 signals:
     void Changed();  // a window opened or closed, or changed its app_id or state

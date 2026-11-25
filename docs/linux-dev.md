@@ -72,7 +72,8 @@ on first run. `LIQUINIX_DOCK_PNG=dock.png` draws the Dock into an image and exit
 
 `LIQUINIX_DOCK_SCRIPT="move 501 140; press; move 580 140; release"` (with `QT_QPA_PLATFORM=offscreen`) sends
 those mouse events to the Dock, prints the pinned order and exits: a way to test dragging without a screen. A press and
-release without moving is a real click and launches the app. `tools/linux/ci-dock-tests.sh ./build/liquinix-dock` runs
+release without moving is a real click and launches the app. `rclick x y` opens the right-click menu, `menu <label>`
+picks an item, `wait <ms>` lets animations run, and `png <file>` / `menupng <file> <y>` save pictures. `tools/linux/ci-dock-tests.sh ./build/liquinix-dock` runs
 the CI's behaviour tests that way (dragging to reorder and unpin, saving `dock.txt`, the launch bounce), with fake apps
 that launch nothing.
 
