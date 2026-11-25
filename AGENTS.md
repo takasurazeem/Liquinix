@@ -69,6 +69,10 @@ or run (for example, Windows code edited from Linux).
 - `src/janelas`: Mac title bars injected into other apps' windows; `src/titulos`: those title bars without the shell.
 - `src/menu`: context menus over the real Windows shell extensions. `src/dialogo`: the Mac Open/Save dialog.
 - `src/comum`: shared code (program names in `nomes.h`, language, glass, shadows, SF Symbols drawing).
+- `src/nucleo`: code with nothing platform-specific in it, for Windows and Linux alike (animation curves, the Dock's
+  magnification). Standard C++ only.
+- `src/plataforma`: platform services behind a small interface (`plataforma.h`: clock, settings folder), with a
+  `win/` and a `linux/` backend. See the `liquinix-platform-layer` skill.
 - `src/setup`: the installer app. `instalador/`: install, update and uninstall scripts.
 - `tools/`: build, resource, icon and packaging scripts.
 - `icones/tahoe`: the only bundled icons (MacTahoe icon theme by vinceliuice, GPL-3.0). The code also looks for

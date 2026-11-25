@@ -150,7 +150,8 @@ if /i "%1"=="apps" exit /b 0
 :shell
 rem /Zi + /DEBUG: simbolos em bin\obj\LiquinixShell.pdb (perfil de CPU e falhas); /OPT:REF,ICF mantem o exe enxuto
 rem /PDBALTPATH: o exe guarda so o nome do .pdb, nao o caminho deste PC (C:\Users\<nome>\... iria na release)
-cl %CFLAGS% /Zi /Fd:bin\obj\shell.pdb src\shell\*.cpp bin\obj\context_menu.obj %RES%\LiquinixShell.res /Fe:bin\LiquinixShell.exe %LFLAGS% version.lib wlanapi.lib powrprof.lib propsys.lib windowscodecs.lib d3d11.lib dxgi.lib dcomp.lib dxguid.lib /DEBUG /OPT:REF /OPT:ICF /PDB:bin\obj\LiquinixShell.pdb /PDBALTPATH:%%_PDB%% || exit /b 1
+rem src\nucleo: codigo sem nada do Windows (curvas...); src\plataforma\win: o backend Windows da plataforma (#19)
+cl %CFLAGS% /Zi /Fd:bin\obj\shell.pdb src\shell\*.cpp src\nucleo\*.cpp src\plataforma\win\*.cpp bin\obj\context_menu.obj %RES%\LiquinixShell.res /Fe:bin\LiquinixShell.exe %LFLAGS% version.lib wlanapi.lib powrprof.lib propsys.lib windowscodecs.lib d3d11.lib dxgi.lib dcomp.lib dxguid.lib /DEBUG /OPT:REF /OPT:ICF /PDB:bin\obj\LiquinixShell.pdb /PDBALTPATH:%%_PDB%% || exit /b 1
 call :setup || exit /b 1
 exit /b 0
 

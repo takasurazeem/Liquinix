@@ -4,6 +4,7 @@
 #include "shell.h"
 #include "../comum/simbolos.h"
 #include "../menu/context_menu.h"
+#include "../plataforma/plataforma.h"
 #include <shlobj.h>
 #include <share.h>
 #include <cstdarg>
@@ -292,9 +293,7 @@ std::wstring shell::Setting(const wchar_t* key, const wchar_t* def) {
 }
 
 static std::wstring SettingsPath() {
-    PWSTR p = nullptr;
-    std::wstring f;
-    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &p))) { f = std::wstring(p) + L"\\Shell"; CoTaskMemFree(p); }
+    std::wstring f = plataforma::PastaAjustes();
     CreateDirectoryW(f.c_str(), nullptr);
     return f + L"\\ajustes.txt";
 }
@@ -348,10 +347,9 @@ void shell::OpenSettings(const std::wstring& page) {
 }
 
 static void LoadSettings() {
-    PWSTR p = nullptr;
-    if (FAILED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &p))) return;
-    std::wstring f = std::wstring(p) + L"\\Shell\\ajustes.txt";
-    CoTaskMemFree(p);
+    std::wstring pasta = plataforma::PastaAjustes();
+    if (pasta.empty()) return;
+    std::wstring f = pasta + L"\\ajustes.txt";
     FILE* fp = nullptr;
     if (_wfopen_s(&fp, f.c_str(), L"r, ccs=UTF-8") || !fp) return;
     wchar_t line[512];
