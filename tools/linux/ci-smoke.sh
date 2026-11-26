@@ -101,6 +101,16 @@ if [[ -x "$TESTWIN" ]]; then
     check "its icon goes when it closes"               'liquinix-dock: open, not pinned: \(none\)'
     kill "$TESTPID" 2>/dev/null; wait "$TESTPID" 2>/dev/null
 
+    # A minimized window gets a slot between Downloads and the Trash (labelled with its title); a click restores it
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland "$TESTWIN" >/dev/null 2>&1 & TESTPID=$!
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland XDG_DATA_HOME="$APPS/data" XDG_CONFIG_HOME="$APPS/config" LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+        LIQUINIX_DOCK_SCRIPT="wait 2000; rclick 577 140; menu Hide; wait 1000; click Liquinix test window; wait 1000" timeout 30 "$DOCK" >"$LOGS/min.log" 2>&1
+    log="$LOGS/min.log"
+    check "a minimized window gets a slot"            'liquinix-dock: minimized: 1 window'
+    check "a click on it restores the window"         'liquinix-dock: restore "Liquinix test window": ok'
+    check "the slot goes once it's restored"          'liquinix-dock: minimized: 0 window'
+    kill "$TESTPID" 2>/dev/null; wait "$TESTPID" 2>/dev/null
+
     WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland "$TESTWIN" >/dev/null 2>&1 & TESTPID=$!
     WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland XDG_DATA_HOME="$APPS/data" XDG_CONFIG_HOME="$APPS/config" LANG=C.UTF-8 LC_ALL=C.UTF-8 \
         LIQUINIX_DOCK_SCRIPT="wait 2000; rclick 577 140; menu Keep in Dock; wait 500" timeout 30 "$DOCK" >"$LOGS/keep.log" 2>&1
@@ -109,7 +119,7 @@ if [[ -x "$TESTWIN" ]]; then
     saved=$(grep -v '^#' "$APPS/config/liquinix/dock.txt" | tr '\n' ' ' | xargs)  # the pinned ids, without the comment line
     if [[ "$saved" == "liquinix-test-window" ]]; then echo "ok   and saves it to dock.txt"; else echo "FAIL and saves it to dock.txt: got '$saved'"; fail=1; fi
     kill "$TESTPID" 2>/dev/null; wait "$TESTPID" 2>/dev/null
-    for l in "$LOGS/open.log" "$LOGS/keep.log"; do
+    for l in "$LOGS/open.log" "$LOGS/min.log" "$LOGS/keep.log"; do
         if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$l"; then
             echo "FAIL sanitizer reports ($(basename "$l"))"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$l" | head -40; fail=1
         fi

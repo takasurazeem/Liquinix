@@ -28,6 +28,9 @@ public:
     // the windows whose app_id `belongs` accepts (taskbar ones), oldest first: their titles and a key for ActivateWindow
     struct Info { QString title; quintptr key; };
     std::vector<Info> Windows(const std::function<bool(const QString&)>& belongs) const;
+    // every taskbar window, oldest first (for the Dock's minimized windows)
+    struct Window { QString appId, title; quintptr key; bool minimized; };
+    std::vector<Window> All() const;
     // brings one window (a key from Windows()) to the front; false if it has closed since
     bool ActivateWindow(quintptr key);
     // minimizes every window whose app_id `belongs` accepts (Hide); returns how many

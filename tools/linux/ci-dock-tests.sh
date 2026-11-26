@@ -121,6 +121,12 @@ check "Open at Login adds an autostart entry" "$(grep -c '^Exec=true$' "$XDG_CON
 LIQUINIX_DOCK_SCRIPT="rclick 501 140; menu Open at Login" timeout 60 "$DOCK" >>"$DIR/all.log" 2>&1
 check "and turning it off removes it" "$([[ -e "$XDG_CONFIG_HOME/autostart/fake-a.desktop" ]] && echo present || echo gone)" "gone"
 
+# dock_downloads=0 takes Downloads out of the Dock (the Windows key)
+printf 'tamanho=48\nampliacao=0\ndock_downloads=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+reset; check "dock_downloads=0: no Downloads" "$(LIQUINIX_DOCK_SCRIPT="click Downloads" timeout 60 "$DOCK" 2>&1 | tee -a "$DIR/all.log" | grep -c 'click "Downloads": not found')" "1"
+printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+reset; check "Downloads is there by default" "$(LIQUINIX_DOCK_SCRIPT="click Downloads" timeout 60 "$DOCK" 2>&1 | tee -a "$DIR/all.log" | grep -c 'click "Downloads": done')" "1"
+
 # a sanitized build reports memory errors, leaks and undefined behaviour in the output: any of those fails the run
 if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log"; then
     echo "FAIL sanitizer reports:"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log" | head -60; fail=1
