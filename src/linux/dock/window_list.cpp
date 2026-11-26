@@ -84,3 +84,13 @@ std::vector<WindowList::Window> WindowList::All() const {
             r.push_back({ w->appId, w->title, reinterpret_cast<quintptr>(w.get()), bool(w->state & org_kde_plasma_window_management::state_minimized) });
     return r;
 }
+
+bool WindowList::Covers(const QRect& area, const QString& desktop, const std::function<bool(const QString&)>& ignore) const {
+    using M = org_kde_plasma_window_management;
+    for (auto& w : windows_) {
+        if (!w->ready || (w->state & (M::state_skiptaskbar | M::state_minimized)) || ignore(w->appId)) continue;
+        bool here = desktop.isEmpty() || (w->state & M::state_on_all_desktops) || w->desktops.isEmpty() || w->desktops.contains(desktop);
+        if (here && w->geometry.intersects(area)) return true;
+    }
+    return false;
+}

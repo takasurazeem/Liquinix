@@ -111,6 +111,27 @@ if [[ -x "$TESTWIN" ]]; then
     check "the slot goes once it's restored"          'liquinix-dock: minimized: 0 window'
     kill "$TESTPID" 2>/dev/null; wait "$TESTPID" 2>/dev/null
 
+    # Smart hiding (ocultar=inteligente): a maximized window covers the Dock, which hides; once it's minimized, it's back
+    printf 'tamanho=48\nampliacao=0\nanimar_abertura=0\nocultar=inteligente\n' > "$APPS/config/liquinix/ajustes.txt"
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland "$TESTWIN" --maximized --minimize-after 3000 >/dev/null 2>&1 & TESTPID=$!
+    sleep 1
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland XDG_DATA_HOME="$APPS/data" XDG_CONFIG_HOME="$APPS/config" LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+        LIQUINIX_DOCK_SCRIPT="wait 4500" timeout 30 "$DOCK" >"$LOGS/smart.log" 2>&1
+    log="$LOGS/smart.log"
+    check "smart hiding: a maximized window hides the Dock" 'liquinix-dock: covered: yes'
+    check "smart hiding: it comes back when that's minimized" 'liquinix-dock: covered: no'
+    kill "$TESTPID" 2>/dev/null; wait "$TESTPID" 2>/dev/null
+    # and an ordinary window away from the bottom (KWin places the 320x200 test window centred) doesn't hide it
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland "$TESTWIN" >/dev/null 2>&1 & TESTPID=$!
+    sleep 1
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland XDG_DATA_HOME="$APPS/data" XDG_CONFIG_HOME="$APPS/config" LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+        LIQUINIX_DOCK_SCRIPT="wait 2500" timeout 30 "$DOCK" >"$LOGS/smart2.log" 2>&1
+    if grep -q 'liquinix-dock: running: liquinix-test-window' "$LOGS/smart2.log" && ! grep -q 'covered: yes' "$LOGS/smart2.log"; then
+        echo "ok   smart hiding: a window away from the Dock doesn't hide it"
+    else echo "FAIL smart hiding: a window away from the Dock doesn't hide it"; fail=1; fi
+    kill "$TESTPID" 2>/dev/null; wait "$TESTPID" 2>/dev/null
+    printf 'tamanho=48\nampliacao=0\nanimar_abertura=0\n' > "$APPS/config/liquinix/ajustes.txt"
+
     WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland "$TESTWIN" >/dev/null 2>&1 & TESTPID=$!
     WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland XDG_DATA_HOME="$APPS/data" XDG_CONFIG_HOME="$APPS/config" LANG=C.UTF-8 LC_ALL=C.UTF-8 \
         LIQUINIX_DOCK_SCRIPT="wait 2000; rclick 577 140; menu Keep in Dock; wait 500" timeout 30 "$DOCK" >"$LOGS/keep.log" 2>&1
@@ -119,7 +140,7 @@ if [[ -x "$TESTWIN" ]]; then
     saved=$(grep -v '^#' "$APPS/config/liquinix/dock.txt" | tr '\n' ' ' | xargs)  # the pinned ids, without the comment line
     if [[ "$saved" == "liquinix-test-window" ]]; then echo "ok   and saves it to dock.txt"; else echo "FAIL and saves it to dock.txt: got '$saved'"; fail=1; fi
     kill "$TESTPID" 2>/dev/null; wait "$TESTPID" 2>/dev/null
-    for l in "$LOGS/open.log" "$LOGS/min.log" "$LOGS/keep.log"; do
+    for l in "$LOGS/open.log" "$LOGS/min.log" "$LOGS/smart.log" "$LOGS/smart2.log" "$LOGS/keep.log"; do
         if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$l"; then
             echo "FAIL sanitizer reports ($(basename "$l"))"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$l" | head -40; fail=1
         fi
