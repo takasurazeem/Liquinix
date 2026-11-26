@@ -65,6 +65,10 @@ it. It passes if the Dock got its layer-shell surface and drew a frame, and if, 
 window built for the tests) pinned, it launches that app, sees it running, brings it to the front and quits it.
 Run it on the host: the toolbox has no KWin.
 
+Apps' notification badges come from the `com.canonical.Unity.LauncherEntry` D-Bus signal on the session bus (what
+Telegram, Thunderbird and others send). To try one by hand:
+`gdbus emit --session --object-path /test --signal com.canonical.Unity.LauncherEntry.Update "'application://org.kde.konsole.desktop'" "{'count': <int64 3>, 'count-visible': <true>}"`.
+
 `liquinix-dock` reads the same `ajustes.txt` keys as the Windows Dock (`tamanho`, `ampliacao`,
 `ampliacao_tamanho`, `animar_abertura`, `ocultar`, `dock_posicao`, `pilha_exibir`, `idioma`; without `idioma` it
 follows the system language) from `$XDG_CONFIG_HOME/liquinix/`, plus `tema_icones` (an icon theme name such as

@@ -7,8 +7,10 @@
 #include "background_effect.h"
 #include "dock_menu.h"
 #include "dock_stack.h"
+#include "launcher_entries.h"
 #include "window_list.h"
 #include "core/curves.h"
+#include "core/dock_drawing.h"
 #include "core/translate.h"
 #include "core/dock_layout.h"
 #include "platform/linux/painter_qt.h"
@@ -146,6 +148,11 @@ public:
         QObject::connect(list, &WindowList::activeChanged, report);
         report();  // it may have connected already, before this signal was hooked up
     }
+    // Apps' notification counts from the session bus (the badges)
+    void ConnectBadges(LauncherEntries* badges) {
+        badges_ = badges;
+        QObject::connect(badges, &LauncherEntries::Changed, [this] { update(); });
+    }
     // The compositor's blur behind the shelf (Wayland only, not in safe mode)
     void ConnectBackgroundEffect(BackgroundEffect* effect) {
         effect_ = effect;
@@ -280,6 +287,16 @@ protected:
             if (entries_[i].kind == Entry::App && running_[entries_[i].app]) {  // running: Tahoe's small dot, a little above the edge (the same as on Windows)
                 float dotR = std::max(1.25f, tile_ * 0.028f), dotY = bg_.bottom - tile_ * 0.088f;
                 pq.FillRoundedRect(drawing::Rect{ cx - dotR, dotY - dotR, cx + dotR, dotY + dotR }, dotR, drawing::Color{ 0.05f, 0.07f, 0.20f, 0.85f });
+            }
+            if (entries_[i].kind == Entry::App && badges_) if (int n = badges_->Count(apps_[entries_[i].app].id)) {
+                // the red count at the icon's top-right, upright; Mac-style themes draw the body at 80% of the icon, as
+                // the Windows Dock's bundled icons do
+                QString theme = QIcon::themeName();
+                bool macStyle = theme.contains(QLatin1String("tahoe"), Qt::CaseInsensitive) || theme.contains(QLatin1String("whitesur"), Qt::CaseInsensitive);
+                float m = macStyle ? float(r.width()) * 0.10f : 0;
+                p.resetTransform();
+                dock_drawing::Badge(pq, drawing::Rect{ float(r.left()) + m, float(r.top()) + m, float(r.right()) - m, float(r.bottom()) - m }, n);
+                p.setTransform(T);
             }
         }
         if (dragging_ && pressIndex_ >= 0) {  // the dragged icon at the pointer; faded once it's far enough out to be removed
@@ -648,6 +665,7 @@ private:
     bool trashFull_ = false;
     std::vector<dock_layout::Item> items_;
     std::vector<bool> running_;           // per pinned app: has an open window
+    LauncherEntries* badges_ = nullptr;   // apps' notification counts (null without a session bus)
     std::vector<double> launchedAt_;      // per pinned app: when it was launched (NowMs), 0 = not bouncing
     WindowList* windowList_ = nullptr;
     float tile_, large_;
@@ -700,6 +718,8 @@ int main(int argc, char** argv) {
     std::fflush(stdout);  // output goes to a file or pipe: without this the line would only appear on exit
 
     DockWindow w(std::move(apps), st, dir, safeMode);
+    LauncherEntries badges;  // apps' notification counts: any platform with a session bus
+    if (badges.Connected()) w.ConnectBadges(&badges);
     // Plasma's window list and the compositor's blur (Wayland only): created before the test modes, so a scripted run
     // inside a (nested) KWin exercises the running dots, bringing to front and Quit for real
     std::unique_ptr<WindowList> windowList;
