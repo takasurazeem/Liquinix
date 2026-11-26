@@ -1,7 +1,8 @@
 # On every commit to main and every pull request into main: checks that Liquinix builds.
 #   windows: build.cmd plus the 32/64-bit title bar DLLs.
-#   linux:   the CMake build (Qt 6, layer-shell-qt) in a Fedora 44 container, then a smoke test of liquinix-dock in a
-#            headless KWin (tools/linux/ci-smoke.sh).
+#   linux:   the CMake build (Qt 6, layer-shell-qt) in a Fedora 44 container, a smoke test of liquinix-dock in a
+#            headless KWin (tools/linux/ci-smoke.sh), its behaviour tests (ci-dock-tests.sh), both again under
+#            AddressSanitizer and UBSan, and pictures of the Dock.
 # Skipped when a push or pull request only changes docs (Markdown, docs/, .claude/); run it by hand to build anyway.
 # Releases are published with tools\publicar.ps1. They never carry Apple's fonts, sounds or cursors: the installer
 # downloads those on the user's PC.
@@ -47,7 +48,7 @@ jobs:
     container: registry.fedoraproject.org/fedora@sha256:68b5ed88f893d3456ddf118b4890cbd6221029d90b20708f34dc9cdc03f4cc13  # fedora:44
     steps:
       - name: Install build tools, Qt 6, layer-shell-qt, Plasma protocols and KWin
-        run: dnf install -y -q git gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtwayland-devel qt6-qtbase-private-devel wayland-protocols-devel layer-shell-qt-devel plasma-wayland-protocols-devel kwin dbus-daemon
+        run: dnf install -y -q git gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtwayland-devel qt6-qtbase-private-devel wayland-protocols-devel layer-shell-qt-devel plasma-wayland-protocols-devel kwin dbus-daemon libasan libubsan
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -64,6 +65,19 @@ jobs:
       # dragging to reorder or unpin, saving dock.txt, the launch bounce (scripted mouse events, no screen)
       - name: Dock behaviour tests
         run: tools/linux/ci-dock-tests.sh ./build/liquinix-dock
+
+      # the same tests on a build with AddressSanitizer and UBSan: memory errors, leaks and undefined behaviour fail the job
+      - name: Build with sanitizers
+        run: |
+          cmake -B build-asan -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          ninja -C build-asan
+
+      - name: Tests under sanitizers
+        env:
+          UBSAN_OPTIONS: print_stacktrace=1
+        run: |
+          tools/linux/ci-smoke.sh ./build-asan/liquinix-dock
+          tools/linux/ci-dock-tests.sh ./build-asan/liquinix-dock
 
       # the Dock drawn into an image (at rest and magnified), to look at from the run's page
       - name: Render the Dock

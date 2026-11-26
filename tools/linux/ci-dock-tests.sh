@@ -25,7 +25,8 @@ done
 printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
 reset() { printf 'fake-a\nfake-b\nfake-c\nfake-d\n' > "$XDG_CONFIG_HOME/liquinix/dock.txt"; }
 saved() { grep -v '^#' "$XDG_CONFIG_HOME/liquinix/dock.txt" | paste -sd, -; }
-run() { LIQUINIX_DOCK_SCRIPT="$1" timeout 60 "$DOCK" 2>&1 | sed -n 's/^liquinix-dock: pinned: //p' | tr -d ' '; }
+# every run's full output also goes to all.log: sanitizer reports (a sanitized build in CI) fail the tests at the end
+run() { LIQUINIX_DOCK_SCRIPT="$1" timeout 60 "$DOCK" 2>&1 | tee -a "$DIR/all.log" | sed -n 's/^liquinix-dock: pinned: //p' | tr -d ' '; }
 fail=0
 check() { if [[ "$2" == "$3" ]]; then echo "ok   $1"; else echo "FAIL $1: got '$2', expected '$3'"; fail=1; fi; }
 
@@ -42,7 +43,7 @@ check "the unpinned app is gone from dock.txt" "$(saved)" "fake-b,fake-c,fake-d"
 # the right-click menu: Remove from Dock unpins; Open launches
 reset; got=$(run "rclick 552 140; menu Remove from Dock")
 check "right-click > Remove from Dock unpins the app" "$got" "fake-a,fake-c,fake-d"
-reset; launched=$(LIQUINIX_DOCK_SCRIPT="rclick 501 140; menu Open" timeout 60 "$DOCK" 2>&1 | grep -c "launch fake-a (true): ok")
+reset; launched=$(LIQUINIX_DOCK_SCRIPT="rclick 501 140; menu Open" timeout 60 "$DOCK" 2>&1 | tee -a "$DIR/all.log" | grep -c "launch fake-a (true): ok")
 check "right-click > Open launches the app" "$launched" "1"
 
 # a click bounces the icon (Exec=true never opens a window, so it bounces for the full 8 s), then it stops. The resting
@@ -62,9 +63,15 @@ printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
 reset; out=$( ( sleep 0.8; printf 'tamanho=64\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.new" \
               && mv "$XDG_CONFIG_HOME/liquinix/ajustes.new" "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
               printf 'fake-d\nfake-a\n' > "$XDG_CONFIG_HOME/liquinix/dock.txt" ) &
-       LIQUINIX_DOCK_SCRIPT="wait 2000" timeout 60 "$DOCK" 2>&1; wait )
+       LIQUINIX_DOCK_SCRIPT="wait 2000" timeout 60 "$DOCK" 2>&1 | tee -a "$DIR/all.log"; wait )
 check "settings applied live: new icon size" "$(grep -c 'settings reloaded: icon 64' <<<"$out")" "1"
 check "settings applied live: new pinned list" "$(sed -n 's/^liquinix-dock: pinned: //p' <<<"$out" | tr -d ' ')" "fake-d,fake-a"
 printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
 
+# a sanitized build reports memory errors, leaks and undefined behaviour in the output: any of those fails the run
+if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log"; then
+    echo "FAIL sanitizer reports:"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log" | head -60; fail=1
+else
+    echo "ok   no sanitizer reports"
+fi
 exit $fail
