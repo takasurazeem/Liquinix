@@ -351,7 +351,9 @@ protected:
 
 public:
     // LIQUINIX_DOCK_SCRIPT's "menu <label>": picks an item of the open right-click menu
-    bool ChooseMenu(const QString& label) { return menu_ && menu_->isVisible() && menu_->Choose(label); }
+    // LIQUINIX_DOCK_SCRIPT only: picks from the last menu's items even when the compositor didn't map the popup (a
+    // synthetic click has no input serial, so KWin refuses an xdg_popup from it); the action itself runs for real
+    bool ChooseMenu(const QString& label) { return menu_ && menu_->Choose(label); }
     bool ChooseStack(const QString& name) { return stack_popup_ && stack_popup_->isVisible() && stack_popup_->Choose(name); }
     bool StackPng(const QString& file) { return stack_popup_ && stack_popup_->isVisible() && stack_popup_->SavePng(file); }
     bool MenuPng(const QString& file, int hoverY) {
@@ -698,6 +700,14 @@ int main(int argc, char** argv) {
     std::fflush(stdout);  // output goes to a file or pipe: without this the line would only appear on exit
 
     DockWindow w(std::move(apps), st, dir, safeMode);
+    // Plasma's window list and the compositor's blur (Wayland only): created before the test modes, so a scripted run
+    // inside a (nested) KWin exercises the running dots, bringing to front and Quit for real
+    std::unique_ptr<WindowList> windowList;
+    std::unique_ptr<BackgroundEffect> effect;
+    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"))) {
+        windowList = std::make_unique<WindowList>(); w.ConnectWindowList(windowList.get());
+        if (!safeMode) { effect = std::make_unique<BackgroundEffect>(); w.ConnectBackgroundEffect(effect.get()); }  // safe mode: no blur
+    }
     if (const char* png = std::getenv("LIQUINIX_DOCK_PNG")) {  // test: draw into an image and exit (CI and checks)
         const char* mx = std::getenv("LIQUINIX_DOCK_PNG_MOUSE");
         bool ok = w.SavePng(QString::fromLocal8Bit(png), 1280, mx ? float(std::atof(mx)) : -1.f, 2.0);
@@ -760,12 +770,6 @@ int main(int argc, char** argv) {
     }
     QSurfaceFormat fmt = w.format(); fmt.setAlphaBufferSize(8); w.setFormat(fmt);  // transparent background
     w.ConfigureLayerShell();  // before showing: becomes a layer-shell surface on its edge
-    std::unique_ptr<WindowList> windowList;
-    std::unique_ptr<BackgroundEffect> effect;
-    if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"))) {
-        windowList = std::make_unique<WindowList>(); w.ConnectWindowList(windowList.get());
-        if (!safeMode) { effect = std::make_unique<BackgroundEffect>(); w.ConnectBackgroundEffect(effect.get()); }  // safe mode: no blur
-    }
     w.show();
     int result = app.exec();
     effect.reset();      // before the window and the connection to the compositor go away

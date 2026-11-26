@@ -10,6 +10,7 @@ BackgroundEffect::BackgroundEffect() : QWaylandClientExtensionTemplate<Backgroun
 
 BackgroundEffect::~BackgroundEffect() {
     if (effect_) ext_background_effect_surface_v1_destroy(effect_);
+    if (object()) destroy();  // the manager itself (its destructor request); Qt's wrapper doesn't release it
 }
 
 void BackgroundEffect::ext_background_effect_manager_v1_capabilities(uint32_t flags) {

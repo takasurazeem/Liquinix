@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Smoke test for the Linux programs, without a screen: starts a headless KWin (kwin_wayland --virtual), runs
 # liquinix-dock inside it and checks, in the Wayland protocol log, that the Dock got a layer-shell surface anchored
-# to the bottom edge, acknowledged its size and committed a drawn frame. Used by the CI (.github/workflows/build.yml)
+# to the bottom edge, acknowledged its size and committed a drawn frame. Then, with liquinix-test-window pinned, that
+# the Dock launches it, sees it running, brings it to the front and quits it. Used by the CI (.github/workflows/build.yml)
 # and runnable by hand:
 #
 #   tools/linux/ci-smoke.sh [./build/liquinix-dock]
@@ -63,6 +64,33 @@ fi
 if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$log"; then  # a sanitized build's reports
     echo "FAIL sanitizer reports"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$log" | head -40; fail=1
 fi
+
+# A real app in the same KWin: the Dock launches the pinned liquinix-test-window, sees it running through Plasma's
+# window list, brings it to the front on a click and closes it with Quit from the right-click menu
+TESTWIN="$(dirname "$DOCK")/liquinix-test-window"
+if [[ -x "$TESTWIN" ]]; then
+    APPS="$(mktemp -d)"; mkdir -p "$APPS/data/applications" "$APPS/config/liquinix"
+    printf '[Desktop Entry]\nType=Application\nName=Test Window\nExec=%s\n' "$(realpath "$TESTWIN")" > "$APPS/data/applications/liquinix-test-window.desktop"
+    printf 'liquinix-test-window\n' > "$APPS/config/liquinix/dock.txt"
+    printf 'tamanho=48\nampliacao=0\nanimar_abertura=0\n' > "$APPS/config/liquinix/ajustes.txt"
+    # with one pinned app the Dock's first icon is at x 577 in a 1280-point wide output
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland XDG_DATA_HOME="$APPS/data" XDG_CONFIG_HOME="$APPS/config" LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+        LIQUINIX_DOCK_SCRIPT="wait 1500; move 577 140; press; release; wait 3000; press; release; wait 500; rclick 577 140; menu Quit; wait 2000" \
+        timeout 30 "$DOCK" >"$LOGS/apps.log" 2>&1
+    log="$LOGS/apps.log"
+    check "launched the pinned app"          'liquinix-dock: launch liquinix-test-window .*: ok'
+    check "saw it running (window list)"     'liquinix-dock: running: liquinix-test-window'
+    check "brought it to the front"          'liquinix-dock: activate liquinix-test-window'
+    check "Quit asked its window to close"   'liquinix-dock: quit liquinix-test-window: 1 window'
+    check "no longer running after Quit"     'liquinix-dock: running: \(none\)'
+    if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$log"; then
+        echo "FAIL sanitizer reports (apps)"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$log" | head -40; fail=1
+    fi
+    rm -rf "$APPS"
+else
+    echo "FAIL not found: $TESTWIN (built with the Dock by CMakeLists.txt)"; fail=1
+fi
+
 if [[ $fail -ne 0 ]]; then
     echo "--- liquinix-dock (last lines)"; grep -v '^\[' "$log" | tail -20
     echo "--- kwin"; tail -20 "$LOGS/kwin.log"
