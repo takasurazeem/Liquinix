@@ -68,6 +68,13 @@ check "settings applied live: new icon size" "$(grep -c 'settings reloaded: icon
 check "settings applied live: new pinned list" "$(sed -n 's/^liquinix-dock: pinned: //p' <<<"$out" | tr -d ' ')" "fake-d,fake-a"
 printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
 
+# the Dock on the left edge (dock_posicao=esquerda): the same drag, turned a quarter. The window is 420 x 800, the apps'
+# centres are at y = 261, 312, 363, 414 along the edge, with their icons about 36 points from the left edge
+printf 'tamanho=48\nampliacao=0\ndock_posicao=esquerda\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+reset; got=$(run "move 36 261; press; move 36 280; move 36 320; move 36 340; release")
+check "left edge: drag the first app between the third and the fourth" "$got" "fake-b,fake-c,fake-a,fake-d"
+printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+
 # a sanitized build reports memory errors, leaks and undefined behaviour in the output: any of those fails the run
 if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log"; then
     echo "FAIL sanitizer reports:"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log" | head -60; fail=1
