@@ -26,6 +26,7 @@
 #include <QLineF>
 #include <QGuiApplication>
 #include <QIcon>
+#include <QHash>
 #include <QLocale>
 #include <QMimeDatabase>
 #include <QMouseEvent>
@@ -118,6 +119,7 @@ public:
     DockWindow(std::vector<DesktopApp> apps, const DockSettings& st, QString settingsDir, bool safeMode)
         : apps_(std::move(apps)), tile_(st.tile), large_(st.large), magnify_(st.magnify), settingsDir_(std::move(settingsDir)), bounce_(st.bounce),
           autohide_(st.autohide), reveal_(st.autohide ? 0.f : 1.f), safeMode_(safeMode), theme_(st.theme), edge_(st.edge), stack_(st.stack) {
+        pinnedCount_ = apps_.size();
         LoadAppIcons();
         BuildEntries();
         UpdateTrash();
@@ -226,7 +228,7 @@ public:
         p.end();
         return img.save(file);
     }
-    QString PinnedIds() const { QStringList ids; for (auto& a : apps_) ids << a.id; return ids.join(QStringLiteral(", ")); }
+    QString PinnedIds() const { QStringList ids; for (size_t i = 0; i < pinnedCount_; i++) ids << apps_[i].id; return ids.join(QStringLiteral(", ")); }
     // LIQUINIX_DOCK_PNG: the same drawing into an image (no window), with the pointer at `mouse` and full magnification
     bool SavePng(const QString& file, int W, float mouse, qreal scale) {
         mouseX_ = lastMouseX_ = mouse; magAmt_ = mouse >= 0 ? 1.f : 0.f;
@@ -405,14 +407,18 @@ private:
     }
     // the right-click menu (as on the Mac and the Windows Dock): Open or Quit, and Remove from Dock, for a pinned app;
     // Open for Downloads and the Trash
-    enum MenuAction { kOpen = 1, kQuit, kRemove };
+    enum MenuAction { kOpen = 1, kQuit, kRemove, kKeep };
     void ShowMenu(int index) {
         const Entry& en = entries_[index];
         if (en.kind == Entry::Separator) return;
         std::vector<DockMenu::Item> items;
         bool running = en.kind == Entry::App && running_[en.app];
         items.push_back({ running ? Tr(L"Encerrar") : Tr(L"Abrir"), running ? kQuit : kOpen });
-        if (en.kind == Entry::App) { items.push_back({ QString(), 0, true }); items.push_back({ Tr(L"Remover do Dock"), kRemove }); }
+        if (en.kind == Entry::App) {  // pinned: Remove from Dock; open but not pinned: Keep in Dock
+            items.push_back({ QString(), 0, true });
+            if (size_t(en.app) < pinnedCount_) items.push_back({ Tr(L"Remover do Dock"), kRemove });
+            else items.push_back({ Tr(L"Manter no Dock"), kKeep });
+        }
         // the choice refers to the entry by what it shows (the list can change while the menu is open)
         Entry::Kind kind = en.kind;
         QString appId = en.kind == Entry::App ? apps_[en.app].id : QString();
@@ -459,12 +465,27 @@ private:
             std::printf("liquinix-dock: quit %s: %d window(s) asked to close\n", qPrintable(a.id), n); std::fflush(stdout);
         } else if (action == kRemove) {
             Unpin(app);
+        } else if (action == kKeep) {
+            Pin(app, int(pinnedCount_));
         }
     }
+    // an open app that wasn't pinned becomes pinned at position `to` (Keep in Dock, or dragged in among the pinned apps)
+    void Pin(int app, int to) {
+        if (size_t(app) < pinnedCount_) return;
+        to = std::clamp(to, 0, int(pinnedCount_));
+        std::printf("liquinix-dock: pin %s at %d\n", qPrintable(apps_[app].id), to);
+        DesktopApp a = apps_[app]; QIcon icon = appIcons_[app];
+        apps_.erase(apps_.begin() + app); appIcons_.erase(appIcons_.begin() + app);
+        apps_.insert(apps_.begin() + to, a); appIcons_.insert(appIcons_.begin() + to, icon);
+        pinnedCount_++;
+        PinnedChanged();
+    }
     void Unpin(int app) {
+        if (size_t(app) >= pinnedCount_) return;  // not pinned: it stays while it's open
         std::printf("liquinix-dock: unpin %s\n", qPrintable(apps_[app].id));
         apps_.erase(apps_.begin() + app); appIcons_.erase(appIcons_.begin() + app);
-        PinnedChanged();
+        pinnedCount_--;
+        PinnedChanged();  // still open: it comes back after the pinned apps, as on the Mac
     }
     // the pinned list changed (moved or removed): new slots, and save dock.txt
     void PinnedChanged(bool save = true) {
@@ -472,7 +493,7 @@ private:
         running_.assign(apps_.size(), false);
         launchedAt_.assign(apps_.size(), 0);
         UpdateRunning();
-        if (save && !WritePinned(settingsDir_, apps_)) std::printf("liquinix-dock: couldn't save %s/dock.txt\n", qPrintable(settingsDir_));
+        if (save && !WritePinned(settingsDir_, std::vector<DesktopApp>(apps_.begin(), apps_.begin() + pinnedCount_))) std::printf("liquinix-dock: couldn't save %s/dock.txt\n", qPrintable(settingsDir_));
         std::fflush(stdout);
         update();
     }
@@ -480,6 +501,14 @@ private:
 private:
     void UpdateRunning() {
         QStringList ids = windowList_ && windowList_->Available() ? windowList_->AppIds() : QStringList();
+        // never the Dock's own windows (its menu or stack, when the compositor lists them as windows)
+        ids.removeIf([](const QString& id) {
+            return id == QLatin1String("liquinix-dock") || (!QGuiApplication::desktopFileName().isEmpty() && id == QGuiApplication::desktopFileName());
+        });
+        // the open unpinned apps (not mid-drag: the entries under the pointer stay put until it's dropped)
+        if (!dragging_ && UpdateOpenApps(ids)) {
+            BuildEntries(); hover_ = -1; running_.assign(apps_.size(), false); launchedAt_.resize(apps_.size(), 0); update();
+        }
         std::vector<bool> now(apps_.size(), false);
         for (size_t i = 0; i < apps_.size(); i++)
             for (const QString& id : ids) if (WindowBelongsTo(apps_[i], id)) { now[i] = true; break; }
@@ -490,6 +519,45 @@ private:
         std::printf("liquinix-dock: running: %s\n", names.isEmpty() ? "(none)" : qPrintable(names.join(QStringLiteral(", "))));
         std::fflush(stdout);
         update();
+    }
+    // the open apps that no pinned app claims, after the pinned ones: the ones already shown keep their place, new ones
+    // are added in the order their windows opened, closed ones go. True if the list changed.
+    bool UpdateOpenApps(const QStringList& windowIds) {
+        std::vector<DesktopApp> open;
+        auto claimed = [&](const QString& id, const std::vector<DesktopApp>& list, size_t from, size_t to) {
+            for (size_t i = from; i < to; i++) if (WindowBelongsTo(list[i], id)) return int(i);
+            return -1;
+        };
+        for (size_t i = pinnedCount_; i < apps_.size(); i++)  // those already shown, while they still have a window
+            for (const QString& id : windowIds) if (WindowBelongsTo(apps_[i], id)) { open.push_back(apps_[i]); break; }
+        for (const QString& id : windowIds) {
+            if (claimed(id, apps_, 0, pinnedCount_) >= 0 || claimed(id, open, 0, open.size()) >= 0) continue;
+            open.push_back(AppForWindow(id));
+        }
+        bool same = open.size() == apps_.size() - pinnedCount_;
+        for (size_t i = 0; same && i < open.size(); i++) same = open[i].id == apps_[pinnedCount_ + i].id;
+        if (same) return false;
+        apps_.resize(pinnedCount_); appIcons_.resize(pinnedCount_);
+        for (DesktopApp& a : open) { appIcons_.push_back(IconFor(a)); apps_.push_back(std::move(a)); }
+        QStringList names; for (size_t i = pinnedCount_; i < apps_.size(); i++) names << apps_[i].id;
+        std::printf("liquinix-dock: open, not pinned: %s\n", names.isEmpty() ? "(none)" : qPrintable(names.join(QStringLiteral(", "))));
+        std::fflush(stdout);
+        return true;
+    }
+    // the .desktop file for a window's app id (as it is, or in lower case), remembered per id; without one, the app id
+    // with an icon of the same name (or a generic one)
+    DesktopApp AppForWindow(const QString& appId) {
+        auto it = windowApps_.constFind(appId);
+        if (it != windowApps_.constEnd()) return *it;
+        std::optional<DesktopApp> found = FindApp(appId);
+        if (!found && appId != appId.toLower()) found = FindApp(appId.toLower());
+        DesktopApp a = found ? *found : DesktopApp{ appId, appId, appId, QString(), QString(), QString() };
+        if (found && a.wmClass.isEmpty() && a.id.compare(appId, Qt::CaseInsensitive) != 0) a.wmClass = appId;
+        windowApps_.insert(appId, a);
+        return a;
+    }
+    static QIcon IconFor(const DesktopApp& a) {
+        return a.icon.startsWith('/') ? QIcon(a.icon) : QIcon::fromTheme(a.icon, QIcon::fromTheme(QStringLiteral("application-x-executable")));
     }
     void UpdateTrash() {
         bool full = TrashHasFiles();
@@ -528,8 +596,7 @@ private:
     bool WantShown() const { return !autohide_ || mouseX_ >= 0 || edgeTouched_ || dragging_ || (menu_ && menu_->isVisible()); }
     void LoadAppIcons() {
         appIcons_.clear();
-        for (const DesktopApp& a : apps_)
-            appIcons_.push_back(a.icon.startsWith('/') ? QIcon(a.icon) : QIcon::fromTheme(a.icon, QIcon::fromTheme(QStringLiteral("application-x-executable"))));
+        for (const DesktopApp& a : apps_) appIcons_.push_back(IconFor(a));
     }
     // ajustes.txt and dock.txt changed (System Settings, an editor, another program): applied live, as the Windows Dock
     // does. The folder is watched too: editors often save by renaming a new file over the old one, which ends a file watch.
@@ -566,8 +633,10 @@ private:
         std::vector<DesktopApp> pinned = ReadPinned(settingsDir_);
         QStringList now, before;
         for (auto& a : pinned) now << a.id;
-        for (auto& a : apps_) before << a.id;
-        if (now != before) { apps_ = std::move(pinned); LoadAppIcons(); PinnedChanged(false); }
+        for (size_t i = 0; i < pinnedCount_; i++) before << apps_[i].id;
+        if (now != before) {  // the open unpinned apps are found again from the window list
+            apps_ = std::move(pinned); pinnedCount_ = apps_.size(); LoadAppIcons(); PinnedChanged(false);
+        }
         std::printf("liquinix-dock: settings reloaded: icon %.0f, magnification %s (%.0f), autohide %s, icons %s, language %ls; pinned: %s\n", tile_,
                     magnify_ ? "on" : "off", large_, autohide_ ? "on" : "off", qPrintable(theme_), translate::Code(), qPrintable(PinnedIds()));
         std::fflush(stdout);
@@ -620,9 +689,15 @@ private:
         int dropTarget = dock_layout::Compute(copy, LayoutParams(AxisLen())).dropTarget;
         bool out = outside_;
         dragging_ = false; outside_ = false; pressIndex_ = -1;
+        if (size_t(from) >= pinnedCount_) {  // open but not pinned: pinned where it was dropped among the pinned apps
+            if (!out && dropTarget >= 0 && dropTarget <= int(pinnedCount_)) { Pin(from, dropTarget); return; }
+            UpdateRunning();  // windows that opened or closed during the drag
+            update();
+            return;
+        }
         if (out) { Unpin(from); return; }
         if (dropTarget >= 0 && dropTarget != from) {
-            int to = std::clamp(dropTarget, 0, int(apps_.size()) - 1);  // the same move as the Windows Dock (apps::Move)
+            int to = std::clamp(dropTarget, 0, int(pinnedCount_) - 1);  // the same move as the Windows Dock (apps::Move)
             std::printf("liquinix-dock: move %s from %d to %d\n", qPrintable(apps_[from].id), from, to);
             DesktopApp a = apps_[from]; QIcon icon = appIcons_[from];
             apps_.erase(apps_.begin() + from); appIcons_.erase(appIcons_.begin() + from);
@@ -630,6 +705,7 @@ private:
             PinnedChanged();
             return;
         }
+        UpdateRunning();  // windows that opened or closed during the drag
         update();
     }
     // the compositor's blur behind the shelf only (its rounded shape), sent again only when the shape changes
@@ -652,8 +728,9 @@ private:
         if (r != mask_) { mask_ = r; setMask(QRegion(r)); }
     }
 
-    std::vector<DesktopApp> apps_;
-    std::vector<QIcon> appIcons_;         // per pinned app, in the same order as apps_
+    std::vector<DesktopApp> apps_;        // the pinned apps, then the open ones that aren't pinned (#83)
+    size_t pinnedCount_ = 0;              // how many of apps_ are pinned (the rest come and go with their windows)
+    std::vector<QIcon> appIcons_;         // per app, in the same order as apps_
     int pressIndex_ = -1;                 // entry pressed with the left button (a pinned app), -1 = none
     QPointF pressPos_;
     bool dragging_ = false, outside_ = false;  // dragging that app; dropped now it would be unpinned
@@ -664,7 +741,8 @@ private:
     QFileSystemWatcher trashWatcher_;
     bool trashFull_ = false;
     std::vector<dock_layout::Item> items_;
-    std::vector<bool> running_;           // per pinned app: has an open window
+    std::vector<bool> running_;           // per app: has an open window
+    QHash<QString, DesktopApp> windowApps_;  // a window's app id -> its .desktop app (or a stand-in), found once
     LauncherEntries* badges_ = nullptr;   // apps' notification counts (null without a session bus)
     std::vector<double> launchedAt_;      // per pinned app: when it was launched (NowMs), 0 = not bouncing
     WindowList* windowList_ = nullptr;

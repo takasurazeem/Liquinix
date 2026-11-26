@@ -86,6 +86,32 @@ if [[ -x "$TESTWIN" ]]; then
     if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$log"; then
         echo "FAIL sanitizer reports (apps)"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$log" | head -40; fail=1
     fi
+
+    # An open app that isn't pinned gets its own icon after the pinned ones (none pinned here, so it's the first, at
+    # x 577), with Quit and Keep in Dock in its menu
+    : > "$APPS/config/liquinix/dock.txt"
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland "$TESTWIN" >/dev/null 2>&1 & TESTPID=$!
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland XDG_DATA_HOME="$APPS/data" XDG_CONFIG_HOME="$APPS/config" LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+        LIQUINIX_DOCK_SCRIPT="wait 2000; rclick 577 140; menu Quit; wait 2000" timeout 30 "$DOCK" >"$LOGS/open.log" 2>&1
+    log="$LOGS/open.log"
+    check "an open app that isn't pinned gets an icon" 'liquinix-dock: open, not pinned: liquinix-test-window'
+    check "Quit from that icon closes it"              'liquinix-dock: quit liquinix-test-window: 1 window'
+    check "its icon goes when it closes"               'liquinix-dock: open, not pinned: \(none\)'
+    kill "$TESTPID" 2>/dev/null; wait "$TESTPID" 2>/dev/null
+
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland "$TESTWIN" >/dev/null 2>&1 & TESTPID=$!
+    WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland XDG_DATA_HOME="$APPS/data" XDG_CONFIG_HOME="$APPS/config" LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+        LIQUINIX_DOCK_SCRIPT="wait 2000; rclick 577 140; menu Keep in Dock; wait 500" timeout 30 "$DOCK" >"$LOGS/keep.log" 2>&1
+    log="$LOGS/keep.log"
+    check "Keep in Dock pins it"                       'liquinix-dock: pin liquinix-test-window at 0'
+    saved=$(grep -v '^#' "$APPS/config/liquinix/dock.txt" | tr '\n' ' ' | xargs)  # the pinned ids, without the comment line
+    if [[ "$saved" == "liquinix-test-window" ]]; then echo "ok   and saves it to dock.txt"; else echo "FAIL and saves it to dock.txt: got '$saved'"; fail=1; fi
+    kill "$TESTPID" 2>/dev/null; wait "$TESTPID" 2>/dev/null
+    for l in "$LOGS/open.log" "$LOGS/keep.log"; do
+        if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$l"; then
+            echo "FAIL sanitizer reports ($(basename "$l"))"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$l" | head -40; fail=1
+        fi
+    done
     rm -rf "$APPS"
 else
     echo "FAIL not found: $TESTWIN (built with the Dock by CMakeLists.txt)"; fail=1
