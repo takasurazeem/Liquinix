@@ -8,6 +8,7 @@
 #include "dock_menu.h"
 #include "dock_stack.h"
 #include "launcher_entries.h"
+#include "virtual_desktops.h"
 #include "window_list.h"
 #include "core/curves.h"
 #include "core/dock_drawing.h"
@@ -86,6 +87,7 @@ bool TrashHasFiles() { return !QDir(TrashFilesDir()).isEmpty(QDir::AllEntries | 
 struct DockSettings {
     float tile = 48, large = 128;
     bool magnify = false, bounce = true, autohide = false;
+    bool smartHide = false;  // ocultar=inteligente: hidden only while a window covers the Dock
     int edge = 0;   // dock_posicao: 0 bottom (baixo), 1 left (esquerda), 2 right (direita)
     int lang = translate::EN;  // idioma= (the Windows key); not set: the system's language
     bool downloads = true;     // dock_downloads: Downloads in the Dock (on unless turned off)
@@ -101,6 +103,7 @@ DockSettings LoadDockSettings(const QString& dir, bool safeMode) {
     s.magnify = !safeMode && settings["ampliacao"] == QLatin1String("1");  // safe mode: nothing optional
     s.bounce = settings["animar_abertura"] != QLatin1String("0");           // on unless turned off
     s.autohide = !safeMode && settings["ocultar"] == QLatin1String("1");
+    s.smartHide = !safeMode && settings["ocultar"] == QLatin1String("inteligente");
     s.stack = settings["pilha_exibir"] != QLatin1String("pasta");
     s.downloads = settings["dock_downloads"] != QLatin1String("0");
     QString code = settings["idioma"];
@@ -121,7 +124,7 @@ class DockWindow : public QRasterWindow {
 public:
     DockWindow(std::vector<DesktopApp> apps, const DockSettings& st, QString settingsDir, bool safeMode)
         : apps_(std::move(apps)), tile_(st.tile), large_(st.large), magnify_(st.magnify), settingsDir_(std::move(settingsDir)), bounce_(st.bounce),
-          autohide_(st.autohide), reveal_(st.autohide ? 0.f : 1.f), safeMode_(safeMode), theme_(st.theme), edge_(st.edge), stack_(st.stack), downloads_(st.downloads) {
+          autohide_(st.autohide), smartHide_(st.smartHide), reveal_(st.autohide ? 0.f : 1.f), safeMode_(safeMode), theme_(st.theme), edge_(st.edge), stack_(st.stack), downloads_(st.downloads) {
         pinnedCount_ = apps_.size();
         LoadAppIcons();
         BuildEntries();
@@ -144,7 +147,8 @@ public:
     // open app to the front instead of starting it again
     void ConnectWindowList(WindowList* list) {
         windowList_ = list;
-        QObject::connect(list, &WindowList::Changed, [this] { UpdateRunning(); });
+        QObject::connect(list, &WindowList::Changed, [this] { UpdateRunning(); UpdateCovered(); });
+        QObject::connect(list, &WindowList::Moved, [this] { UpdateCovered(); });
         auto report = [this] {
             std::printf("liquinix-dock: Plasma window list %s\n", windowList_->Available() ? "connected" : "not available yet");
             std::fflush(stdout);
@@ -152,6 +156,29 @@ public:
         };
         QObject::connect(list, &WindowList::activeChanged, report);
         report();  // it may have connected already, before this signal was hooked up
+    }
+    // the current virtual desktop: only windows on it can cover the Dock (smart hiding)
+    void ConnectDesktops(VirtualDesktops* desktops) {
+        desktops_ = desktops;
+        QObject::connect(desktops, &VirtualDesktops::CurrentChanged, [this] { UpdateCovered(); });
+    }
+    // Smart hiding: does a window cover the Dock's area (where it rests when shown, on its screen)? Recomputed on window
+    // list events only, never on a timer.
+    void UpdateCovered() {
+        bool now = false;
+        if (smartHide_ && windowList_ && windowList_->Available() && screen() && bg_.right > bg_.left) {
+            QRect scr = screen()->geometry();
+            // the window's top-left on the screen: the strip is anchored to its edge, as wide (or tall) as the screen
+            QPoint origin = edge_ == 0 ? QPoint(scr.left(), scr.bottom() + 1 - height())
+                          : edge_ == 1 ? scr.topLeft() : QPoint(scr.right() + 1 - width(), scr.top());
+            QRect area = ToWindow().mapRect(QRectF(bg_.left, bg_.top, bg_.right - bg_.left, bg_.bottom - bg_.top)).toAlignedRect().translated(origin);
+            now = windowList_->Covers(area, desktops_ ? desktops_->Current() : QString(),
+                                      [](const QString& id) { return id == QLatin1String("liquinix-dock"); });
+        }
+        if (now == covered_) return;
+        covered_ = now;
+        std::printf("liquinix-dock: covered: %s\n", now ? "yes (hiding)" : "no (showing)"); std::fflush(stdout);
+        update();
     }
     // Apps' notification counts from the session bus (the badges)
     void ConnectBadges(LauncherEntries* badges) {
@@ -343,7 +370,7 @@ protected:
     void mouseMoveEvent(QMouseEvent* e) override {
         QPointF d = ToDock(e->position());  // x along the edge, y towards it
         float x = float(d.x()), y = float(d.y());
-        if (autohide_ && y >= Thickness() - 3) edgeTouched_ = true;  // the pointer reached the screen's edge: come back
+        if (Hides() && y >= Thickness() - 3) edgeTouched_ = true;  // the pointer reached the screen's edge: come back
         if (pressIndex_ >= 0 && (e->buttons() & Qt::LeftButton)) {
             if (!dragging_ && QLineF(pressPos_, d).length() > 6) { dragging_ = true; hover_ = -1; }
             if (dragging_) {  // the icon follows the pointer; well above the Dock it would be removed
@@ -669,6 +696,11 @@ private:
         float hide = (1 - curves::EaseInOut(reveal_)) * (tile_ + PadTop() + PadBottom() + Margin() + 2);
         float bottom = H - Margin() + hide;
         bg_ = drawing::Rect{ (W - res.total) / 2, bottom - (tile_ + PadTop() + PadBottom()), (W + res.total) / 2, bottom };
+        // smart hiding checks the resting shelf: again when it changes (first layout, apps added), not while magnified
+        if (smartHide_ && mouseX_ < 0 && (bg_.left != coveredBg_.left || bg_.right != coveredBg_.right || bg_.top != coveredBg_.top)) {
+            coveredBg_ = bg_;
+            QTimer::singleShot(0, this, [this] { UpdateCovered(); });  // after this frame (it may repaint)
+        }
     }
     // launching: half an icon high hops of 620 ms (the Windows Dock's, curves::DockHop) for up to 8 s, until a window shows up
     bool Bouncing(int app, double now) const { return launchedAt_[app] > 0 && now - launchedAt_[app] < 8000; }
@@ -678,7 +710,9 @@ private:
         return Bouncing(app, now) ? -curves::DockHop(now - launchedAt_[app], 620) * tile_ * 0.5f : 0.f;
     }
     // automatic hiding: shown while the pointer is on the Dock or just touched the edge, while dragging, or with the menu open
-    bool WantShown() const { return !autohide_ || mouseX_ >= 0 || edgeTouched_ || dragging_ || (menu_ && menu_->isVisible()); }
+    // hiding now: always in automatic mode; in smart mode while a window covers the Dock
+    bool Hides() const { return autohide_ || (smartHide_ && covered_); }
+    bool WantShown() const { return !Hides() || mouseX_ >= 0 || edgeTouched_ || dragging_ || (menu_ && menu_->isVisible()); }
     void LoadAppIcons() {
         appIcons_.clear();
         for (const DesktopApp& a : apps_) appIcons_.push_back(IconFor(a));
@@ -710,6 +744,7 @@ private:
         if (st.downloads != downloads_) { downloads_ = st.downloads; BuildEntries(); }
         if (langChanged) { translate::SetLanguage(st.lang); BuildEntries(); }  // the labels in the new language
         tile_ = st.tile; large_ = st.large; magnify_ = st.magnify; bounce_ = st.bounce; autohide_ = st.autohide; stack_ = st.stack;
+        smartHide_ = st.smartHide; UpdateCovered();
         if (themeChanged) {  // every icon again, from the new theme
             theme_ = st.theme; QIcon::setThemeName(theme_); LoadAppIcons(); BuildEntries();
             for (auto& e : entries_) if (e.kind == Entry::Trash) e.icon = QIcon();
@@ -811,7 +846,7 @@ private:
     // only the Dock takes the pointer; the rest of the strip lets clicks through to the windows below. With the pointer
     // on it, the area grows upwards (the magnified icons) and sideways.
     void UpdateMask() {
-        QRectF d = autohide_ && reveal_ <= 0.f ? QRectF(0, Thickness() - 2, AxisLen(), 2)  // hidden: only the edge strip
+        QRectF d = Hides() && reveal_ <= 0.f ? QRectF(0, Thickness() - 2, AxisLen(), 2)  // hidden: only the edge strip
                  : mouseX_ >= 0 ? QRectF(bg_.left - large_, 0, bg_.right - bg_.left + 2 * large_, Thickness())
                                 : QRectF(bg_.left, bg_.top, bg_.right - bg_.left, bg_.bottom - bg_.top);
         QRect r = ToWindow().mapRect(d).toAlignedRect();
@@ -842,6 +877,10 @@ private:
     QString settingsDir_;                 // where dock.txt is saved
     bool bounce_;                         // bounce launching apps (animar_abertura, on by default)
     bool autohide_;                       // automatic hiding (ocultar=1)
+    bool smartHide_;                      // smart hiding (ocultar=inteligente): hides while a window covers the Dock
+    bool covered_ = false;                // smart hiding: a window covers the Dock's area now
+    drawing::Rect coveredBg_{};           // the resting shelf smart hiding last checked
+    VirtualDesktops* desktops_ = nullptr; // the current virtual desktop (smart hiding; null without the protocol)
     float reveal_;                        // 0 = hidden, 1 = shown
     bool edgeTouched_ = false;            // the pointer touched the bottom edge while hidden
     bool safeMode_;
@@ -896,8 +935,10 @@ int main(int argc, char** argv) {
     // inside a (nested) KWin exercises the running dots, bringing to front and Quit for real
     std::unique_ptr<WindowList> windowList;
     std::unique_ptr<BackgroundEffect> effect;
+    std::unique_ptr<VirtualDesktops> desktops;
     if (QGuiApplication::platformName().startsWith(QLatin1String("wayland"))) {
         windowList = std::make_unique<WindowList>(); w.ConnectWindowList(windowList.get());
+        desktops = std::make_unique<VirtualDesktops>(); w.ConnectDesktops(desktops.get());
         if (!safeMode) { effect = std::make_unique<BackgroundEffect>(); w.ConnectBackgroundEffect(effect.get()); }  // safe mode: no blur
     }
     if (const char* png = std::getenv("LIQUINIX_DOCK_PNG")) {  // test: draw into an image and exit (CI and checks)
