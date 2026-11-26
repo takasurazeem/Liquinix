@@ -5,7 +5,8 @@
 #   tools/linux/ci-dock-tests.sh [./build/liquinix-dock]
 #
 # Checks: dragging a pinned app reorders the Dock and saves dock.txt; dragging it out unpins it; the right-click menu
-# unpins and opens; a click makes the icon bounce, and the bounce stops after 8 s; automatic hiding comes and goes.
+# unpins and opens; a click makes the icon bounce, and the bounce stops after 8 s; automatic hiding comes and goes;
+# settings changes are applied live.
 # Exits 0 when all pass.
 set -uo pipefail
 
@@ -54,6 +55,16 @@ printf 'tamanho=48\nampliacao=0\nocultar=1\n' > "$XDG_CONFIG_HOME/liquinix/ajust
 reset; run "wait 300; png $DIR/hidden.png; move 640 199; wait 600; png $DIR/shown.png; leave; wait 600; png $DIR/hidden2.png" >/dev/null
 if [[ -s "$DIR/shown.png" ]] && ! cmp -s "$DIR/hidden.png" "$DIR/shown.png"; then echo "ok   autohide: the Dock comes back at the bottom edge"; else echo "FAIL autohide: the Dock comes back at the bottom edge"; fail=1; fi
 if cmp -s "$DIR/hidden.png" "$DIR/hidden2.png"; then echo "ok   autohide: it hides again when the pointer leaves"; else echo "FAIL autohide: it hides again when the pointer leaves"; fail=1; fi
+printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+
+# settings applied live: ajustes.txt (saved by renaming a new file over it, as editors do) and dock.txt change while the
+# Dock runs, and it picks up the new icon size and pinned list without a restart
+reset; out=$( ( sleep 0.8; printf 'tamanho=64\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.new" \
+              && mv "$XDG_CONFIG_HOME/liquinix/ajustes.new" "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+              printf 'fake-d\nfake-a\n' > "$XDG_CONFIG_HOME/liquinix/dock.txt" ) &
+       LIQUINIX_DOCK_SCRIPT="wait 2000" timeout 60 "$DOCK" 2>&1; wait )
+check "settings applied live: new icon size" "$(grep -c 'settings reloaded: icon 64' <<<"$out")" "1"
+check "settings applied live: new pinned list" "$(sed -n 's/^liquinix-dock: pinned: //p' <<<"$out" | tr -d ' ')" "fake-d,fake-a"
 printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
 
 exit $fail

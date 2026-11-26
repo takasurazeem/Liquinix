@@ -33,6 +33,7 @@
 #include <QStandardPaths>
 #include <QSurfaceFormat>
 #include <QTextStream>
+#include <QTimer>
 #include <QUrl>
 #include <algorithm>
 #include <cmath>
@@ -70,13 +71,38 @@ struct Entry {
 QString TrashFilesDir() { return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/Trash/files"); }
 bool TrashHasFiles() { return !QDir(TrashFilesDir()).isEmpty(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System); }
 
+// the Dock's settings from ajustes.txt (the Windows keys), read at start and again whenever the file changes
+struct DockSettings {
+    float tile = 48, large = 128;
+    bool magnify = false, bounce = true, autohide = false;
+    QString theme;  // icon theme to use (resolved: the setting, KDE's, or Breeze)
+};
+DockSettings LoadDockSettings(const QString& dir, bool safeMode) {
+    auto settings = ReadSettings(dir);
+    auto num = [&](const char* k, float def) { auto it = settings.find(QString::fromLatin1(k)); bool ok = false; float v = it == settings.end() ? def : it->second.toFloat(&ok); return ok ? v : def; };
+    DockSettings s;
+    s.tile = std::clamp(num("tamanho", 48), 16.f, 128.f);
+    s.large = std::clamp(num("ampliacao_tamanho", 128), s.tile, 256.f);
+    s.magnify = !safeMode && settings["ampliacao"] == QLatin1String("1");  // safe mode: nothing optional
+    s.bounce = settings["animar_abertura"] != QLatin1String("0");           // on unless turned off
+    s.autohide = !safeMode && settings["ocultar"] == QLatin1String("1");
+    // icon theme: the one in the settings (tema_icones=MacTahoe, for example), else KDE's (kdeglobals); with neither
+    // and no platform theme (as in image mode), Breeze
+    s.theme = settings["tema_icones"];
+    if (s.theme.isEmpty()) {
+        QString kg = QStandardPaths::locate(QStandardPaths::GenericConfigLocation, QStringLiteral("kdeglobals"));
+        if (!kg.isEmpty()) s.theme = QSettings(kg, QSettings::IniFormat).value(QStringLiteral("Icons/Theme")).toString();
+    }
+    if (s.theme.isEmpty()) s.theme = QIcon::themeName().isEmpty() ? QStringLiteral("breeze") : QIcon::themeName();
+    return s;
+}
+
 class DockWindow : public QRasterWindow {
 public:
-    DockWindow(std::vector<DesktopApp> apps, float tile, float large, bool magnify, QString settingsDir, bool bounce, bool autohide)
-        : apps_(std::move(apps)), tile_(tile), large_(large), magnify_(magnify), settingsDir_(std::move(settingsDir)), bounce_(bounce),
-          autohide_(autohide), reveal_(autohide ? 0.f : 1.f) {
-        for (const DesktopApp& a : apps_)
-            appIcons_.push_back(a.icon.startsWith('/') ? QIcon(a.icon) : QIcon::fromTheme(a.icon, QIcon::fromTheme(QStringLiteral("application-x-executable"))));
+    DockWindow(std::vector<DesktopApp> apps, const DockSettings& st, QString settingsDir, bool safeMode)
+        : apps_(std::move(apps)), tile_(st.tile), large_(st.large), magnify_(st.magnify), settingsDir_(std::move(settingsDir)), bounce_(st.bounce),
+          autohide_(st.autohide), reveal_(st.autohide ? 0.f : 1.f), safeMode_(safeMode), theme_(st.theme) {
+        LoadAppIcons();
         BuildEntries();
         UpdateTrash();
         // the Trash icon follows its contents: a watcher on the trash folder (and its parents, so a first trashed file
@@ -91,6 +117,7 @@ public:
         setFlag(Qt::FramelessWindowHint);
         running_.assign(apps_.size(), false);
         launchedAt_.assign(apps_.size(), 0);
+        WatchSettings();
     }
     // Open windows (Wayland only, and only if KWin offers the protocol): the "running" dots, and clicks that bring an
     // open app to the front instead of starting it again
@@ -350,12 +377,12 @@ private:
         PinnedChanged();
     }
     // the pinned list changed (moved or removed): new slots, and save dock.txt
-    void PinnedChanged() {
+    void PinnedChanged(bool save = true) {
         BuildEntries();
         running_.assign(apps_.size(), false);
         launchedAt_.assign(apps_.size(), 0);
         UpdateRunning();
-        if (!WritePinned(settingsDir_, apps_)) std::printf("liquinix-dock: couldn't save %s/dock.txt\n", qPrintable(settingsDir_));
+        if (save && !WritePinned(settingsDir_, apps_)) std::printf("liquinix-dock: couldn't save %s/dock.txt\n", qPrintable(settingsDir_));
         std::fflush(stdout);
         update();
     }
@@ -409,6 +436,52 @@ private:
     }
     // automatic hiding: shown while the pointer is on the Dock or just touched the edge, while dragging, or with the menu open
     bool WantShown() const { return !autohide_ || mouseX_ >= 0 || edgeTouched_ || dragging_ || (menu_ && menu_->isVisible()); }
+    void LoadAppIcons() {
+        appIcons_.clear();
+        for (const DesktopApp& a : apps_)
+            appIcons_.push_back(a.icon.startsWith('/') ? QIcon(a.icon) : QIcon::fromTheme(a.icon, QIcon::fromTheme(QStringLiteral("application-x-executable"))));
+    }
+    // ajustes.txt and dock.txt changed (System Settings, an editor, another program): applied live, as the Windows Dock
+    // does. The folder is watched too: editors often save by renaming a new file over the old one, which ends a file watch.
+    void WatchSettings() {
+        QObject::connect(&settingsWatcher_, &QFileSystemWatcher::directoryChanged, [this] { ScheduleReload(); });
+        QObject::connect(&settingsWatcher_, &QFileSystemWatcher::fileChanged, [this] { ScheduleReload(); });
+        WatchSettingsFiles();
+    }
+    void WatchSettingsFiles() {
+        if (QDir(settingsDir_).exists() && !settingsWatcher_.directories().contains(settingsDir_)) settingsWatcher_.addPath(settingsDir_);
+        for (const QString& f : { settingsDir_ + QStringLiteral("/ajustes.txt"), settingsDir_ + QStringLiteral("/dock.txt") })
+            if (QFile::exists(f) && !settingsWatcher_.files().contains(f)) settingsWatcher_.addPath(f);
+    }
+    // a save often comes as several change events: one reload shortly after the last of them
+    void ScheduleReload() {
+        if (reloadPending_) return;
+        reloadPending_ = true;
+        QTimer::singleShot(150, &settingsWatcher_, [this] { reloadPending_ = false; Reload(); });
+    }
+    void Reload() {
+        WatchSettingsFiles();
+        DockSettings st = LoadDockSettings(settingsDir_, safeMode_);
+        bool sizes = st.tile != tile_ || st.large != large_;
+        bool themeChanged = st.theme != theme_;
+        tile_ = st.tile; large_ = st.large; magnify_ = st.magnify; bounce_ = st.bounce; autohide_ = st.autohide;
+        if (themeChanged) {  // every icon again, from the new theme
+            theme_ = st.theme; QIcon::setThemeName(theme_); LoadAppIcons(); BuildEntries();
+            for (auto& e : entries_) if (e.kind == Entry::Trash) e.icon = QIcon();
+            UpdateTrash();
+        }
+        // the pinned apps: only if the list differs (the Dock's own saves after a drag come back here unchanged)
+        std::vector<DesktopApp> pinned = ReadPinned(settingsDir_);
+        QStringList now, before;
+        for (auto& a : pinned) now << a.id;
+        for (auto& a : apps_) before << a.id;
+        if (now != before) { apps_ = std::move(pinned); LoadAppIcons(); PinnedChanged(false); }
+        std::printf("liquinix-dock: settings reloaded: icon %.0f, magnification %s (%.0f), autohide %s, icons %s; pinned: %s\n", tile_,
+                    magnify_ ? "on" : "off", large_, autohide_ ? "on" : "off", qPrintable(theme_), qPrintable(PinnedIds()));
+        std::fflush(stdout);
+        if (sizes) resize(width(), WindowHeight());  // the window's height follows the icon and magnified sizes
+        update();
+    }
     // the shared layout's inputs from the Dock's current state
     dock_layout::Params LayoutParams(float W) const {
         dock_layout::Params prm;
@@ -488,6 +561,10 @@ private:
     bool autohide_;                       // automatic hiding (ocultar=1)
     float reveal_;                        // 0 = hidden, 1 = shown
     bool edgeTouched_ = false;            // the pointer touched the bottom edge while hidden
+    bool safeMode_;
+    QString theme_;                       // the icon theme in use
+    QFileSystemWatcher settingsWatcher_;  // ajustes.txt, dock.txt and their folder
+    bool reloadPending_ = false;
     BackgroundEffect* effect_ = nullptr;
     bool blurOn_ = false;      // blur requested: draw the glass tint instead of the opaque shelf
     QRegion blurRegion_;
@@ -506,19 +583,7 @@ int main(int argc, char** argv) {
     const char* safe = std::getenv("LIQUINIX_SAFE_MODE");
     bool safeMode = safe && std::strcmp(safe, "1") == 0;  // safe mode: nothing optional (no magnification)
     QString dir = QString::fromStdWString(platform::SettingsDir());
-    auto settings = ReadSettings(dir);
-    auto num = [&](const char* k, float def) { auto it = settings.find(QString::fromLatin1(k)); bool ok = false; float v = it == settings.end() ? def : it->second.toFloat(&ok); return ok ? v : def; };
-    float tile = std::clamp(num("tamanho", 48), 16.f, 128.f);
-    float large = std::clamp(num("ampliacao_tamanho", 128), tile, 256.f);
-    bool magnify = !safeMode && settings["ampliacao"] == QLatin1String("1");
-    // icon theme: the one in the settings (tema_icones=MacTahoe, for example), else KDE's (kdeglobals), else whatever Qt
-    // found; with none of those (no platform theme, as in image mode), Breeze
-    QString theme = settings["tema_icones"];
-    if (theme.isEmpty()) {
-        QString kg = QStandardPaths::locate(QStandardPaths::GenericConfigLocation, QStringLiteral("kdeglobals"));
-        if (!kg.isEmpty()) theme = QSettings(kg, QSettings::IniFormat).value(QStringLiteral("Icons/Theme")).toString();
-    }
-    if (theme.isEmpty() && QIcon::themeName().isEmpty()) theme = QStringLiteral("breeze");
+    DockSettings st = LoadDockSettings(dir, safeMode);
     // where to look for themes (Icon Theme Specification): <XDG_DATA_DIRS>/icons and ~/.icons. The platform theme (KDE)
     // usually adds these; without it Qt only looks at its built-in icons
     QStringList searchPaths = QIcon::themeSearchPaths();
@@ -528,15 +593,13 @@ int main(int argc, char** argv) {
     for (const QString& d : iconDirs) if (!searchPaths.contains(d) && QDir(d).exists()) searchPaths << d;
     QIcon::setThemeSearchPaths(searchPaths);
     QIcon::setFallbackSearchPaths(QIcon::fallbackSearchPaths() << QStringLiteral("/usr/share/pixmaps"));  // loose icons
-    if (!theme.isEmpty()) QIcon::setThemeName(theme);
+    QIcon::setThemeName(st.theme);
     std::vector<DesktopApp> apps = ReadPinned(dir);
     std::printf("liquinix-dock: %s; settings in %s; %zu pinned apps; icon %.0f, magnification %s (%.0f); icons: %s\n", safeMode ? "safe mode" : "normal",
-                qPrintable(dir), apps.size(), tile, magnify ? "on" : "off", large, qPrintable(QIcon::themeName()));
+                qPrintable(dir), apps.size(), st.tile, st.magnify ? "on" : "off", st.large, qPrintable(QIcon::themeName()));
     std::fflush(stdout);  // output goes to a file or pipe: without this the line would only appear on exit
 
-    bool bounce = settings["animar_abertura"] != QLatin1String("0");  // the Windows setting: on unless turned off
-    bool autohide = !safeMode && settings["ocultar"] == QLatin1String("1");  // automatic hiding (the Windows setting)
-    DockWindow w(std::move(apps), tile, large, magnify, dir, bounce, autohide);
+    DockWindow w(std::move(apps), st, dir, safeMode);
     if (const char* png = std::getenv("LIQUINIX_DOCK_PNG")) {  // test: draw into an image and exit (CI and checks)
         const char* mx = std::getenv("LIQUINIX_DOCK_PNG_MOUSE");
         bool ok = w.SavePng(QString::fromLocal8Bit(png), 1280, mx ? float(std::atof(mx)) : -1.f, 2.0);
