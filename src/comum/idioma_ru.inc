@@ -1556,3 +1556,4 @@
 { L"Texto Formatado (RTF)", L"Форматированный текст (RTF)" },
 { L"Texto Simples", L"Обычный текст" },
 { L"Documentos de texto", L"Текстовые документы" },
+{ L"Downloads", L"Загрузки" },

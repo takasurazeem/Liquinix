@@ -639,7 +639,7 @@ std::wstring Label(const Item& it) {
     if (it.kind == I_GHOST) return L"";
     if (it.kind == I_APP) return apps::list[it.app].name;
     if (it.kind == I_MINWIN) { wchar_t t[200] = {}; GetWindowTextW(it.win, t, 200); return t[0] ? t : apps::list[it.app].name; }
-    if (it.kind == I_DOWNLOADS) return L"Downloads";
+    if (it.kind == I_DOWNLOADS) return Tr(L"Downloads");
     if (it.kind == I_LAUNCHPAD) return LEO_DOCK ? Tr(L"Aplicativos") : L"Launchpad";  // Leopard: a pasta Aplicativos
     if (it.kind == I_TRASH) return Tr(L"Lixeira");
     return L"";

@@ -1556,3 +1556,4 @@
 { L"Texto Formatado (RTF)", L"Zengin Metin (RTF)" },
 { L"Texto Simples", L"Düz Metin" },
 { L"Documentos de texto", L"Metin Belgeleri" },
+{ L"Downloads", L"İndirilenler" },

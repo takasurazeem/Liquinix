@@ -1556,3 +1556,4 @@
 { L"Texto Formatado (RTF)", L"서식 있는 텍스트(RTF)" },
 { L"Texto Simples", L"일반 텍스트" },
 { L"Documentos de texto", L"텍스트 문서" },
+{ L"Downloads", L"다운로드" },
