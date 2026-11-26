@@ -76,3 +76,11 @@ int WindowList::MinimizeAll(const std::function<bool(const QString&)>& belongs) 
         }
     return n;
 }
+
+std::vector<WindowList::Window> WindowList::All() const {
+    std::vector<Window> r;
+    for (auto& w : windows_)
+        if (w->ready && !(w->state & org_kde_plasma_window_management::state_skiptaskbar))
+            r.push_back({ w->appId, w->title, reinterpret_cast<quintptr>(w.get()), bool(w->state & org_kde_plasma_window_management::state_minimized) });
+    return r;
+}

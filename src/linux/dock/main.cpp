@@ -71,10 +71,11 @@ std::map<QString, QString> ReadSettings(const QString& dir) {
 
 // one slot in the Dock: a pinned app, the separator, the Downloads folder or the Trash (the Windows Dock's order)
 struct Entry {
-    enum Kind { App, Separator, Downloads, Trash } kind;
+    enum Kind { App, Separator, Downloads, Trash, Minimized } kind;
     int app = -1;     // App: index in apps_
     QIcon icon;
     QString label;    // shown on hover
+    quintptr window = 0;  // Minimized: the window (a WindowList key)
 };
 
 // the XDG trash (Trash specification): $XDG_DATA_HOME/Trash/files
@@ -87,6 +88,7 @@ struct DockSettings {
     bool magnify = false, bounce = true, autohide = false;
     int edge = 0;   // dock_posicao: 0 bottom (baixo), 1 left (esquerda), 2 right (direita)
     int lang = translate::EN;  // idioma= (the Windows key); not set: the system's language
+    bool downloads = true;     // dock_downloads: Downloads in the Dock (on unless turned off)
     bool stack = true;         // pilha_exibir: pilha (Downloads opens as a stack, the default) or pasta (the folder)
     QString theme;  // icon theme to use (resolved: the setting, KDE's, or Breeze)
 };
@@ -100,6 +102,7 @@ DockSettings LoadDockSettings(const QString& dir, bool safeMode) {
     s.bounce = settings["animar_abertura"] != QLatin1String("0");           // on unless turned off
     s.autohide = !safeMode && settings["ocultar"] == QLatin1String("1");
     s.stack = settings["pilha_exibir"] != QLatin1String("pasta");
+    s.downloads = settings["dock_downloads"] != QLatin1String("0");
     QString code = settings["idioma"];
     s.lang = translate::FromCode((code.isEmpty() ? QLocale::system().name() : code).toStdWString());
     s.edge = settings["dock_posicao"] == QLatin1String("esquerda") ? 1 : settings["dock_posicao"] == QLatin1String("direita") ? 2 : 0;
@@ -118,7 +121,7 @@ class DockWindow : public QRasterWindow {
 public:
     DockWindow(std::vector<DesktopApp> apps, const DockSettings& st, QString settingsDir, bool safeMode)
         : apps_(std::move(apps)), tile_(st.tile), large_(st.large), magnify_(st.magnify), settingsDir_(std::move(settingsDir)), bounce_(st.bounce),
-          autohide_(st.autohide), reveal_(st.autohide ? 0.f : 1.f), safeMode_(safeMode), theme_(st.theme), edge_(st.edge), stack_(st.stack) {
+          autohide_(st.autohide), reveal_(st.autohide ? 0.f : 1.f), safeMode_(safeMode), theme_(st.theme), edge_(st.edge), stack_(st.stack), downloads_(st.downloads) {
         pinnedCount_ = apps_.size();
         LoadAppIcons();
         BuildEntries();
@@ -373,6 +376,11 @@ public:
     // LIQUINIX_DOCK_SCRIPT only: picks from the last menu's items even when the compositor didn't map the popup (a
     // synthetic click has no input serial, so KWin refuses an xdg_popup from it); the action itself runs for real
     bool ChooseMenu(const QString& label) { return menu_ && menu_->Choose(label); }
+    // LIQUINIX_DOCK_SCRIPT's "click <label>": a click on the entry with this label (wherever the layout put it)
+    bool ClickLabel(const QString& label) {
+        for (int i = 0; i < int(entries_.size()); i++) if (entries_[i].label == label) { OpenEntry(i); return true; }
+        return false;
+    }
     bool ChooseStack(const QString& name) { return stack_popup_ && stack_popup_->isVisible() && stack_popup_->Choose(name); }
     bool StackPng(const QString& file) { return stack_popup_ && stack_popup_->isVisible() && stack_popup_->SavePng(file); }
     bool MenuPng(const QString& file, int hoverY) {
@@ -391,6 +399,11 @@ private:
             QUrl url = en.kind == Entry::Trash ? QUrl(QStringLiteral("trash:/")) : QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
             bool ok = QDesktopServices::openUrl(url);
             std::printf("liquinix-dock: open %s: %s\n", qPrintable(url.toString()), ok ? "ok" : "failed"); std::fflush(stdout);
+            return;
+        }
+        if (en.kind == Entry::Minimized) {  // bring the window back
+            bool ok = windowList_ && windowList_->ActivateWindow(en.window);
+            std::printf("liquinix-dock: restore \"%s\": %s\n", qPrintable(en.label), ok ? "ok" : "gone"); std::fflush(stdout);
             return;
         }
         if (en.kind != Entry::App) return;
@@ -413,7 +426,7 @@ private:
     struct MenuContext { std::vector<quintptr> windows; std::vector<DesktopAction> actions; };
     void ShowMenu(int index) {
         const Entry& en = entries_[index];
-        if (en.kind == Entry::Separator) return;
+        if (en.kind == Entry::Separator || en.kind == Entry::Minimized) return;  // a minimized window has no menu
         std::vector<DockMenu::Item> items;
         MenuContext ctx;
         auto separator = [&] { if (!items.empty() && !items.back().separator) items.push_back({ QString(), 0, true }); };
@@ -551,16 +564,20 @@ private:
             return id == QLatin1String("liquinix-dock") || (!QGuiApplication::desktopFileName().isEmpty() && id == QGuiApplication::desktopFileName());
         });
         // the open unpinned apps (not mid-drag: the entries under the pointer stay put until it's dropped)
-        if (!dragging_ && UpdateOpenApps(ids)) {
-            BuildEntries(); hover_ = -1; running_.assign(apps_.size(), false); launchedAt_.resize(apps_.size(), 0); update();
+        bool openChanged = !dragging_ && UpdateOpenApps(ids);
+        bool minimizedChanged = !dragging_ && UpdateMinimized();
+        if (openChanged || minimizedChanged) {
+            BuildEntries(); hover_ = -1; launchedAt_.resize(apps_.size(), 0); update();
         }
         std::vector<bool> now(apps_.size(), false);
         for (size_t i = 0; i < apps_.size(); i++)
             for (const QString& id : ids) if (WindowBelongsTo(apps_[i], id)) { now[i] = true; break; }
         for (size_t i = 0; i < apps_.size(); i++) if (now[i]) launchedAt_[i] = 0;  // its window is here: stop bouncing
-        if (now == running_) return;
+        // compared by app id, not by index: a rebuilt list (open or minimized windows) moves the indices
         running_ = now;
         QStringList names; for (size_t i = 0; i < apps_.size(); i++) if (running_[i]) names << apps_[i].id;
+        if (names == runningIds_) return;
+        runningIds_ = names;
         std::printf("liquinix-dock: running: %s\n", names.isEmpty() ? "(none)" : qPrintable(names.join(QStringLiteral(", "))));
         std::fflush(stdout);
         update();
@@ -587,6 +604,29 @@ private:
         QStringList names; for (size_t i = pinnedCount_; i < apps_.size(); i++) names << apps_[i].id;
         std::printf("liquinix-dock: open, not pinned: %s\n", names.isEmpty() ? "(none)" : qPrintable(names.join(QStringLiteral(", "))));
         std::fflush(stdout);
+        return true;
+    }
+    // the minimized windows: those already shown keep their place, newly minimized ones are added at the end. True if
+    // the list changed.
+    bool UpdateMinimized() {
+        std::vector<MinimizedWindow> now;
+        std::vector<WindowList::Window> all = windowList_ && windowList_->Available() ? windowList_->All() : std::vector<WindowList::Window>();
+        auto isOwn = [](const QString& id) { return id == QLatin1String("liquinix-dock"); };
+        for (const MinimizedWindow& m : minimized_)
+            for (const WindowList::Window& w : all) if (w.key == m.key && w.minimized) { now.push_back({ w.key, w.title, m.icon }); break; }
+        for (const WindowList::Window& w : all) {
+            if (!w.minimized || isOwn(w.appId)) continue;
+            if (std::any_of(now.begin(), now.end(), [&](const MinimizedWindow& m) { return m.key == w.key; })) continue;
+            QIcon icon;
+            for (size_t i = 0; i < apps_.size() && icon.isNull(); i++) if (WindowBelongsTo(apps_[i], w.appId)) icon = appIcons_[i];
+            if (icon.isNull()) icon = IconFor(AppForWindow(w.appId));
+            now.push_back({ w.key, w.title.isEmpty() ? w.appId : w.title, icon });
+        }
+        bool same = now.size() == minimized_.size();
+        for (size_t i = 0; same && i < now.size(); i++) same = now[i].key == minimized_[i].key && now[i].title == minimized_[i].title;
+        minimized_ = std::move(now);
+        if (same) return false;
+        std::printf("liquinix-dock: minimized: %zu window(s)\n", minimized_.size()); std::fflush(stdout);
         return true;
     }
     // the .desktop file for a window's app id (as it is, or in lower case), remembered per id; without one, the app id
@@ -667,6 +707,7 @@ private:
         bool sizes = st.tile != tile_ || st.large != large_;
         bool themeChanged = st.theme != theme_;
         bool langChanged = st.lang != translate::Language();
+        if (st.downloads != downloads_) { downloads_ = st.downloads; BuildEntries(); }
         if (langChanged) { translate::SetLanguage(st.lang); BuildEntries(); }  // the labels in the new language
         tile_ = st.tile; large_ = st.large; magnify_ = st.magnify; bounce_ = st.bounce; autohide_ = st.autohide; stack_ = st.stack;
         if (themeChanged) {  // every icon again, from the new theme
@@ -722,7 +763,11 @@ private:
         entries_.clear();
         for (size_t i = 0; i < apps_.size(); i++) entries_.push_back({ Entry::App, int(i), appIcons_[i], apps_[i].name });
         entries_.push_back({ Entry::Separator, -1, QIcon(), QString() });
-        entries_.push_back({ Entry::Downloads, -1, QIcon::fromTheme(QStringLiteral("folder-downloads"), QIcon::fromTheme(QStringLiteral("folder"))), Tr(L"Downloads") });
+        if (downloads_)
+            entries_.push_back({ Entry::Downloads, -1, QIcon::fromTheme(QStringLiteral("folder-downloads"), QIcon::fromTheme(QStringLiteral("folder"))), Tr(L"Downloads") });
+        // minimized windows between Downloads and the Trash, as on the Mac and the Windows Dock (with the app's icon:
+        // a live thumbnail of another app's window needs screen capture, which Wayland keeps behind a portal)
+        for (const MinimizedWindow& m : minimized_) entries_.push_back({ Entry::Minimized, -1, m.icon, m.title, m.key });
         entries_.push_back({ Entry::Trash, -1, trash, Tr(L"Lixeira") });
         items_.clear();  // a different set of slots: no centres to carry over
     }
@@ -787,6 +832,7 @@ private:
     bool trashFull_ = false;
     std::vector<dock_layout::Item> items_;
     std::vector<bool> running_;           // per app: has an open window
+    QStringList runningIds_;              // the running apps last reported (and drawn)
     QHash<QString, DesktopApp> windowApps_;  // a window's app id -> its .desktop app (or a stand-in), found once
     LauncherEntries* badges_ = nullptr;   // apps' notification counts (null without a session bus)
     std::vector<double> launchedAt_;      // per pinned app: when it was launched (NowMs), 0 = not bouncing
@@ -803,6 +849,9 @@ private:
     QFileSystemWatcher settingsWatcher_;  // ajustes.txt, dock.txt and their folder
     int edge_;                            // 0 bottom, 1 left, 2 right
     bool stack_;                          // Downloads opens as a stack (pilha_exibir)
+    bool downloads_;                      // Downloads is in the Dock (dock_downloads)
+    struct MinimizedWindow { quintptr key; QString title; QIcon icon; };
+    std::vector<MinimizedWindow> minimized_;  // minimized windows, in the order they were minimized
     float winW_ = 1, winH_ = 1;           // the window's (or test image's) size for this frame
     bool reloadPending_ = false;
     BackgroundEffect* effect_ = nullptr;
@@ -882,6 +931,11 @@ int main(int argc, char** argv) {
                 QCoreApplication::sendEvent(&w, &mv); settle();
                 QMouseEvent pr(QEvent::MouseButtonPress, pos, w.mapToGlobal(pos), Qt::RightButton, Qt::RightButton, Qt::NoModifier);
                 QCoreApplication::sendEvent(&w, &pr); settle();
+                continue;
+            } else if (p[0] == QLatin1String("click") && p.size() >= 2) {  // a click on an entry by its label
+                QString label = QStringList(p.mid(1)).join(' ');
+                std::printf("liquinix-dock: click \"%s\": %s\n", qPrintable(label), w.ClickLabel(label) ? "done" : "not found");
+                settle();
                 continue;
             } else if (p[0] == QLatin1String("stack") && p.size() >= 2) {  // picks a file (or the folder button) in the open stack
                 QString name = QStringList(p.mid(1)).join(' ');

@@ -70,7 +70,7 @@ Telegram, Thunderbird and others send). To try one by hand:
 `gdbus emit --session --object-path /test --signal com.canonical.Unity.LauncherEntry.Update "'application://org.kde.konsole.desktop'" "{'count': <int64 3>, 'count-visible': <true>}"`.
 
 `liquinix-dock` reads the same `ajustes.txt` keys as the Windows Dock (`tamanho`, `ampliacao`,
-`ampliacao_tamanho`, `animar_abertura`, `ocultar`, `dock_posicao`, `pilha_exibir`, `idioma`; without `idioma` it
+`ampliacao_tamanho`, `animar_abertura`, `ocultar`, `dock_posicao`, `pilha_exibir`, `dock_downloads`, `idioma`; without `idioma` it
 follows the system language) from `$XDG_CONFIG_HOME/liquinix/`, plus `tema_icones` (an icon theme name such as
 `MacTahoe`; by default KDE's theme). Its pinned apps are in `dock.txt` there, one `.desktop` id per line, created
 on first run. Changes to both files apply live, without restarting the Dock. `LIQUINIX_DOCK_PNG=dock.png` draws the Dock into an image and exits, without a window
