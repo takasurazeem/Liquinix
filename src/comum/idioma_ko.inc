@@ -1557,3 +1557,4 @@
 { L"Texto Simples", L"일반 텍스트" },
 { L"Documentos de texto", L"텍스트 문서" },
 { L"Downloads", L"다운로드" },
+{ L"Abrir no Gerenciador de Arquivos", L"파일 관리자에서 열기" },

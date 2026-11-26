@@ -1557,3 +1557,4 @@
 { L"Texto Simples", L"纯文本" },
 { L"Documentos de texto", L"文本文稿" },
 { L"Downloads", L"下载" },
+{ L"Abrir no Gerenciador de Arquivos", L"在文件管理器中打开" },

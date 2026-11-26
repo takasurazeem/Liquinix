@@ -1557,3 +1557,4 @@
 { L"Texto Simples", L"Düz Metin" },
 { L"Documentos de texto", L"Metin Belgeleri" },
 { L"Downloads", L"İndirilenler" },
+{ L"Abrir no Gerenciador de Arquivos", L"Dosya Yöneticisinde Aç" },

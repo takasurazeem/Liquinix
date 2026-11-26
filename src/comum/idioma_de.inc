@@ -1557,3 +1557,4 @@
 { L"Texto Simples", L"Reiner Text" },
 { L"Documentos de texto", L"Textdokumente" },
 { L"Downloads", L"Downloads" },
+{ L"Abrir no Gerenciador de Arquivos", L"Im Dateimanager öffnen" },

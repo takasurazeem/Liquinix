@@ -1557,3 +1557,4 @@
 { L"Texto Simples", L"Texto sin formato" },
 { L"Documentos de texto", L"Documentos de texto" },
 { L"Downloads", L"Descargas" },
+{ L"Abrir no Gerenciador de Arquivos", L"Abrir en el administrador de archivos" },

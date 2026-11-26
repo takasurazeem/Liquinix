@@ -131,7 +131,7 @@ void PaintLeopard() {
     if (fac) fac->Release();
     br->SetColor(D2D1::ColorF(1, 1, 1, 0.95f));
     {
-        std::wstring title = g_apps ? std::wstring(Tr(L"Aplicativos")) : std::wstring(L"Downloads");
+        std::wstring title = g_apps ? std::wstring(Tr(L"Aplicativos")) : std::wstring(Tr(L"Downloads"));
         dc->DrawTextW(title.c_str(), (UINT32)title.size(), g_tfTitle, D2D1::RectF(0, 7, PW(), HEAD), br);
     }
     {
