@@ -48,3 +48,31 @@ int WindowList::CloseAll(const std::function<bool(const QString&)>& belongs) {
         if (w->ready && belongs(w->appId) && !(w->state & org_kde_plasma_window_management::state_skiptaskbar)) { w->close(); n++; }
     return n;
 }
+
+std::vector<WindowList::Info> WindowList::Windows(const std::function<bool(const QString&)>& belongs) const {
+    std::vector<Info> r;
+    for (auto& w : windows_)
+        if (w->ready && belongs(w->appId) && !(w->state & org_kde_plasma_window_management::state_skiptaskbar))
+            r.push_back({ w->title, reinterpret_cast<quintptr>(w.get()) });
+    return r;
+}
+
+bool WindowList::ActivateWindow(quintptr key) {
+    for (auto& w : windows_) {
+        if (reinterpret_cast<quintptr>(w.get()) != key) continue;
+        w->set_state(org_kde_plasma_window_management::state_active | org_kde_plasma_window_management::state_minimized,
+                     org_kde_plasma_window_management::state_active);
+        return true;
+    }
+    return false;
+}
+
+int WindowList::MinimizeAll(const std::function<bool(const QString&)>& belongs) {
+    int n = 0;
+    for (auto& w : windows_)
+        if (w->ready && belongs(w->appId) && !(w->state & org_kde_plasma_window_management::state_skiptaskbar)) {
+            w->set_state(org_kde_plasma_window_management::state_minimized, org_kde_plasma_window_management::state_minimized);
+            n++;
+        }
+    return n;
+}

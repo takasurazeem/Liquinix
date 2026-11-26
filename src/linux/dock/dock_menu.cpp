@@ -1,6 +1,7 @@
 // The Dock's right-click menu on Linux (see dock_menu.h).
 #include "dock_menu.h"
 #include "platform/linux/painter_qt.h"
+#include <QFontMetricsF>
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -28,7 +29,7 @@ float DockMenu::ItemTop(int i) const {
 
 int DockMenu::ItemAt(float y) const {
     for (int i = 0; i < int(items_.size()); i++)
-        if (!items_[i].separator && y >= ItemTop(i) && y < ItemTop(i) + ItemHeight(i)) return i;
+        if (!items_[i].separator && !items_[i].disabled && y >= ItemTop(i) && y < ItemTop(i) + ItemHeight(i)) return i;
     return -1;
 }
 
@@ -37,8 +38,12 @@ void DockMenu::Open(const QPoint& anchor) {
     QImage probe(1, 1, QImage::Format_ARGB32_Premultiplied);
     QPainter pp(&probe);
     PainterQt measure(pp);
+    // long labels (window titles) are shortened in the middle, so the menu stays at most ~360 points wide
+    QFont font; font.setPointSizeF(kTextSize * 0.75);  // the size PainterQt draws kTextSize text at
+    QFontMetricsF fm(font);
+    for (auto& it : items_) if (!it.separator) it.label = fm.elidedText(it.label, Qt::ElideMiddle, 300);
     float w = 160;
-    for (auto& it : items_) if (!it.separator) w = std::max(w, measure.TextWidth(it.label.toStdWString(), kTextSize, drawing::Weight::Normal) + 44);
+    for (auto& it : items_) if (!it.separator) w = std::max(w, measure.TextWidth(it.label.toStdWString(), kTextSize, drawing::Weight::Normal) + 44 + LabelLeft() - 16);
     pp.end();
     width_ = w;
     int h = int(ItemTop(int(items_.size())) + kPad);
@@ -88,10 +93,13 @@ void DockMenu::Draw(QPainter& p, bool clear) {
                                dark ? drawing::Color{ 1, 1, 1, 0.12f } : drawing::Color{ 0, 0, 0, 0.10f });
             continue;
         }
-        bool hot = i == hover_;
+        bool hot = i == hover_ && !items_[i].disabled;
         if (hot) pq.FillRoundedRect(drawing::Rect{ kPad, top, float(width()) - kPad, top + h }, 6, drawing::Color{ 0.04f, 0.52f, 1.0f, 1 });  // the accent blue
-        pq.Text(items_[i].label.toStdWString(), drawing::Rect{ 16, top, float(width()) - 16, top + h }, kTextSize, drawing::Weight::Normal,
-                drawing::Align::Leading, hot ? drawing::Color{ 1, 1, 1, 1 } : text);
+        drawing::Color ink = hot ? drawing::Color{ 1, 1, 1, 1 } : items_[i].disabled ? drawing::Color{ text.r, text.g, text.b, 0.45f } : text;
+        if (items_[i].checked)  // the checkmark, in the column before the labels
+            pq.Text(L"\u2713", drawing::Rect{ 10, top, LabelLeft(), top + h }, kTextSize, drawing::Weight::Semibold, drawing::Align::Leading, ink);
+        pq.Text(items_[i].label.toStdWString(), drawing::Rect{ LabelLeft(), top, float(width()) - 16, top + h }, kTextSize, drawing::Weight::Normal,
+                drawing::Align::Leading, ink);
     }
 }
 

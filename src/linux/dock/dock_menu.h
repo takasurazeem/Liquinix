@@ -9,7 +9,11 @@
 
 class DockMenu : public QRasterWindow {
 public:
-    struct Item { QString label; int id = 0; bool separator = false; };
+    struct Item {
+        QString label; int id = 0; bool separator = false;
+        bool checkable = false, checked = false;  // a checkmark column (Open at Login)
+        bool disabled = false;                    // dimmed and not clickable (a section heading)
+    };
     // `chosen` gets the item's id; the menu closes itself afterwards
     DockMenu(QWindow* parent, std::vector<Item> items, std::function<void(int)> chosen);
     // opens with its bottom centre at `anchor` (the parent's coordinates)
@@ -31,6 +35,8 @@ private:
     int ItemAt(float y) const;
     float ItemTop(int i) const;
     float ItemHeight(int i) const { return items_[i].separator ? 9.f : 26.f; }
+    // where labels start: after a checkmark column when any item has one
+    float LabelLeft() const { for (auto& it : items_) if (it.checkable) return 28.f; return 16.f; }
     std::vector<Item> items_;
     std::function<void(int)> chosen_;
     int hover_ = -1;

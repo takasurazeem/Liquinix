@@ -75,12 +75,14 @@ if [[ -x "$TESTWIN" ]]; then
     printf 'tamanho=48\nampliacao=0\nanimar_abertura=0\n' > "$APPS/config/liquinix/ajustes.txt"
     # with one pinned app the Dock's first icon is at x 577 in a 1280-point wide output
     WAYLAND_DISPLAY="$SOCKET" QT_QPA_PLATFORM=wayland XDG_DATA_HOME="$APPS/data" XDG_CONFIG_HOME="$APPS/config" LANG=C.UTF-8 LC_ALL=C.UTF-8 \
-        LIQUINIX_DOCK_SCRIPT="wait 1500; move 577 140; press; release; wait 3000; press; release; wait 500; rclick 577 140; menu Quit; wait 2000" \
+        LIQUINIX_DOCK_SCRIPT="wait 1500; move 577 140; press; release; wait 3000; press; release; wait 500; rclick 577 140; menu Liquinix test window; wait 300; rclick 577 140; menu Hide; wait 500; rclick 577 140; menu Quit; wait 2000" \
         timeout 30 "$DOCK" >"$LOGS/apps.log" 2>&1
     log="$LOGS/apps.log"
     check "launched the pinned app"          'liquinix-dock: launch liquinix-test-window .*: ok'
     check "saw it running (window list)"     'liquinix-dock: running: liquinix-test-window'
     check "brought it to the front"          'liquinix-dock: activate liquinix-test-window'
+    check "its window is in the menu, by title" 'liquinix-dock: window 0 of liquinix-test-window: activated'
+    check "Hide minimizes its window"        'liquinix-dock: hide liquinix-test-window: 1 window'
     check "Quit asked its window to close"   'liquinix-dock: quit liquinix-test-window: 1 window'
     check "no longer running after Quit"     'liquinix-dock: running: \(none\)'
     if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$log"; then
