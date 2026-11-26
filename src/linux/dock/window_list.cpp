@@ -1,11 +1,16 @@
 // Open windows from Plasma's protocol (see window_list.h).
 #include "window_list.h"
 #include <algorithm>
+#include <wayland-client-core.h>
 
 // version 16: window_with_uuid (13) and initial_state (4); Qt binds the lower of ours and KWin's
 WindowList::WindowList() : QWaylandClientExtensionTemplate<WindowList>(16) { initialize(); }
 
-WindowList::~WindowList() { windows_.clear(); }
+WindowList::~WindowList() {
+    windows_.clear();
+    // the manager has no destructor request in the protocol, and Qt's wrapper doesn't free it: release our proxy
+    if (object()) wl_proxy_destroy(reinterpret_cast<wl_proxy*>(object()));
+}
 
 void WindowList::org_kde_plasma_window_management_window_with_uuid(uint32_t, const QString& uuid) {
     windows_.push_back(std::make_unique<PlasmaWindow>(this, get_window_by_uuid(uuid)));
