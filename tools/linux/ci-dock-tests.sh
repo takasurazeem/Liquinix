@@ -82,6 +82,13 @@ reset; got=$(run "rclick 552 140; menu Supprimer du Dock")
 check "idioma=fr: the menu is in French (Supprimer du Dock)" "$got" "fake-a,fake-c,fake-d"
 printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
 
+# Downloads as a stack: newest first, unfinished downloads left out, a file picked by name
+mkdir -p "$DIR/downloads"; printf 'XDG_DOWNLOAD_DIR="%s"\n' "$DIR/downloads" > "$XDG_CONFIG_HOME/user-dirs.dirs"
+i=0; for f in old.pdf photo.png notes.txt partial.iso.part; do i=$((i+1)); echo x > "$DIR/downloads/$f"; touch -d "2026-11-0$i 10:00" "$DIR/downloads/$f"; done
+reset; out=$(LIQUINIX_DOCK_SCRIPT="move 728 140; press; release; stack notes.txt" timeout 60 "$DOCK" 2>&1 | tee -a "$DIR/all.log")
+check "Downloads opens as a stack, newest first" "$(sed -n 's/^liquinix-dock: stack: //p' <<<"$out")" "notes.txt, photo.png, old.pdf"
+check "a file in the stack can be picked" "$(grep -c 'stack "notes.txt": chosen' <<<"$out")" "1"
+
 # a sanitized build reports memory errors, leaks and undefined behaviour in the output: any of those fails the run
 if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log"; then
     echo "FAIL sanitizer reports:"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log" | head -60; fail=1

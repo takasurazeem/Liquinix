@@ -6,6 +6,7 @@
 #include "apps.h"
 #include "background_effect.h"
 #include "dock_menu.h"
+#include "dock_stack.h"
 #include "window_list.h"
 #include "core/curves.h"
 #include "core/translate.h"
@@ -24,6 +25,7 @@
 #include <QGuiApplication>
 #include <QIcon>
 #include <QLocale>
+#include <QMimeDatabase>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -82,6 +84,7 @@ struct DockSettings {
     bool magnify = false, bounce = true, autohide = false;
     int edge = 0;   // dock_posicao: 0 bottom (baixo), 1 left (esquerda), 2 right (direita)
     int lang = translate::EN;  // idioma= (the Windows key); not set: the system's language
+    bool stack = true;         // pilha_exibir: pilha (Downloads opens as a stack, the default) or pasta (the folder)
     QString theme;  // icon theme to use (resolved: the setting, KDE's, or Breeze)
 };
 DockSettings LoadDockSettings(const QString& dir, bool safeMode) {
@@ -93,6 +96,7 @@ DockSettings LoadDockSettings(const QString& dir, bool safeMode) {
     s.magnify = !safeMode && settings["ampliacao"] == QLatin1String("1");  // safe mode: nothing optional
     s.bounce = settings["animar_abertura"] != QLatin1String("0");           // on unless turned off
     s.autohide = !safeMode && settings["ocultar"] == QLatin1String("1");
+    s.stack = settings["pilha_exibir"] != QLatin1String("pasta");
     QString code = settings["idioma"];
     s.lang = translate::FromCode((code.isEmpty() ? QLocale::system().name() : code).toStdWString());
     s.edge = settings["dock_posicao"] == QLatin1String("esquerda") ? 1 : settings["dock_posicao"] == QLatin1String("direita") ? 2 : 0;
@@ -111,7 +115,7 @@ class DockWindow : public QRasterWindow {
 public:
     DockWindow(std::vector<DesktopApp> apps, const DockSettings& st, QString settingsDir, bool safeMode)
         : apps_(std::move(apps)), tile_(st.tile), large_(st.large), magnify_(st.magnify), settingsDir_(std::move(settingsDir)), bounce_(st.bounce),
-          autohide_(st.autohide), reveal_(st.autohide ? 0.f : 1.f), safeMode_(safeMode), theme_(st.theme), edge_(st.edge) {
+          autohide_(st.autohide), reveal_(st.autohide ? 0.f : 1.f), safeMode_(safeMode), theme_(st.theme), edge_(st.edge), stack_(st.stack) {
         LoadAppIcons();
         BuildEntries();
         UpdateTrash();
@@ -348,6 +352,8 @@ protected:
 public:
     // LIQUINIX_DOCK_SCRIPT's "menu <label>": picks an item of the open right-click menu
     bool ChooseMenu(const QString& label) { return menu_ && menu_->isVisible() && menu_->Choose(label); }
+    bool ChooseStack(const QString& name) { return stack_popup_ && stack_popup_->isVisible() && stack_popup_->Choose(name); }
+    bool StackPng(const QString& file) { return stack_popup_ && stack_popup_->isVisible() && stack_popup_->SavePng(file); }
     bool MenuPng(const QString& file, int hoverY) {
         if (!menu_ || !menu_->isVisible()) return false;
         QMouseEvent mv(QEvent::MouseMove, QPointF(20, hoverY), menu_->mapToGlobal(QPointF(20, hoverY)), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
@@ -359,6 +365,7 @@ private:
     // a click on an entry: open the folder, bring a running app forward, or launch it (and bounce)
     void OpenEntry(int index) {
         const Entry& en = entries_[index];
+        if (en.kind == Entry::Downloads && stack_) { ShowStack(index); return; }  // Downloads as a stack (pilha_exibir=pilha)
         if (en.kind == Entry::Downloads || en.kind == Entry::Trash) {  // open the folder in the file manager
             QUrl url = en.kind == Entry::Trash ? QUrl(QStringLiteral("trash:/")) : QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
             bool ok = QDesktopServices::openUrl(url);
@@ -392,6 +399,31 @@ private:
         QString appId = en.kind == Entry::App ? apps_[en.app].id : QString();
         menu_ = std::make_unique<DockMenu>(this, std::move(items), [this, kind, appId](int action) { MenuChosen(kind, appId, action); });
         menu_->Open(ToWindow().map(QPointF(items_[index].cx, bg_.top - 8)).toPoint());
+        hover_ = -1;
+        update();
+    }
+    // the newest files in Downloads (up to 12; not hidden or unfinished ones), in a popup above the icon
+    void ShowStack(int index) {
+        QString dir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+        QMimeDatabase mimes;
+        std::vector<DockStack::File> files;
+        for (const QFileInfo& fi : QDir(dir).entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDir::Time)) {
+            QString suffix = fi.suffix().toLower();
+            if (suffix == QLatin1String("part") || suffix == QLatin1String("crdownload") || suffix == QLatin1String("download")) continue;
+            QMimeType m = mimes.mimeTypeForFile(fi);
+            QIcon icon = QIcon::fromTheme(m.iconName(), QIcon::fromTheme(m.genericIconName(), QIcon::fromTheme(QStringLiteral("text-x-generic"))));
+            files.push_back({ fi.absoluteFilePath(), fi.fileName(), icon });
+            if (files.size() == 12) break;
+        }
+        QStringList names; for (auto& f : files) names << f.name;
+        std::printf("liquinix-dock: stack: %s\n", names.isEmpty() ? "(empty)" : qPrintable(names.join(QStringLiteral(", ")))); std::fflush(stdout);
+        stack_popup_ = std::make_unique<DockStack>(this, Tr(L"Downloads"), std::move(files), Tr(L"Abrir no Gerenciador de Arquivos"), Tr(L"Nenhum item"),
+            [dir](const QString& path) {  // a file opens with its default app; the button opens the folder
+                QUrl url = QUrl::fromLocalFile(path.isEmpty() ? dir : path);
+                bool ok = QDesktopServices::openUrl(url);
+                std::printf("liquinix-dock: open %s: %s\n", qPrintable(url.toString()), ok ? "ok" : "failed"); std::fflush(stdout);
+            });
+        stack_popup_->Open(ToWindow().map(QPointF(items_[index].cx, bg_.top - 8)).toPoint());
         hover_ = -1;
         update();
     }
@@ -505,7 +537,7 @@ private:
         bool themeChanged = st.theme != theme_;
         bool langChanged = st.lang != translate::Language();
         if (langChanged) { translate::SetLanguage(st.lang); BuildEntries(); }  // the labels in the new language
-        tile_ = st.tile; large_ = st.large; magnify_ = st.magnify; bounce_ = st.bounce; autohide_ = st.autohide;
+        tile_ = st.tile; large_ = st.large; magnify_ = st.magnify; bounce_ = st.bounce; autohide_ = st.autohide; stack_ = st.stack;
         if (themeChanged) {  // every icon again, from the new theme
             theme_ = st.theme; QIcon::setThemeName(theme_); LoadAppIcons(); BuildEntries();
             for (auto& e : entries_) if (e.kind == Entry::Trash) e.icon = QIcon();
@@ -608,6 +640,7 @@ private:
     bool dragging_ = false, outside_ = false;  // dragging that app; dropped now it would be unpinned
     float dragY_ = 0;
     std::unique_ptr<DockMenu> menu_;      // the right-click menu while it's open
+    std::unique_ptr<DockStack> stack_popup_;  // the Downloads stack while it's open
     std::vector<Entry> entries_;          // what the Dock shows, in order (items_ is laid out from it)
     QFileSystemWatcher trashWatcher_;
     bool trashFull_ = false;
@@ -626,6 +659,7 @@ private:
     QString theme_;                       // the icon theme in use
     QFileSystemWatcher settingsWatcher_;  // ajustes.txt, dock.txt and their folder
     int edge_;                            // 0 bottom, 1 left, 2 right
+    bool stack_;                          // Downloads opens as a stack (pilha_exibir)
     float winW_ = 1, winH_ = 1;           // the window's (or test image's) size for this frame
     bool reloadPending_ = false;
     BackgroundEffect* effect_ = nullptr;
@@ -696,7 +730,13 @@ int main(int argc, char** argv) {
                 QMouseEvent pr(QEvent::MouseButtonPress, pos, w.mapToGlobal(pos), Qt::RightButton, Qt::RightButton, Qt::NoModifier);
                 QCoreApplication::sendEvent(&w, &pr); settle();
                 continue;
-            } else if (p[0] == QLatin1String("menupng") && p.size() == 3) {  // the open menu in an image, item at y highlighted
+            } else if (p[0] == QLatin1String("stack") && p.size() >= 2) {  // picks a file (or the folder button) in the open stack
+                QString name = QStringList(p.mid(1)).join(' ');
+                std::printf("liquinix-dock: stack \"%s\": %s\n", qPrintable(name), w.ChooseStack(name) ? "chosen" : "not found");
+                settle();
+                continue;
+            } else if (p[0] == QLatin1String("stackpng") && p.size() == 2) { w.StackPng(p[1]); continue; }
+            else if (p[0] == QLatin1String("menupng") && p.size() == 3) {  // the open menu in an image, item at y highlighted
                 w.MenuPng(p[1], p[2].toInt());
                 continue;
             } else if (p[0] == QLatin1String("menu") && p.size() >= 2) {  // picks a menu item by its label

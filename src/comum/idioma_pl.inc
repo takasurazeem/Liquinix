@@ -1557,3 +1557,4 @@
 { L"Texto Simples", L"Zwykły tekst" },
 { L"Documentos de texto", L"Dokumenty tekstowe" },
 { L"Downloads", L"Pobrane" },
+{ L"Abrir no Gerenciador de Arquivos", L"Otwórz w menedżerze plików" },

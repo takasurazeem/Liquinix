@@ -43,7 +43,8 @@ target_link_libraries(liquinix-painter-qt PUBLIC liquinix-core Qt6::Gui)
 
 # the Dock (#20): pinned apps from .desktop files, theme icons, magnification, running dots; the layout is the Windows one
 add_executable(liquinix-dock src/linux/dock/main.cpp src/linux/dock/apps.cpp src/linux/dock/window_list.cpp src/linux/dock/window_list.h
-    src/linux/dock/background_effect.cpp src/linux/dock/background_effect.h src/linux/dock/dock_menu.cpp src/linux/dock/dock_menu.h)
+    src/linux/dock/background_effect.cpp src/linux/dock/background_effect.h src/linux/dock/dock_menu.cpp src/linux/dock/dock_menu.h
+    src/linux/dock/dock_stack.cpp src/linux/dock/dock_stack.h)
 set_target_properties(liquinix-dock PROPERTIES AUTOMOC ON)
 qt6_generate_wayland_protocol_client_sources(liquinix-dock FILES ${PLASMA_WAYLAND_PROTOCOLS_DIR}/plasma-window-management.xml
     ${WAYLAND_PROTOCOLS_DIR}/staging/ext-background-effect/ext-background-effect-v1.xml)

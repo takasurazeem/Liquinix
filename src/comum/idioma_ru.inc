@@ -1557,3 +1557,4 @@
 { L"Texto Simples", L"Обычный текст" },
 { L"Documentos de texto", L"Текстовые документы" },
 { L"Downloads", L"Загрузки" },
+{ L"Abrir no Gerenciador de Arquivos", L"Открыть в файловом менеджере" },
