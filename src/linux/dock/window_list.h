@@ -25,6 +25,13 @@ public:
     bool Activate(const std::function<bool(const QString&)>& belongs);
     // asks every window whose app_id `belongs` accepts to close (the app may still ask to save); returns how many
     int CloseAll(const std::function<bool(const QString&)>& belongs);
+    // the windows whose app_id `belongs` accepts (taskbar ones), oldest first: their titles and a key for ActivateWindow
+    struct Info { QString title; quintptr key; };
+    std::vector<Info> Windows(const std::function<bool(const QString&)>& belongs) const;
+    // brings one window (a key from Windows()) to the front; false if it has closed since
+    bool ActivateWindow(quintptr key);
+    // minimizes every window whose app_id `belongs` accepts (Hide); returns how many
+    int MinimizeAll(const std::function<bool(const QString&)>& belongs);
 
 signals:
     void Changed();  // a window opened or closed, or changed its app_id or state
@@ -43,11 +50,13 @@ public:
     PlasmaWindow(WindowList* owner, struct ::org_kde_plasma_window* obj) : QtWayland::org_kde_plasma_window(obj), owner_(owner) {}
     ~PlasmaWindow() override { if (object()) destroy(); }
     QString appId;
+    QString title;
     uint32_t state = 0;
     bool ready = false;  // initial_state has arrived (before that, app_id and state may be incomplete)
 
 protected:
     void org_kde_plasma_window_app_id_changed(const QString& id) override { appId = id; if (ready) emit owner_->Changed(); }
+    void org_kde_plasma_window_title_changed(const QString& t) override { title = t; }  // read when a menu opens: no signal
     void org_kde_plasma_window_state_changed(uint32_t flags) override { state = flags; if (ready) emit owner_->Changed(); }
     void org_kde_plasma_window_initial_state() override { ready = true; emit owner_->Changed(); }
     void org_kde_plasma_window_unmapped() override { owner_->Gone(this); }

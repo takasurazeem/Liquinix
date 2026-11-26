@@ -5,7 +5,7 @@
 #   tools/linux/ci-dock-tests.sh [./build/liquinix-dock]
 #
 # Checks: dragging a pinned app reorders the Dock and saves dock.txt; dragging it out unpins it; the right-click menu
-# unpins and opens; a click makes the icon bounce, and the bounce stops after 8 s; automatic hiding comes and goes;
+# unpins and opens, and runs the app's own actions and Open at Login; a click makes the icon bounce, and the bounce stops after 8 s; automatic hiding comes and goes;
 # settings changes are applied live.
 # Exits 0 when all pass.
 set -uo pipefail
@@ -23,6 +23,8 @@ mkdir -p "$XDG_DATA_HOME/applications" "$XDG_CONFIG_HOME/liquinix"
 for a in a b c d; do
     printf '[Desktop Entry]\nType=Application\nName=Fake %s\nIcon=%s\nExec=true\n' "$a" "$DIR/icon.xpm" > "$XDG_DATA_HOME/applications/fake-$a.desktop"
 done
+# fake-a has its own actions, like Firefox's "New Private Window"
+printf 'Actions=new-window;broken;\n\n[Desktop Action new-window]\nName=New Fake Window\nExec=true --new-window %%u\n\n[Desktop Action broken]\nName=No Exec\n' >> "$XDG_DATA_HOME/applications/fake-a.desktop"
 printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
 reset() { printf 'fake-a\nfake-b\nfake-c\nfake-d\n' > "$XDG_CONFIG_HOME/liquinix/dock.txt"; }
 saved() { grep -v '^#' "$XDG_CONFIG_HOME/liquinix/dock.txt" | paste -sd, -; }
@@ -109,6 +111,15 @@ if command -v gdbus >/dev/null && command -v dbus-run-session >/dev/null; then
 else
     echo "FAIL badges: gdbus and dbus-run-session are needed (glib2, dbus-daemon)"; fail=1
 fi
+
+# the app menu: the app's own actions (.desktop), and Open at Login (an autostart copy that comes and goes)
+reset; out=$(LIQUINIX_DOCK_SCRIPT="rclick 501 140; menupng $DIR/appmenu.png 0; menu New Fake Window" timeout 60 "$DOCK" 2>&1 | tee -a "$DIR/all.log")
+check "the menu runs the app's own action" "$(grep -c 'action fake-a "New Fake Window" (true --new-window): ok' <<<"$out")" "1"
+check "an action without Exec isn't listed" "$(LIQUINIX_DOCK_SCRIPT="rclick 501 140; menu No Exec" timeout 60 "$DOCK" 2>&1 | tee -a "$DIR/all.log" | grep -c 'menu "No Exec": not found')" "1"
+reset; LIQUINIX_DOCK_SCRIPT="rclick 501 140; menu Open at Login" timeout 60 "$DOCK" >>"$DIR/all.log" 2>&1
+check "Open at Login adds an autostart entry" "$(grep -c '^Exec=true$' "$XDG_CONFIG_HOME/autostart/fake-a.desktop" 2>/dev/null)" "1"
+LIQUINIX_DOCK_SCRIPT="rclick 501 140; menu Open at Login" timeout 60 "$DOCK" >>"$DIR/all.log" 2>&1
+check "and turning it off removes it" "$([[ -e "$XDG_CONFIG_HOME/autostart/fake-a.desktop" ]] && echo present || echo gone)" "gone"
 
 # a sanitized build reports memory errors, leaks and undefined behaviour in the output: any of those fails the run
 if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log"; then

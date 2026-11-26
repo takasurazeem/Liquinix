@@ -407,22 +407,49 @@ private:
     }
     // the right-click menu (as on the Mac and the Windows Dock): Open or Quit, and Remove from Dock, for a pinned app;
     // Open for Downloads and the Trash
-    enum MenuAction { kOpen = 1, kQuit, kRemove, kKeep };
+    // For an app, as on the Mac and the Windows Dock: its windows by title, its own actions (.desktop), the options
+    // (Remove from / Keep in Dock, Open at Login), then Hide and Quit, or Open when it isn't running.
+    enum MenuAction { kOpen = 1, kQuit, kRemove, kKeep, kHide, kLogin, kWindow0 = 3000, kAction0 = 6000 };
+    struct MenuContext { std::vector<quintptr> windows; std::vector<DesktopAction> actions; };
     void ShowMenu(int index) {
         const Entry& en = entries_[index];
         if (en.kind == Entry::Separator) return;
         std::vector<DockMenu::Item> items;
+        MenuContext ctx;
+        auto separator = [&] { if (!items.empty() && !items.back().separator) items.push_back({ QString(), 0, true }); };
         bool running = en.kind == Entry::App && running_[en.app];
-        items.push_back({ running ? Tr(L"Encerrar") : Tr(L"Abrir"), running ? kQuit : kOpen });
-        if (en.kind == Entry::App) {  // pinned: Remove from Dock; open but not pinned: Keep in Dock
-            items.push_back({ QString(), 0, true });
+        if (en.kind == Entry::App) {
+            const DesktopApp& a = apps_[en.app];
+            if (running && windowList_)
+                for (const WindowList::Info& w : windowList_->Windows([&](const QString& id) { return WindowBelongsTo(a, id); })) {
+                    if (ctx.windows.size() == 15) break;
+                    items.push_back({ w.title.isEmpty() ? a.name : w.title, kWindow0 + int(ctx.windows.size()) });
+                    ctx.windows.push_back(w.key);
+                }
+            separator();
+            for (const DesktopAction& da : a.actions) {
+                items.push_back({ da.name, kAction0 + int(ctx.actions.size()) });
+                ctx.actions.push_back(da);
+            }
+            separator();
+            DockMenu::Item heading{ Tr(L"Opções"), 0 }; heading.disabled = true;
+            items.push_back(heading);
+            // pinned: Remove from Dock; open but not pinned: Keep in Dock
             if (size_t(en.app) < pinnedCount_) items.push_back({ Tr(L"Remover do Dock"), kRemove });
             else items.push_back({ Tr(L"Manter no Dock"), kKeep });
+            if (!a.file.isEmpty()) {
+                DockMenu::Item login{ Tr(L"Abrir ao Iniciar Sessão"), kLogin };
+                login.checkable = true; login.checked = OpensAtLogin(a);
+                items.push_back(login);
+            }
+            separator();
+            if (running) items.push_back({ Tr(L"Ocultar"), kHide });
         }
+        items.push_back({ running ? Tr(L"Encerrar") : Tr(L"Abrir"), running ? kQuit : kOpen });
         // the choice refers to the entry by what it shows (the list can change while the menu is open)
         Entry::Kind kind = en.kind;
         QString appId = en.kind == Entry::App ? apps_[en.app].id : QString();
-        menu_ = std::make_unique<DockMenu>(this, std::move(items), [this, kind, appId](int action) { MenuChosen(kind, appId, action); });
+        menu_ = std::make_unique<DockMenu>(this, std::move(items), [this, kind, appId, ctx](int action) { MenuChosen(kind, appId, action, ctx); });
         menu_->Open(ToWindow().map(QPointF(items_[index].cx, bg_.top - 8)).toPoint());
         hover_ = -1;
         update();
@@ -452,7 +479,7 @@ private:
         hover_ = -1;
         update();
     }
-    void MenuChosen(Entry::Kind kind, const QString& appId, int action) {
+    void MenuChosen(Entry::Kind kind, const QString& appId, int action, const MenuContext& ctx) {
         int index = -1;
         for (int i = 0; i < int(entries_.size()); i++)
             if (entries_[i].kind == kind && (kind != Entry::App || apps_[entries_[i].app].id == appId)) { index = i; break; }
@@ -467,6 +494,24 @@ private:
             Unpin(app);
         } else if (action == kKeep) {
             Pin(app, int(pinnedCount_));
+        } else if (action == kHide && windowList_) {  // minimize all its windows
+            const DesktopApp& a = apps_[app];
+            int n = windowList_->MinimizeAll([&](const QString& id) { return WindowBelongsTo(a, id); });
+            std::printf("liquinix-dock: hide %s: %d window(s)\n", qPrintable(a.id), n); std::fflush(stdout);
+        } else if (action == kLogin) {
+            const DesktopApp& a = apps_[app];
+            bool on = !OpensAtLogin(a);
+            bool ok = SetOpenAtLogin(a, on);
+            std::printf("liquinix-dock: open at login %s: %s%s\n", qPrintable(a.id), on ? "on" : "off", ok ? "" : " (failed)"); std::fflush(stdout);
+        } else if (action >= kAction0 && action - kAction0 < int(ctx.actions.size())) {  // one of the app's own actions
+            const DesktopAction& da = ctx.actions[action - kAction0];
+            bool ok = LaunchCommand(da.exec);
+            if (ok && bounce_ && !running_[app]) { launchedAt_[app] = platform::NowMs(); update(); }  // bounce until a window shows
+            std::printf("liquinix-dock: action %s \"%s\" (%s): %s\n", qPrintable(apps_[app].id), qPrintable(da.name), qPrintable(da.exec), ok ? "ok" : "failed");
+            std::fflush(stdout);
+        } else if (action >= kWindow0 && action - kWindow0 < int(ctx.windows.size()) && windowList_) {  // one window to the front
+            bool ok = windowList_->ActivateWindow(ctx.windows[action - kWindow0]);
+            std::printf("liquinix-dock: window %d of %s: %s\n", action - kWindow0, qPrintable(apps_[app].id), ok ? "activated" : "gone"); std::fflush(stdout);
         }
     }
     // an open app that wasn't pinned becomes pinned at position `to` (Keep in Dock, or dragged in among the pinned apps)
@@ -551,7 +596,7 @@ private:
         if (it != windowApps_.constEnd()) return *it;
         std::optional<DesktopApp> found = FindApp(appId);
         if (!found && appId != appId.toLower()) found = FindApp(appId.toLower());
-        DesktopApp a = found ? *found : DesktopApp{ appId, appId, appId, QString(), QString(), QString() };
+        DesktopApp a = found ? *found : DesktopApp{ appId, appId, appId, QString(), QString(), QString(), {} };
         if (found && a.wmClass.isEmpty() && a.id.compare(appId, Qt::CaseInsensitive) != 0) a.wmClass = appId;
         windowApps_.insert(appId, a);
         return a;
