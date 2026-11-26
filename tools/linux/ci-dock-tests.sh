@@ -15,6 +15,7 @@ DOCK="${1:-./build/liquinix-dock}"
 DIR="$(mktemp -d)"
 trap '[[ -n "${KEEP:-}" ]] || rm -rf "$DIR"' EXIT; [[ -n "${KEEP:-}" ]] && echo "keeping $DIR"
 export XDG_DATA_HOME="$DIR/data" XDG_CONFIG_HOME="$DIR/config" QT_QPA_PLATFORM=offscreen
+export LANG=C.UTF-8 LC_ALL=C.UTF-8  # the Dock follows the system language when idioma= isn't set: the tests use English
 mkdir -p "$XDG_DATA_HOME/applications" "$XDG_CONFIG_HOME/liquinix"
 # the fake apps' icon: an XPM written here (Qt reads it without plugins or an icon theme, which CI doesn't have)
 { echo '/* XPM */'; echo 'static char *icon[] = { "16 16 2 1", "  c None", "x c #2F8CF0",'
@@ -73,6 +74,12 @@ printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
 printf 'tamanho=48\nampliacao=0\ndock_posicao=esquerda\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
 reset; got=$(run "move 36 261; press; move 36 280; move 36 320; move 36 340; release")
 check "left edge: drag the first app between the third and the fourth" "$got" "fake-b,fake-c,fake-a,fake-d"
+printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+
+# translations: with idioma=fr the right-click menu is in French (the Windows tables)
+printf 'tamanho=48\nampliacao=0\nidioma=fr\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+reset; got=$(run "rclick 552 140; menu Supprimer du Dock")
+check "idioma=fr: the menu is in French (Supprimer du Dock)" "$got" "fake-a,fake-c,fake-d"
 printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
 
 # a sanitized build reports memory errors, leaks and undefined behaviour in the output: any of those fails the run

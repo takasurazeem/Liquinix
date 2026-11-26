@@ -1556,3 +1556,4 @@
 { L"Texto Formatado (RTF)", L"Testo formattato (RTF)" },
 { L"Texto Simples", L"Testo semplice" },
 { L"Documentos de texto", L"Documenti di testo" },
+{ L"Downloads", L"Download" },

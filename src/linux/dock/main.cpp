@@ -8,6 +8,7 @@
 #include "dock_menu.h"
 #include "window_list.h"
 #include "core/curves.h"
+#include "core/translate.h"
 #include "core/dock_layout.h"
 #include "platform/linux/painter_qt.h"
 #include "platform/platform.h"
@@ -22,6 +23,7 @@
 #include <QLineF>
 #include <QGuiApplication>
 #include <QIcon>
+#include <QLocale>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -44,6 +46,9 @@
 #include <memory>
 
 namespace {
+
+// the interface's text in the current language (src/core/translate.h: the Windows tables); the key is Portuguese
+QString Tr(const wchar_t* pt) { return QString::fromWCharArray(translate::Tr(pt)); }
 
 // ajustes.txt (the same format as on Windows: key=value per line)
 std::map<QString, QString> ReadSettings(const QString& dir) {
@@ -76,6 +81,7 @@ struct DockSettings {
     float tile = 48, large = 128;
     bool magnify = false, bounce = true, autohide = false;
     int edge = 0;   // dock_posicao: 0 bottom (baixo), 1 left (esquerda), 2 right (direita)
+    int lang = translate::EN;  // idioma= (the Windows key); not set: the system's language
     QString theme;  // icon theme to use (resolved: the setting, KDE's, or Breeze)
 };
 DockSettings LoadDockSettings(const QString& dir, bool safeMode) {
@@ -87,6 +93,8 @@ DockSettings LoadDockSettings(const QString& dir, bool safeMode) {
     s.magnify = !safeMode && settings["ampliacao"] == QLatin1String("1");  // safe mode: nothing optional
     s.bounce = settings["animar_abertura"] != QLatin1String("0");           // on unless turned off
     s.autohide = !safeMode && settings["ocultar"] == QLatin1String("1");
+    QString code = settings["idioma"];
+    s.lang = translate::FromCode((code.isEmpty() ? QLocale::system().name() : code).toStdWString());
     s.edge = settings["dock_posicao"] == QLatin1String("esquerda") ? 1 : settings["dock_posicao"] == QLatin1String("direita") ? 2 : 0;
     // icon theme: the one in the settings (tema_icones=MacTahoe, for example), else KDE's (kdeglobals); with neither
     // and no platform theme (as in image mode), Breeze
@@ -377,8 +385,8 @@ private:
         if (en.kind == Entry::Separator) return;
         std::vector<DockMenu::Item> items;
         bool running = en.kind == Entry::App && running_[en.app];
-        items.push_back({ running ? QStringLiteral("Quit") : QStringLiteral("Open"), running ? kQuit : kOpen });
-        if (en.kind == Entry::App) { items.push_back({ QString(), 0, true }); items.push_back({ QStringLiteral("Remove from Dock"), kRemove }); }
+        items.push_back({ running ? Tr(L"Encerrar") : Tr(L"Abrir"), running ? kQuit : kOpen });
+        if (en.kind == Entry::App) { items.push_back({ QString(), 0, true }); items.push_back({ Tr(L"Remover do Dock"), kRemove }); }
         // the choice refers to the entry by what it shows (the list can change while the menu is open)
         Entry::Kind kind = en.kind;
         QString appId = en.kind == Entry::App ? apps_[en.app].id : QString();
@@ -495,6 +503,8 @@ private:
         DockSettings st = LoadDockSettings(settingsDir_, safeMode_);
         bool sizes = st.tile != tile_ || st.large != large_;
         bool themeChanged = st.theme != theme_;
+        bool langChanged = st.lang != translate::Language();
+        if (langChanged) { translate::SetLanguage(st.lang); BuildEntries(); }  // the labels in the new language
         tile_ = st.tile; large_ = st.large; magnify_ = st.magnify; bounce_ = st.bounce; autohide_ = st.autohide;
         if (themeChanged) {  // every icon again, from the new theme
             theme_ = st.theme; QIcon::setThemeName(theme_); LoadAppIcons(); BuildEntries();
@@ -507,8 +517,8 @@ private:
         for (auto& a : pinned) now << a.id;
         for (auto& a : apps_) before << a.id;
         if (now != before) { apps_ = std::move(pinned); LoadAppIcons(); PinnedChanged(false); }
-        std::printf("liquinix-dock: settings reloaded: icon %.0f, magnification %s (%.0f), autohide %s, icons %s; pinned: %s\n", tile_,
-                    magnify_ ? "on" : "off", large_, autohide_ ? "on" : "off", qPrintable(theme_), qPrintable(PinnedIds()));
+        std::printf("liquinix-dock: settings reloaded: icon %.0f, magnification %s (%.0f), autohide %s, icons %s, language %ls; pinned: %s\n", tile_,
+                    magnify_ ? "on" : "off", large_, autohide_ ? "on" : "off", qPrintable(theme_), translate::Code(), qPrintable(PinnedIds()));
         std::fflush(stdout);
         if (st.edge != edge_) { edge_ = st.edge; items_.clear(); mask_ = QRect(); blurRegion_ = QRegion(); ConfigureLayerShell(); }  // moved to another edge
         else if (sizes) ConfigureLayerShell();  // the strip's thickness follows the icon and magnified sizes
@@ -547,8 +557,8 @@ private:
         entries_.clear();
         for (size_t i = 0; i < apps_.size(); i++) entries_.push_back({ Entry::App, int(i), appIcons_[i], apps_[i].name });
         entries_.push_back({ Entry::Separator, -1, QIcon(), QString() });
-        entries_.push_back({ Entry::Downloads, -1, QIcon::fromTheme(QStringLiteral("folder-downloads"), QIcon::fromTheme(QStringLiteral("folder"))), QStringLiteral("Downloads") });
-        entries_.push_back({ Entry::Trash, -1, trash, QStringLiteral("Trash") });
+        entries_.push_back({ Entry::Downloads, -1, QIcon::fromTheme(QStringLiteral("folder-downloads"), QIcon::fromTheme(QStringLiteral("folder"))), Tr(L"Downloads") });
+        entries_.push_back({ Entry::Trash, -1, trash, Tr(L"Lixeira") });
         items_.clear();  // a different set of slots: no centres to carry over
     }
     // a drag ended: move the app to where the gap opened, or unpin it if it was dropped well above the Dock
@@ -637,6 +647,7 @@ int main(int argc, char** argv) {
     bool safeMode = safe && std::strcmp(safe, "1") == 0;  // safe mode: nothing optional (no magnification)
     QString dir = QString::fromStdWString(platform::SettingsDir());
     DockSettings st = LoadDockSettings(dir, safeMode);
+    translate::SetLanguage(st.lang);
     // where to look for themes (Icon Theme Specification): <XDG_DATA_DIRS>/icons and ~/.icons. The platform theme (KDE)
     // usually adds these; without it Qt only looks at its built-in icons
     QStringList searchPaths = QIcon::themeSearchPaths();
@@ -648,8 +659,8 @@ int main(int argc, char** argv) {
     QIcon::setFallbackSearchPaths(QIcon::fallbackSearchPaths() << QStringLiteral("/usr/share/pixmaps"));  // loose icons
     QIcon::setThemeName(st.theme);
     std::vector<DesktopApp> apps = ReadPinned(dir);
-    std::printf("liquinix-dock: %s; settings in %s; %zu pinned apps; icon %.0f, magnification %s (%.0f); icons: %s\n", safeMode ? "safe mode" : "normal",
-                qPrintable(dir), apps.size(), st.tile, st.magnify ? "on" : "off", st.large, qPrintable(QIcon::themeName()));
+    std::printf("liquinix-dock: %s; settings in %s; %zu pinned apps; icon %.0f, magnification %s (%.0f); icons: %s; language: %ls\n", safeMode ? "safe mode" : "normal",
+                qPrintable(dir), apps.size(), st.tile, st.magnify ? "on" : "off", st.large, qPrintable(QIcon::themeName()), translate::Code());
     std::fflush(stdout);  // output goes to a file or pipe: without this the line would only appear on exit
 
     DockWindow w(std::move(apps), st, dir, safeMode);

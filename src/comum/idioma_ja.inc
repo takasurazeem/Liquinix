@@ -1556,3 +1556,4 @@
 { L"Texto Formatado (RTF)", L"リッチテキスト (RTF)" },
 { L"Texto Simples", L"標準テキスト" },
 { L"Documentos de texto", L"テキスト書類" },
+{ L"Downloads", L"ダウンロード" },

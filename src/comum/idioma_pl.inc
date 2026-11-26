@@ -1556,3 +1556,4 @@
 { L"Texto Formatado (RTF)", L"Tekst sformatowany (RTF)" },
 { L"Texto Simples", L"Zwykły tekst" },
 { L"Documentos de texto", L"Dokumenty tekstowe" },
+{ L"Downloads", L"Pobrane" },
