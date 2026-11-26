@@ -60,6 +60,9 @@ if awk '/zwlr_layer_surface_v1#[0-9]+\.ack_configure\(/{f=1} f && /wl_surface#[0
 else
     echo "FAIL drew and committed a frame"; fail=1
 fi
+if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$log"; then  # a sanitized build's reports
+    echo "FAIL sanitizer reports"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$log" | head -40; fail=1
+fi
 if [[ $fail -ne 0 ]]; then
     echo "--- liquinix-dock (last lines)"; grep -v '^\[' "$log" | tail -20
     echo "--- kwin"; tail -20 "$LOGS/kwin.log"
