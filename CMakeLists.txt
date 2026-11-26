@@ -49,3 +49,7 @@ set_target_properties(liquinix-dock PROPERTIES AUTOMOC ON)
 qt6_generate_wayland_protocol_client_sources(liquinix-dock FILES ${PLASMA_WAYLAND_PROTOCOLS_DIR}/plasma-window-management.xml
     ${WAYLAND_PROTOCOLS_DIR}/staging/ext-background-effect/ext-background-effect-v1.xml)
 target_link_libraries(liquinix-dock PRIVATE liquinix-core liquinix-painter-qt Qt6::Core Qt6::Gui Qt6::GuiPrivate Qt6::WaylandClient LayerShellQt::Interface)
+
+# a plain window for the Linux tests (tools/linux/ci-smoke.sh: the Dock launches it, shows it running and quits it)
+add_executable(liquinix-test-window src/linux/test/test_window.cpp)
+target_link_libraries(liquinix-test-window PRIVATE Qt6::Core Qt6::Gui)

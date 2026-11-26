@@ -61,7 +61,9 @@ code at all) and `src/platform` (one interface, a `win/` and a `linux/` backend)
 
 `tools/linux/ci-smoke.sh ./build/liquinix-dock` runs the same check as the CI's Linux job: a headless KWin
 (`kwin_wayland --virtual`, with its own runtime folder and D-Bus, so your desktop isn't touched) and the Dock inside
-it, passing only if the Dock got its layer-shell surface and drew a frame.
+it. It passes if the Dock got its layer-shell surface and drew a frame, and if, with `liquinix-test-window` (a plain
+window built for the tests) pinned, it launches that app, sees it running, brings it to the front and quits it.
+Run it on the host: the toolbox has no KWin.
 
 `liquinix-dock` reads the same `ajustes.txt` keys as the Windows Dock (`tamanho`, `ampliacao`,
 `ampliacao_tamanho`, `animar_abertura`, `ocultar`, `dock_posicao`, `pilha_exibir`, `idioma`; without `idioma` it
