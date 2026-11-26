@@ -19,7 +19,7 @@ add_compile_options(-Wall -Wextra)
 
 # GuiPrivate: a window's wl_surface for the blur (Qt has no public API for it; layer-shell-qt uses Qt internals too)
 set(QT_NO_PRIVATE_MODULE_WARNING ON)
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui GuiPrivate WaylandClient)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui GuiPrivate WaylandClient DBus)  # DBus: apps' badges (Unity LauncherEntry)
 find_package(PlasmaWaylandProtocols REQUIRED)  # Plasma's window-management protocol (the Dock's "running" dots)
 find_package(LayerShellQt REQUIRED)
 find_package(PkgConfig REQUIRED)  # wayland-protocols' folder: ext-background-effect-v1, the compositor's blur behind the Dock
@@ -44,11 +44,11 @@ target_link_libraries(liquinix-painter-qt PUBLIC liquinix-core Qt6::Gui)
 # the Dock (#20): pinned apps from .desktop files, theme icons, magnification, running dots; the layout is the Windows one
 add_executable(liquinix-dock src/linux/dock/main.cpp src/linux/dock/apps.cpp src/linux/dock/window_list.cpp src/linux/dock/window_list.h
     src/linux/dock/background_effect.cpp src/linux/dock/background_effect.h src/linux/dock/dock_menu.cpp src/linux/dock/dock_menu.h
-    src/linux/dock/dock_stack.cpp src/linux/dock/dock_stack.h)
+    src/linux/dock/dock_stack.cpp src/linux/dock/dock_stack.h src/linux/dock/launcher_entries.cpp src/linux/dock/launcher_entries.h)
 set_target_properties(liquinix-dock PROPERTIES AUTOMOC ON)
 qt6_generate_wayland_protocol_client_sources(liquinix-dock FILES ${PLASMA_WAYLAND_PROTOCOLS_DIR}/plasma-window-management.xml
     ${WAYLAND_PROTOCOLS_DIR}/staging/ext-background-effect/ext-background-effect-v1.xml)
-target_link_libraries(liquinix-dock PRIVATE liquinix-core liquinix-painter-qt Qt6::Core Qt6::Gui Qt6::GuiPrivate Qt6::WaylandClient LayerShellQt::Interface)
+target_link_libraries(liquinix-dock PRIVATE liquinix-core liquinix-painter-qt Qt6::Core Qt6::Gui Qt6::GuiPrivate Qt6::WaylandClient Qt6::DBus LayerShellQt::Interface)
 
 # a plain window for the Linux tests (tools/linux/ci-smoke.sh: the Dock launches it, shows it running and quits it)
 add_executable(liquinix-test-window src/linux/test/test_window.cpp)

@@ -89,6 +89,27 @@ reset; out=$(LIQUINIX_DOCK_SCRIPT="move 728 140; press; release; stack notes.txt
 check "Downloads opens as a stack, newest first" "$(sed -n 's/^liquinix-dock: stack: //p' <<<"$out")" "notes.txt, photo.png, old.pdf"
 check "a file in the stack can be picked" "$(grep -c 'stack "notes.txt": chosen' <<<"$out")" "1"
 
+# badges: an app's count sent over D-Bus (the Unity LauncherEntry API) shows on its icon, and goes when the app hides it
+reset; printf 'tamanho=48\nampliacao=0\n' > "$XDG_CONFIG_HOME/liquinix/ajustes.txt"
+cat > "$DIR/badge.sh" <<BADGE
+#!/usr/bin/env bash
+emit() { gdbus emit --session --object-path /test/fake_b --signal com.canonical.Unity.LauncherEntry.Update "'application://fake-b.desktop'" "\$1" >/dev/null; }
+LIQUINIX_DOCK_SCRIPT="wait 300; png $DIR/nobadge.png; wait 1200; png $DIR/badge.png; wait 1000; png $DIR/badge-off.png" timeout 60 "$DOCK" &
+sleep 0.9; emit "{'count': <int64 7>, 'count-visible': <true>}"
+sleep 1.0; emit "{'count-visible': <false>}"
+wait
+BADGE
+chmod +x "$DIR/badge.sh"
+if command -v gdbus >/dev/null && command -v dbus-run-session >/dev/null; then
+    out=$(dbus-run-session -- "$DIR/badge.sh" 2>&1 | tee -a "$DIR/all.log")
+    check "a badge arrives over D-Bus" "$(grep -c 'badge fake-b: 7$' <<<"$out")" "1"
+    check "the app hides its badge" "$(grep -c 'badge fake-b: 7 (hidden)' <<<"$out")" "1"
+    if [[ -s "$DIR/badge.png" ]] && ! cmp -s "$DIR/nobadge.png" "$DIR/badge.png"; then echo "ok   the badge is drawn"; else echo "FAIL the badge is drawn"; fail=1; fi
+    if cmp -s "$DIR/nobadge.png" "$DIR/badge-off.png"; then echo "ok   a hidden badge isn't drawn"; else echo "FAIL a hidden badge isn't drawn"; fail=1; fi
+else
+    echo "FAIL badges: gdbus and dbus-run-session are needed (glib2, dbus-daemon)"; fail=1
+fi
+
 # a sanitized build reports memory errors, leaks and undefined behaviour in the output: any of those fails the run
 if grep -qE "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log"; then
     echo "FAIL sanitizer reports:"; grep -E -A12 "ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:" "$DIR/all.log" | head -60; fail=1
